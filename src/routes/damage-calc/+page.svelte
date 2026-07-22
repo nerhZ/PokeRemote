@@ -204,6 +204,18 @@
                         <div class="flex gap-1 mt-1">{#each defender.types as t}<TypeBadge type={t} size="xs" />{/each}</div>
                     </div>
                 </div>
+                <div class="mt-3 flex items-center gap-2">
+                    <span class="text-xs text-white/40">Level</span>
+                    <input type="number" bind:value={level} onchange={syncUrl} min={1} max={100} class="w-16 px-2 py-1 bg-white/5 border border-white/10 rounded-lg text-xs outline-none" />
+                </div>
+                {@const defHp = Math.floor(((2 * (defender.stats.find((s) => s.name === "hp")?.base_stat ?? 0) + 31) * level) / 100) + level + 10}
+                {@const defDef = Math.floor(((2 * (defender.stats.find((s) => s.name === "defense")?.base_stat ?? 0) + 31) * level) / 100 + 5)}
+                {@const defSpd = Math.floor(((2 * (defender.stats.find((s) => s.name === "special-defense")?.base_stat ?? 0) + 31) * level) / 100 + 5)}
+                <div class="mt-3 grid grid-cols-3 gap-1.5 text-center">
+                    <div class="px-2 py-1.5 rounded-lg bg-white/[0.03]"><div class="text-[10px] text-white/40">HP</div><div class="text-xs font-bold">{defHp}</div></div>
+                    <div class="px-2 py-1.5 rounded-lg bg-white/[0.03]"><div class="text-[10px] text-white/40">Defense</div><div class="text-xs font-bold">{defDef}</div></div>
+                    <div class="px-2 py-1.5 rounded-lg bg-white/[0.03]"><div class="text-[10px] text-white/40">Sp. Def</div><div class="text-xs font-bold">{defSpd}</div></div>
+                </div>
             {/if}
         </div>
     </div>
