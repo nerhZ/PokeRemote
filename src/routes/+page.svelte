@@ -65,10 +65,10 @@
 
     $effect(() => {
         const el = sentinel;
-        if (!el || activeGen !== "all" || loadingMore) return;
+        if (!el || activeGen !== "all" || loading || loadingMore) return;
         const observer = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting && !loadingMore) loadMore();
-        }, { rootMargin: "200px" });
+        }, { rootMargin: "0px" });
         observer.observe(el);
         return () => observer.disconnect();
     });
@@ -314,6 +314,7 @@
                 </div>
             {/if}
             {#if activeType === "all" && activeGen === "all" && nextOffset < totalCount}
+                <div class="h-24"></div>
                 <div bind:this={sentinel} class="flex justify-center pb-16">
                     {#if loadingMore}
                         <div class="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>

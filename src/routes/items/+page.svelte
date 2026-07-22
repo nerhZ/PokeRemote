@@ -22,10 +22,10 @@
 
     $effect(() => {
         const el = sentinel;
-        if (!el || !!search || loadingMore) return;
+        if (!el || !!search || loading || loadingMore) return;
         const observer = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting && !loadingMore) loadMore();
-        }, { rootMargin: "200px" });
+        }, { rootMargin: "0px" });
         observer.observe(el);
         return () => observer.disconnect();
     });
@@ -100,6 +100,7 @@
             </div>
         {/if}
         {#if nextOffset < total && !search}
+            <div class="h-24"></div>
             <div bind:this={sentinel} class="flex justify-center pb-12">
                 {#if loadingMore}
                     <div class="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
