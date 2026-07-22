@@ -23,7 +23,7 @@ jobs:
       - run: bun run build
         env:
           BASE_PATH: /PokeRemote
-      - run: cp build/404.html build/index.html
+      - run: cp build/index.html build/404.html
       - uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
