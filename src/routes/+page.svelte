@@ -65,9 +65,9 @@
 
     $effect(() => {
         const el = sentinel;
-        if (!el || activeGen !== "all") return;
+        if (!el || activeGen !== "all" || loadingMore) return;
         const observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting) loadMore();
+            if (entries[0].isIntersecting && !loadingMore) loadMore();
         }, { rootMargin: "200px" });
         observer.observe(el);
         return () => observer.disconnect();
@@ -303,6 +303,16 @@
                     </div>
                 {/each}
             </div>
+            {#if loadingMore}
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4 pb-4">
+                    {#each Array(10) as _}
+                        <div class="bg-white/[0.03] border border-white/5 rounded-2xl overflow-hidden">
+                            <div class="aspect-square bg-white/[0.03] animate-pulse"></div>
+                            <div class="p-4 space-y-2"><div class="h-3 w-16 bg-white/[0.06] rounded-full animate-pulse"></div><div class="h-5 w-24 bg-white/[0.06] rounded-full animate-pulse"></div></div>
+                        </div>
+                    {/each}
+                </div>
+            {/if}
             {#if activeType === "all" && activeGen === "all" && nextOffset < totalCount}
                 <div bind:this={sentinel} class="flex justify-center pb-16">
                     {#if loadingMore}

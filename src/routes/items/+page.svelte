@@ -22,9 +22,9 @@
 
     $effect(() => {
         const el = sentinel;
-        if (!el || !!search) return;
+        if (!el || !!search || loadingMore) return;
         const observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting) loadMore();
+            if (entries[0].isIntersecting && !loadingMore) loadMore();
         }, { rootMargin: "200px" });
         observer.observe(el);
         return () => observer.disconnect();
@@ -94,6 +94,11 @@
                 </div>
             {/each}
         </div>
+        {#if loadingMore}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pb-4">
+                {#each Array(6) as _}<div class="h-24 rounded-2xl bg-white/[0.03] animate-pulse"></div>{/each}
+            </div>
+        {/if}
         {#if nextOffset < total && !search}
             <div bind:this={sentinel} class="flex justify-center pb-12">
                 {#if loadingMore}
