@@ -2,6 +2,8 @@
 
 A modern Pokédex built with SvelteKit and PokeAPI.
 
+**[Open on GitHub Pages](https://nerhz.github.io/PokeRemote/)**
+
 ## Usage
 
 ```sh
