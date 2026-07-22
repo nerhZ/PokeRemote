@@ -209,7 +209,7 @@
                     </div>
 
                     {#if pokemon.forms?.length > 1}
-                        <div class="panel !p-3 mt-3">
+                        <div class="panel !p-3 mt-3 max-w-full overflow-hidden">
                             <h3 class="text-[10px] font-bold uppercase tracking-wider mb-2" style="color: var(--muted)">Forms ({pokemon.forms.length})</h3>
                             <div class="flex gap-2 overflow-x-auto pb-1">
                                 {#each pokemon.forms as form}
