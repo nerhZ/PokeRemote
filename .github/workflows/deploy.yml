@@ -18,7 +18,7 @@ jobs:
           BASE_PATH: '/${{ github.event.repository.name }}'
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: build
+          path: build/
 
   deploy:
     needs: build_site
