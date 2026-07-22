@@ -1,6 +1,6 @@
 <script lang="ts">
     import { getStatRankings } from "$lib/api";
-    import { TYPE_COLORS, formatName, capitalize, type StatRankings } from "$lib/pokemon-types";
+    import { TYPE_COLORS, formatName, capitalize, TOTAL_POKEMON, type StatRankings } from "$lib/pokemon-types";
     import { base } from "$app/paths";
     import TypeBadge from "$lib/components/TypeBadge.svelte";
     import EmptyState from "$lib/components/EmptyState.svelte";
@@ -23,7 +23,7 @@
 
     onMount(async () => {
         try {
-            rankings = await getStatRankings({ count: 251 });
+            rankings = await getStatRankings({ count: TOTAL_POKEMON });
         } catch (e: any) {
             error = e.message;
         } finally {
@@ -45,7 +45,7 @@
 <div class="tool-shell max-w-3xl">
     <div class="tool-hero">
         <h1>Stat Rankings</h1>
-        <p>Top 10 from the first 251 Pokémon (Gen I–II). Click a row to open the Pokédex entry.</p>
+        <p>Top 10 across all {TOTAL_POKEMON} forms. Click a row to open the Pokédex entry.</p>
     </div>
 
     <div class="flex flex-wrap gap-2 mb-6">

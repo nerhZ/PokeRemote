@@ -304,33 +304,38 @@ export const getStatRankings = async ({ count = 151 }: { count?: number } = {}):
         batches.push(listData.results.slice(i, i + batchSize));
     }
 
-    const batchResults = await Promise.all(batches.map((batch) =>
-        Promise.all(batch.map(async (p: any) => {
-                const id = parseIdFromUrl(p.url);
-            try {
-                const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
-                if (!r.ok) return null;
-                const d = await r.json();
-                const stats: Record<string, number> = {};
-                let total = 0;
-                for (const s of d.stats) {
-                    const key = s.stat.name.replace('-', '_');
-                    stats[key] = s.base_stat;
-                    total += s.base_stat;
-                }
-                stats.total = total;
-                return {
-                    name: p.name,
-                    id,
-                    image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`,
-                    types: d.types.map((t: any) => t.type.name),
-                    stats,
-                };
-            } catch { return null; }
-        }))
-    ));
+    const allStats: { name: string; id: number; image: string; stats: Record<string, number> }[] = [];
 
-    const allStats = batchResults.flat().filter(Boolean) as any[];
+    const concurrency = 8;
+    for (let i = 0; i < batches.length; i += concurrency) {
+        const group = batches.slice(i, i + concurrency);
+        const results = await Promise.all(group.map((batch) =>
+            Promise.all(batch.map(async (p: any) => {
+                const id = parseIdFromUrl(p.url);
+                try {
+                    const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
+                    if (!r.ok) return null;
+                    const d = await r.json();
+                    const stats: Record<string, number> = {};
+                    let total = 0;
+                    for (const s of d.stats) {
+                        const key = s.stat.name.replace('-', '_');
+                        stats[key] = s.base_stat;
+                        total += s.base_stat;
+                    }
+                    stats.total = total;
+                    return {
+                        name: p.name,
+                        id,
+                        image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`,
+                        types: d.types.map((t: any) => t.type.name),
+                        stats,
+                    };
+                } catch { return null; }
+            }))
+        ));
+        allStats.push(...results.flat().filter(Boolean) as any[]);
+    }
 
     function top10(key: string): RankingEntry[] {
         return allStats
