@@ -6,10 +6,15 @@
     import EmptyState from "$lib/components/EmptyState.svelte";
     import { onMount } from "svelte";
 
+    const CACHE_KEY = "pokeremote:rankings";
+    const CACHE_TTL = 24 * 60 * 60 * 1000;
+
     let rankings = $state<StatRankings | null>(null);
     let loading = $state(true);
+    let refreshing = $state(false);
     let error = $state<string | null>(null);
     let activeStat = $state("total");
+    let lastUpdated = $state<string | null>(null);
 
     const stats = [
         { key: "total", label: "Total", max: 720 },
@@ -21,15 +26,44 @@
         { key: "speed", label: "Speed", max: 255 },
     ];
 
-    onMount(async () => {
+    function loadCached(): StatRankings | null {
         try {
-            rankings = await getStatRankings({ count: TOTAL_POKEMON });
+            const raw = localStorage.getItem(CACHE_KEY);
+            if (!raw) return null;
+            const { data, ts } = JSON.parse(raw);
+            if (Date.now() - ts > CACHE_TTL) return null;
+            lastUpdated = new Date(ts).toLocaleString();
+            return data as StatRankings;
+        } catch { return null; }
+    }
+
+    function saveCache(data: StatRankings) {
+        try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
+        } catch {}
+    }
+
+    async function loadRankings(force = false) {
+        if (!force) {
+            const cached = loadCached();
+            if (cached) { rankings = cached; loading = false; return; }
+        }
+        refreshing = true;
+        error = null;
+        try {
+            const data = await getStatRankings({ count: TOTAL_POKEMON });
+            rankings = data;
+            saveCache(data);
+            lastUpdated = new Date().toLocaleString();
         } catch (e: any) {
-            error = e.message;
+            if (!rankings) error = e.message;
         } finally {
             loading = false;
+            refreshing = false;
         }
-    });
+    }
+
+    onMount(() => loadRankings());
 
     let activeList = $derived(rankings ? rankings[activeStat as keyof StatRankings] ?? [] : []);
     let currentMax = $derived(stats.find((s) => s.key === activeStat)?.max ?? 255);
@@ -44,8 +78,16 @@
 
 <div class="tool-shell max-w-3xl">
     <div class="tool-hero">
-        <h1>Stat Rankings</h1>
+        <div class="flex items-center justify-between gap-3 mb-2">
+            <h1>Stat Rankings</h1>
+            <button onclick={() => loadRankings(true)} disabled={refreshing} class="px-3 py-1.5 rounded-xl text-xs font-semibold border cursor-pointer bg-white/5 border-white/10 text-white/60 hover:text-white disabled:opacity-40">
+                {refreshing ? "Loading..." : "Refresh"}
+            </button>
+        </div>
         <p>Top 10 across all {TOTAL_POKEMON} forms. Click a row to open the Pokédex entry.</p>
+        {#if lastUpdated}
+            <p class="text-[10px] mt-1" style="color: var(--muted)">Cached {lastUpdated}. Refreshes after 24h.</p>
+        {/if}
     </div>
 
     <div class="flex flex-wrap gap-2 mb-6">
@@ -59,11 +101,16 @@
 
     {#if loading}
         <div class="space-y-2">{#each Array(10) as _}<div class="h-16 bg-white/[0.03] rounded-2xl animate-pulse"></div>{/each}</div>
-    {:else if error}
+    {:else if error && !rankings}
         <EmptyState title="Could not load rankings" subtitle={error} />
-    {:else if activeList.length === 0}
+    {:else if rankings && activeList.length === 0}
         <EmptyState title="No data" subtitle="No rankings available for this stat." />
-    {:else}
+    {:else if rankings}
+        {#if refreshing}
+            <div class="w-full h-0.5 bg-white/[0.05] overflow-hidden mb-3">
+                <div class="h-full bg-accent/70" style="width: 33%; animation: nav-loading-bar 1.2s ease-in-out infinite"></div>
+            </div>
+        {/if}
         <div class="space-y-2">
             {#each activeList as entry, i}
                 <a href="{base}/pokemon/{entry.name}" class="flex items-center gap-3 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:border-white/20 hover:bg-white/[0.05] transition-all no-underline group">
