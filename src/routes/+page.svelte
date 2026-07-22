@@ -126,8 +126,10 @@
 
     let searchResults = $state<any[]>([]);
     let searchLoading = $state(false);
+    let searchGen = 0;
 
     async function runSearch(q: string) {
+        const gen = ++searchGen;
         searching = true;
         searchLoading = true;
         const matches = allNames
@@ -143,6 +145,7 @@
                 } catch { return null; }
             })
         );
+        if (gen !== searchGen) return;
         searchResults = results.filter(Boolean);
         searchLoading = false;
     }
