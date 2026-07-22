@@ -211,11 +211,11 @@
                     {#if pokemon.forms?.length > 1}
                         <div class="panel !p-3 mt-3 max-w-full overflow-hidden">
                             <h3 class="text-[10px] font-bold uppercase tracking-wider mb-2" style="color: var(--muted)">Forms ({pokemon.forms.length})</h3>
-                            <div class="flex gap-2 overflow-x-auto pb-1">
+                            <div class="flex flex-wrap gap-2">
                                 {#each pokemon.forms as form}
                                     <a
                                         href="/pokemon/{form.name}"
-                                        class="flex-shrink-0 flex flex-col items-center gap-1 w-16 p-1.5 rounded-xl border no-underline transition-all {form.name === pokemon.name ? 'border-accent bg-accent/10' : 'border-white/10 hover:border-white/25'}"
+                                        class="flex flex-col items-center gap-1 w-16 p-1.5 rounded-xl border no-underline transition-all {form.name === pokemon.name ? 'border-accent bg-accent/10' : 'border-white/10 hover:border-white/25'}"
                                         style="color: var(--text)"
                                         title={form.name}
                                     >
