@@ -24,7 +24,7 @@
     let recent = $state<ReturnType<typeof getRecent>>([]);
     let showFavoritesOnly = $state(false);
     let expandedId = $state<number | null>(null);
-    let sentinel = $state<HTMLDivElement | null>(null);
+    let scrollFired = false;
 
     async function loadRange(offset: number, limit: number, append = false) {
         const data = await getPokemonList({ limit, offset });
@@ -61,16 +61,19 @@
         loadRange(0, 40, false)
             .catch((e: any) => { error = e.message; })
             .finally(() => { loading = false; });
-    });
 
-    $effect(() => {
-        const el = sentinel;
-        if (!el || activeGen !== "all" || loading || loadingMore) return;
-        const observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && !loadingMore) loadMore();
-        }, { rootMargin: "0px" });
-        observer.observe(el);
-        return () => observer.disconnect();
+        function onScroll() {
+            if (loading || loadingMore || activeGen !== "all" || nextOffset >= totalCount) return;
+            const bottom = window.innerHeight + window.scrollY;
+            const docH = document.documentElement.scrollHeight;
+            if (docH - bottom < 600) {
+                if (scrollFired) return;
+                scrollFired = true;
+                loadMore().finally(() => { scrollFired = false; });
+            }
+        }
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
     });
 
     async function loadMore() {
@@ -314,8 +317,7 @@
                 </div>
             {/if}
             {#if activeType === "all" && activeGen === "all" && nextOffset < totalCount}
-                <div class="h-24"></div>
-                <div bind:this={sentinel} class="flex justify-center pb-16">
+                <div class="flex justify-center pb-16">
                     {#if loadingMore}
                         <div class="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
                     {/if}

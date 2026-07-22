@@ -11,7 +11,7 @@
     let nextOffset = $state(0);
     let total = $state(0);
     let search = $state("");
-    let sentinel = $state<HTMLDivElement | null>(null);
+    let scrollFired = false;
 
     async function load(append = false) {
         const data = await getItemsList({ limit: 40, offset: append ? nextOffset : 0 });
@@ -20,24 +20,29 @@
         total = data.count;
     }
 
-    $effect(() => {
-        const el = sentinel;
-        if (!el || !!search || loading || loadingMore) return;
-        const observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && !loadingMore) loadMore();
-        }, { rootMargin: "0px" });
-        observer.observe(el);
-        return () => observer.disconnect();
-    });
+    onMount(() => {
+        (async () => {
+            try {
+                await load(false);
+            } catch (e: any) {
+                error = e.message;
+            } finally {
+                loading = false;
+            }
+        })();
 
-    onMount(async () => {
-        try {
-            await load(false);
-        } catch (e: any) {
-            error = e.message;
-        } finally {
-            loading = false;
+        function onScroll() {
+            if (loading || loadingMore || !!search || nextOffset >= total) return;
+            const bottom = window.innerHeight + window.scrollY;
+            const docH = document.documentElement.scrollHeight;
+            if (docH - bottom < 600) {
+                if (scrollFired) return;
+                scrollFired = true;
+                loadMore().finally(() => { scrollFired = false; });
+            }
         }
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
     });
 
     async function loadMore() {
@@ -100,8 +105,7 @@
             </div>
         {/if}
         {#if nextOffset < total && !search}
-            <div class="h-24"></div>
-            <div bind:this={sentinel} class="flex justify-center pb-12">
+            <div class="flex justify-center pb-12">
                 {#if loadingMore}
                     <div class="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
                 {/if}
