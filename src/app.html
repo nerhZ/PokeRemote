@@ -15,6 +15,11 @@
 				} catch (e) {
 					document.documentElement.dataset.theme = 'dark';
 				}
+				var r = sessionStorage.getItem('poke-redirect');
+				if (r) {
+					sessionStorage.removeItem('poke-redirect');
+					history.replaceState(null, '', r);
+				}
 			})();
 		</script>
 		%sveltekit.head%
