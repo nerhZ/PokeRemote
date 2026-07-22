@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { getPokemonList, getPokemonCatalogMeta, getRandomPokemon } from "$lib/api";
+    import { getPokemonList, getPokemonCatalogMeta, getRandomPokemon, getAutocompleteList, getPokemonDetail } from "$lib/api";
     import { TYPE_COLORS, GEN_RANGES, ALL_TYPES, TOTAL_SPECIES, TOTAL_POKEMON, formLabel, formatName } from "$lib/pokemon-types";
     import { getFavorites, toggleFavorite, getRecent, type FavEntry } from "$lib/storage";
     import TypeBadge from "$lib/components/TypeBadge.svelte";
@@ -25,6 +25,8 @@
     let showFavoritesOnly = $state(false);
     let expandedId = $state<number | null>(null);
     let scrollFired = false;
+    let allNames: { name: string; id: number }[] = $state([]);
+    let searching = $state(false);
 
     async function loadRange(offset: number, limit: number, append = false) {
         const data = await getPokemonList({ limit, offset });
@@ -58,12 +60,15 @@
         getPokemonCatalogMeta({})
             .then((m) => { pokemonTotal = m.pokemon_count; })
             .catch(() => {});
+        getAutocompleteList({})
+            .then((c) => { allNames = c.results; })
+            .catch(() => {});
         loadRange(0, 40, false)
             .catch((e: any) => { error = e.message; })
             .finally(() => { loading = false; });
 
         function onScroll() {
-            if (loading || loadingMore || activeGen !== "all" || nextOffset >= totalCount) return;
+            if (loading || loadingMore || searching || activeGen !== "all" || nextOffset >= totalCount) return;
             const bottom = window.innerHeight + window.scrollY;
             const docH = document.documentElement.scrollHeight;
             if (docH - bottom < 600) {
@@ -119,6 +124,39 @@
         });
     }
 
+    let searchResults = $state<any[]>([]);
+    let searchLoading = $state(false);
+
+    async function runSearch(q: string) {
+        searching = true;
+        searchLoading = true;
+        const matches = allNames
+            .filter((n) => n.name.toLowerCase().includes(q) || String(n.id).includes(q))
+            .slice(0, 40);
+        const results = await Promise.all(
+            matches.map(async (n) => {
+                const existing = pokemon.find((p) => p.name === n.name);
+                if (existing) return existing;
+                try {
+                    const d = await getPokemonDetail(n.name);
+                    return { name: d.name, id: d.id, image: d.sprites.other["official-artwork"].front_default, types: d.types, form_count: d.forms.length, forms: d.forms };
+                } catch { return null; }
+            })
+        );
+        searchResults = results.filter(Boolean);
+        searchLoading = false;
+    }
+
+    $effect(() => {
+        const q = searchQuery.trim().toLowerCase();
+        if (!q || allNames.length === 0) {
+            searching = false;
+            searchResults = [];
+            return;
+        }
+        runSearch(q);
+    });
+
     let availableTypes = $derived(
         ALL_TYPES.filter((t) => pokemon.some((p) => p.types.includes(t))).sort()
     );
@@ -131,7 +169,7 @@
                   image: f.image,
                   types: f.types,
               }))
-            : pokemon;
+            : searching ? searchResults : pokemon;
         if (activeType !== "all") result = result.filter((p) => p.types.includes(activeType));
         if (activeGen !== "all" && showFavoritesOnly) {
             const gen = GEN_RANGES.find((g) => g.label === activeGen);
@@ -249,6 +287,10 @@
             </div>
         {:else if error}
             <EmptyState title="Failed to load Pokémon" subtitle={error} actionLabel="Try again" onaction={() => window.location.reload()} />
+        {:else if filtered.length === 0 && searchLoading}
+            <div class="flex justify-center py-16">
+                <div class="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+            </div>
         {:else if filtered.length === 0}
             <EmptyState title="No Pokémon found" subtitle="Try another filter, generation, or clear favorites mode" actionLabel="Reset filters" onaction={() => { searchQuery = ""; activeType = "all"; showFavoritesOnly = false; setGen("all"); }} />
         {:else}
