@@ -64,6 +64,7 @@
 
         function onScroll() {
             if (loading || loadingMore || activeGen !== "all" || nextOffset >= totalCount) return;
+            if (document.documentElement.scrollHeight <= window.innerHeight + 600) return;
             const bottom = window.innerHeight + window.scrollY;
             const docH = document.documentElement.scrollHeight;
             if (docH - bottom < 600) {

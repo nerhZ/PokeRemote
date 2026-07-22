@@ -33,6 +33,7 @@
 
         function onScroll() {
             if (loading || loadingMore || !!search || nextOffset >= total) return;
+            if (document.documentElement.scrollHeight <= window.innerHeight + 600) return;
             const bottom = window.innerHeight + window.scrollY;
             const docH = document.documentElement.scrollHeight;
             if (docH - bottom < 600) {
