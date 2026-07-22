@@ -1,6 +1,7 @@
 <script lang="ts">
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
+    import { base } from "$app/paths";
     import { getPokemonDetail, getAutocompleteList } from "$lib/api";
     import { TYPE_COLORS, ALL_TYPES, formatName, capitalize, type PokemonDetail } from "$lib/pokemon-types";
     import { saveTeam, getSavedTeams } from "$lib/storage";
@@ -46,7 +47,7 @@
         const params = new URLSearchParams();
         if (team.length) params.set("p", team.map((t) => t.name).join(","));
         const q = params.toString();
-        goto(q ? `/team-builder?${q}` : "/team-builder", { replaceState: true, keepFocus: true, noScroll: true });
+        goto(q ? `${base}/team-builder?${q}` : `${base}/team-builder`, { replaceState: true, keepFocus: true, noScroll: true });
     }
 
     async function addToTeam(name: string) {

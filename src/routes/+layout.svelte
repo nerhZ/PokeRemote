@@ -47,8 +47,8 @@
 			if (e.key === "r" || e.key === "R") {
 				if (!e.metaKey && !e.ctrlKey && !e.altKey) {
 					getRandomPokemon({})
-						.then((r) => { goto(`/pokemon/${r.name}`); })
-						.catch(() => { goto(`/pokemon/${Math.floor(Math.random() * TOTAL_SPECIES) + 1}`); });
+						.then((r) => { goto(`${base}/pokemon/${r.name}`); })
+						.catch(() => { goto(`${base}/pokemon/${Math.floor(Math.random() * TOTAL_SPECIES) + 1}`); });
 				}
 			}
 		}

@@ -1,6 +1,7 @@
 <script lang="ts">
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
+    import { base } from "$app/paths";
     import { getPokemonDetail, getAutocompleteList } from "$lib/api";
     import { TYPE_COLORS, formatName, capitalize, type PokemonDetail } from "$lib/pokemon-types";
     import PokemonPicker from "$lib/components/PokemonPicker.svelte";
@@ -46,7 +47,7 @@
         if (pokemonA) params.set("a", pokemonA.name);
         if (pokemonB) params.set("b", pokemonB.name);
         const q = params.toString();
-        goto(q ? `/compare?${q}` : "/compare", { replaceState: true, keepFocus: true, noScroll: true });
+        goto(q ? `${base}/compare?${q}` : `${base}/compare`, { replaceState: true, keepFocus: true, noScroll: true });
     }
 
     async function selectPokemonA(name: string, gen?: number) {

@@ -82,9 +82,9 @@
     async function randomPokemon() {
         try {
             const r = await getRandomPokemon({});
-            goto(`/pokemon/${r.name}`);
+            goto(`${base}/pokemon/${r.name}`);
         } catch {
-            goto(`/pokemon/${Math.floor(Math.random() * TOTAL_SPECIES) + 1}`);
+            goto(`${base}/pokemon/${Math.floor(Math.random() * TOTAL_SPECIES) + 1}`);
         }
     }
 

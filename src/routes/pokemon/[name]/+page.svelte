@@ -155,7 +155,7 @@
                 <div class="space-y-4"><div class="h-64 bg-white/[0.03] rounded-3xl animate-pulse"></div><div class="h-40 bg-white/[0.03] rounded-3xl animate-pulse"></div></div>
             </div>
         {:else if error && !pokemon}
-            <EmptyState title="Something went wrong" subtitle={error} actionLabel="Back to Pokédex" onaction={() => goto("/")} />
+            <EmptyState title="Something went wrong" subtitle={error} actionLabel="Back to Pokédex" onaction={() => goto(`${base}/`)} />
         {:else if pokemon}
             {#if navigating}
                 <div class="absolute top-0 left-4 right-4 z-10 h-0.5 bg-white/[0.05] overflow-hidden">
