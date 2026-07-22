@@ -5,6 +5,7 @@
     import TypeBadge from "$lib/components/TypeBadge.svelte";
     import EmptyState from "$lib/components/EmptyState.svelte";
     import { goto } from "$app/navigation";
+    import { base } from "$app/paths";
     import { onMount } from "svelte";
 
     let pokemon = $state<any[]>([]);
@@ -169,7 +170,7 @@
                 <h2 class="text-xs font-bold uppercase tracking-wider text-white/40 mb-2">Recently viewed</h2>
                 <div class="flex gap-2 overflow-x-auto pb-2">
                     {#each recent as r}
-                        <a href="/pokemon/{r.name}" class="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] no-underline hover:border-white/20 transition-all">
+                        <a href="{base}/pokemon/{r.name}" class="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] no-underline hover:border-white/20 transition-all">
                             <img src={r.image} alt={r.name} class="w-8 h-8 object-contain" />
                             <span class="text-xs font-semibold text-white/70">{formatName(r.name)}</span>
                         </a>
@@ -244,7 +245,7 @@
                     {@const forms = p.forms || []}
                     {@const hasForms = (p.form_count ?? forms.length) > 1}
                     <div class="flex flex-col gap-1.5">
-                        <a href="/pokemon/{p.name}" class="poke-card card-enter group" style="animation-delay: {Math.min(i, 15) * 35}ms; view-transition-name: pokemon-{p.id}">
+                        <a href="{base}/pokemon/{p.name}" class="poke-card card-enter group" style="animation-delay: {Math.min(i, 15) * 35}ms; view-transition-name: pokemon-{p.id}">
                             <div class="aspect-square relative flex items-center justify-center p-5 overflow-hidden">
                                 <div class="absolute inset-0 opacity-40" style="background: radial-gradient(circle at 50% 70%, {primaryColor}22 0%, transparent 65%)"></div>
                                 <img src={p.image} alt={p.name} loading="lazy" class="max-w-full max-h-full object-contain relative z-10 drop-shadow-2xl transition-transform duration-500 group-hover:scale-110 group-hover:-translate-y-1" />
@@ -275,7 +276,7 @@
                             <div class="rounded-xl border p-2 space-y-1" style="background: var(--surface); border-color: var(--border)">
                                 {#each forms as form}
                                     <a
-                                        href="/pokemon/{form.name}"
+                                        href="{base}/pokemon/{form.name}"
                                         class="flex items-center gap-2 px-2 py-1.5 rounded-lg no-underline hover:bg-white/5 transition-colors"
                                         style="color: var(--text)"
                                     >

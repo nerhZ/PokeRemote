@@ -1,6 +1,7 @@
 <script lang="ts">
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
+    import { base } from "$app/paths";
     import { getPokemonDetail, getPokemonMoves, getSpeciesIds } from "$lib/api";
     import { TYPE_COLORS, TOTAL_SPECIES, formLabel, formatName, capitalize, type PokemonDetail, type PokemonMoves } from "$lib/pokemon-types";
     import { pushRecent, toggleFavorite, isFavorite } from "$lib/storage";
@@ -135,14 +136,14 @@
 <div class="min-h-[calc(100vh-73px)] relative" style="background: linear-gradient(180deg, {primaryColor}18 0%, transparent 55%)">
     <div class="max-w-6xl mx-auto px-4 md:px-6 py-6 relative">
         <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
-            <a href="/" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-semibold text-white/60 hover:text-white transition-all no-underline">← Pokédex</a>
+            <a href="{base}/" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-semibold text-white/60 hover:text-white transition-all no-underline">← Pokédex</a>
             {#if pokemon}
                 <div class="flex items-center gap-2">
                     {#if prevId != null}
-                        <a href="/pokemon/{prevId}" class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/50 hover:text-white no-underline" aria-label="Previous species">‹</a>
+                        <a href="{base}/pokemon/{prevId}" class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/50 hover:text-white no-underline" aria-label="Previous species">‹</a>
                     {/if}
                     {#if nextId != null}
-                        <a href="/pokemon/{nextId}" class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/50 hover:text-white no-underline" aria-label="Next species">›</a>
+                        <a href="{base}/pokemon/{nextId}" class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/50 hover:text-white no-underline" aria-label="Next species">›</a>
                     {/if}
                 </div>
             {/if}
@@ -214,7 +215,7 @@
                             <div class="flex flex-wrap gap-2">
                                 {#each pokemon.forms as form}
                                     <a
-                                        href="/pokemon/{form.name}"
+                                        href="{base}/pokemon/{form.name}"
                                         class="flex flex-col items-center gap-1 w-16 p-1.5 rounded-xl border no-underline transition-all {form.name === pokemon.name ? 'border-accent bg-accent/10' : 'border-white/10 hover:border-white/25'}"
                                         style="color: var(--text)"
                                         title={form.name}

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from "$app/state";
 	import { goto } from "$app/navigation";
+	import { base } from "$app/paths";
 	import { onMount } from "svelte";
 	import { applyTheme, getTheme, setTheme, type ThemeMode } from "$lib/storage";
 	import { getRandomPokemon } from "$lib/api";
@@ -63,14 +64,14 @@
 <div class="flex flex-col min-h-screen">
 	<header class="py-3 border-b sticky top-0 z-50 backdrop-blur-md" style="background: color-mix(in srgb, var(--bg) 85%, transparent); border-color: var(--border)">
 		<nav class="max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between gap-3">
-			<a href="/" class="flex items-center gap-2.5 text-xl md:text-2xl font-extrabold tracking-tighter no-underline" style="color: var(--text)">
+			<a href="{base}/" class="flex items-center gap-2.5 text-xl md:text-2xl font-extrabold tracking-tighter no-underline" style="color: var(--text)">
 				<div class="size-7 rounded-full border-2 border-slate-800 relative bg-linear-to-b from-pokemon-red from-50% to-white to-50% after:content-[''] after:absolute after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:w-2.5 after:h-2.5 after:bg-white after:border-2 after:border-slate-800 after:rounded-full"></div>
 				PokéRemote
 			</a>
 
 			<div class="hidden md:flex items-center gap-1 flex-wrap">
 				{#each links as link}
-					<a href={link.href} class="nav-link {isActive(link.href) ? 'nav-link-active' : ''}">{link.icon} {link.label}</a>
+					<a href="{base}{link.href}" class="nav-link {isActive(link.href) ? 'nav-link-active' : ''}">{link.icon} {link.label}</a>
 				{/each}
 				<button onclick={toggleTheme} class="nav-link cursor-pointer border-0 bg-transparent" aria-label="Toggle theme" title="Toggle theme">
 					{theme === "dark" ? "☀" : "☾"}

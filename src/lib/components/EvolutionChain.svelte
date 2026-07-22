@@ -2,6 +2,7 @@
     import EvolutionChain from "./EvolutionChain.svelte";
     import { type EvolutionStage } from "$lib/pokemon-types";
     import { formatName } from "$lib/pokemon-types";
+    import { base } from "$app/paths";
 
     let { stage, currentName, color = "#777" }: { stage: EvolutionStage | null; currentName: string; color?: string } = $props();
 
@@ -34,7 +35,7 @@
 
 {#if stage}
     <div class="flex flex-col items-center gap-2">
-        <a href="/pokemon/{stage.name}" class="flex flex-col items-center gap-1.5 no-underline group">
+        <a href="{base}/pokemon/{stage.name}" class="flex flex-col items-center gap-1.5 no-underline group">
             <div class="w-20 h-20 rounded-2xl bg-white/[0.03] border border-white/[0.06] p-2 group-hover:-translate-y-1 transition-all" style={stage.name === currentName ? `box-shadow: 0 0 0 2px ${color}` : ""}>
                 <img src={stage.image} alt={stage.name} class="w-full h-full object-contain" />
             </div>
