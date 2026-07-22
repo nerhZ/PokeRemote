@@ -188,7 +188,7 @@
     });
 </script>
 
-<div class="relative overflow-hidden">
+<div class="relative min-h-[calc(100vh-73px)]">
     <div class="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
         <div class="absolute -top-24 -right-24 w-96 h-96 bg-pokemon-red/5 rounded-full blur-3xl"></div>
         <div class="absolute -bottom-32 -left-32 w-[500px] h-[500px] bg-accent/5 rounded-full blur-3xl"></div>
