@@ -37,7 +37,7 @@
         if (i === 0) return "#ffcb05";
         if (i === 1) return "#c0c0c0";
         if (i === 2) return "#cd7f32";
-        return "rgba(255,255,255,0.35)";
+        return "var(--muted)";
     }
 </script>
 

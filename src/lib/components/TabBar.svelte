@@ -17,7 +17,7 @@
         <button
             onclick={() => onchange(t.id)}
             class="flex-1 min-w-18 px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wide cursor-pointer border-0 transition-all"
-            style={active === t.id ? `background-color: ${color}33; color: #fff` : "background: transparent; color: rgba(255,255,255,0.45)"}
+            style={active === t.id ? `background-color: ${color}33; color: #fff` : "background: transparent; color: var(--muted)"}
         >{t.label}</button>
     {/each}
 </div>
