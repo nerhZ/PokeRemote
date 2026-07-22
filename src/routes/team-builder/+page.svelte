@@ -73,7 +73,7 @@
 
     function exportTeam() {
         saved = saveTeam(teamName || "My Team", team);
-        const url = `${window.location.origin}/team-builder?p=${team.map((t) => t.name).join(",")}`;
+        const url = `${window.location.origin}${base}/team-builder?p=${team.map((t) => t.name).join(",")}`;
         navigator.clipboard?.writeText(url);
         copied = true;
         setTimeout(() => (copied = false), 2000);
