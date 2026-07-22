@@ -14,8 +14,8 @@
     let loadingMore = $state(false);
     let error = $state<string | null>(null);
     let searchQuery = $state("");
-    let activeType = $state("all");
-    let activeGen = $state("all");
+    let activeTypes = $state<string[]>([]);
+    let activeGens = $state<string[]>([]);
     let sortBy = $state("id-asc");
     let nextOffset = $state(0);
     let totalCount = $state(0);
@@ -33,13 +33,13 @@
         const p = page.url.pathname;
         if (p === `${base}/` || p === base || p === '/') {
             const sq = untrack(() => searchQuery);
-            const at = untrack(() => activeType);
+            const at = untrack(() => activeTypes.length);
             const sf = untrack(() => showFavoritesOnly);
-            if (sq || at !== 'all' || sf) {
+            if (sq || at > 0 || sf) {
                 searchQuery = '';
-                activeType = 'all';
+                activeTypes = [];
                 showFavoritesOnly = false;
-                if (untrack(() => activeGen) !== 'all') setGen('all');
+                if (untrack(() => activeGens.length > 0)) { activeGens = []; loadRange(0, 40, false); }
             }
         }
     });
@@ -49,25 +49,6 @@
         pokemon = append ? [...pokemon, ...data.results] : data.results;
         nextOffset = data.next_offset;
         totalCount = data.count;
-    }
-
-    async function loadForGen(genLabel: string) {
-        loading = true;
-        error = null;
-        try {
-            if (genLabel === "all") {
-                await loadRange(0, 40, false);
-            } else {
-                const gen = GEN_RANGES.find((g) => g.label === genLabel);
-                if (!gen) return;
-                const limit = Math.min(gen.max - gen.min + 1, 80);
-                await loadRange(gen.min - 1, limit, false);
-            }
-        } catch (e: any) {
-            error = e.message;
-        } finally {
-            loading = false;
-        }
     }
 
     onMount(() => {
@@ -84,7 +65,7 @@
             .finally(() => { loading = false; });
 
         function onScroll() {
-            if (loading || loadingMore || searching || activeGen !== "all" || nextOffset >= totalCount) return;
+            if (loading || loadingMore || searching || activeGens.length > 0 || nextOffset >= totalCount) return;
             const bottom = window.innerHeight + window.scrollY;
             const docH = document.documentElement.scrollHeight;
             if (docH - bottom < 600) {
@@ -98,7 +79,7 @@
     });
 
     async function loadMore() {
-        if (loadingMore || activeGen !== "all") return;
+        if (loadingMore || activeGens.length > 0) return;
         loadingMore = true;
         try {
             await loadRange(nextOffset, 40, true);
@@ -107,11 +88,6 @@
         } finally {
             loadingMore = false;
         }
-    }
-
-    async function setGen(label: string) {
-        activeGen = label;
-        await loadForGen(label);
     }
 
     async function randomPokemon() {
@@ -189,10 +165,12 @@
                   types: f.types,
               }))
             : searching ? searchResults : pokemon;
-        if (activeType !== "all") result = result.filter((p) => p.types.includes(activeType));
-        if (activeGen !== "all" && showFavoritesOnly) {
-            const gen = GEN_RANGES.find((g) => g.label === activeGen);
-            if (gen) result = result.filter((p) => p.id >= gen.min && p.id <= gen.max);
+        if (activeTypes.length > 0) result = result.filter((p) => p.types.some((t: string) => activeTypes.includes(t)));
+        if (activeGens.length > 0) {
+            result = result.filter((p) => activeGens.some((gl) => {
+                const gen = GEN_RANGES.find((g) => g.label === gl);
+                return gen && p.id >= gen.min && p.id <= gen.max;
+            }));
         }
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
@@ -270,26 +248,36 @@
                         <option value="name-desc">Name Z-A</option>
                     </select>
                 </div>
+                <p class="text-[10px] mt-1" style="color: var(--muted)">Click to toggle · select multiple to combine filters</p>
             </div>
-
             <div class="mt-3 space-y-2 {filtersOpen ? 'block' : 'hidden md:block'}">
                 <div class="flex flex-wrap gap-1.5">
-                    <button onclick={() => (activeType = "all")} class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-pointer border {activeType === 'all' ? 'bg-white text-bg-navy border-white' : 'bg-white/5 text-white/55 border-white/10'}">All types</button>
+                    <button onclick={() => (activeTypes = [])} class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-pointer border {activeTypes.length === 0 ? 'bg-white text-bg-navy border-white' : 'bg-white/5 text-white/55 border-white/10'}">
+                        All types{#if activeTypes.length > 0}<span class="ml-1 px-1.5 py-0.5 rounded-full text-[8px] bg-accent text-white">{activeTypes.length}</span>{/if}
+                    </button>
                     {#each availableTypes.length ? availableTypes : ALL_TYPES.slice(0, 12) as t}
+                        {@const sel = activeTypes.includes(t)}
                         <button
-                            onclick={() => (activeType = activeType === t ? "all" : t)}
-                            class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-pointer border {activeType === t ? 'text-white border-transparent' : 'bg-white/5 text-white/55 border-white/10'}"
-                            style={activeType === t ? `background-color: ${TYPE_COLORS[t]}` : ""}
+                            onclick={() => (activeTypes = sel ? activeTypes.filter((x) => x !== t) : [...activeTypes, t])}
+                            class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-pointer border {sel ? 'text-white border-transparent' : 'bg-white/5 text-white/55 border-white/10'}"
+                            style={sel ? `background-color: ${TYPE_COLORS[t]}` : ""}
                         >{t}</button>
                     {/each}
                 </div>
                 <div class="flex flex-wrap gap-1.5">
-                    <button onclick={() => setGen("all")} class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-pointer border {activeGen === 'all' ? 'bg-accent text-white border-accent' : 'bg-white/5 text-white/55 border-white/10'}">All gens</button>
+                    <button onclick={() => { activeGens = []; loadRange(0, 40, false); }} class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-pointer border {activeGens.length === 0 ? 'bg-accent text-white border-accent' : 'bg-white/5 text-white/55 border-white/10'}">
+                        All gens{#if activeGens.length > 0}<span class="ml-1 px-1.5 py-0.5 rounded-full text-[8px] bg-white/20 text-white">{activeGens.length}</span>{/if}
+                    </button>
                     {#each GEN_RANGES as gen}
+                        {@const label = gen.label}
+                        {@const sel = activeGens.includes(label)}
                         <button
-                            onclick={() => setGen(activeGen === gen.label ? "all" : gen.label)}
-                            class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-pointer border {activeGen === gen.label ? 'bg-accent text-white border-accent' : 'bg-white/5 text-white/55 border-white/10'}"
-                        >{gen.label.split(" ")[1].replace(/[()]/g, "")}</button>
+                            onclick={() => {
+                                if (sel) { activeGens = activeGens.filter((x) => x !== label); }
+                                else { activeGens = [...activeGens, label]; }
+                            }}
+                            class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-pointer border {sel ? 'bg-accent text-white border-accent' : 'bg-white/5 text-white/55 border-white/10'}"
+                        >{label.split(" ")[1].replace(/[()]/g, "")}</button>
                     {/each}
                 </div>
             </div>
@@ -311,7 +299,7 @@
                 <div class="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
             </div>
         {:else if filtered.length === 0}
-            <EmptyState title="No Pokémon found" subtitle="Try another filter, generation, or clear favorites mode" actionLabel="Reset filters" onaction={() => { searchQuery = ""; activeType = "all"; showFavoritesOnly = false; setGen("all"); }} />
+            <EmptyState title="No Pokémon found" subtitle="Try another filter, generation, or clear favorites mode" actionLabel="Reset filters" onaction={() => { searchQuery = ""; activeTypes = []; activeGens = []; showFavoritesOnly = false; loadRange(0, 40, false); }} />
         {:else}
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4 pb-8">
                 {#each filtered as p, i (p.id)}
@@ -377,7 +365,7 @@
                     {/each}
                 </div>
             {/if}
-            {#if activeType === "all" && activeGen === "all" && nextOffset < totalCount}
+            {#if activeTypes.length === 0 && activeGens.length === 0 && nextOffset < totalCount}
                 <div class="flex justify-center pb-16">
                     {#if loadingMore}
                         <div class="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
