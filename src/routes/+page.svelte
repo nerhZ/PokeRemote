@@ -1,12 +1,13 @@
 <script lang="ts">
+    import { goto } from "$app/navigation";
+    import { page } from "$app/state";
+    import { base } from "$app/paths";
+    import { onMount, untrack } from "svelte";
     import { getPokemonList, getPokemonCatalogMeta, getRandomPokemon, getAutocompleteList, getPokemonDetail } from "$lib/api";
     import { TYPE_COLORS, GEN_RANGES, ALL_TYPES, TOTAL_SPECIES, TOTAL_POKEMON, formLabel, formatName } from "$lib/pokemon-types";
     import { getFavorites, toggleFavorite, getRecent, type FavEntry } from "$lib/storage";
     import TypeBadge from "$lib/components/TypeBadge.svelte";
     import EmptyState from "$lib/components/EmptyState.svelte";
-    import { goto } from "$app/navigation";
-    import { base } from "$app/paths";
-    import { onMount } from "svelte";
 
     let pokemon = $state<any[]>([]);
     let loading = $state(true);
@@ -27,6 +28,21 @@
     let scrollFired = false;
     let allNames: { name: string; id: number }[] = $state([]);
     let searching = $state(false);
+
+    $effect(() => {
+        const p = page.url.pathname;
+        if (p === `${base}/` || p === base || p === '/') {
+            const sq = untrack(() => searchQuery);
+            const at = untrack(() => activeType);
+            const sf = untrack(() => showFavoritesOnly);
+            if (sq || at !== 'all' || sf) {
+                searchQuery = '';
+                activeType = 'all';
+                showFavoritesOnly = false;
+                if (untrack(() => activeGen) !== 'all') setGen('all');
+            }
+        }
+    });
 
     async function loadRange(offset: number, limit: number, append = false) {
         const data = await getPokemonList({ limit, offset });
