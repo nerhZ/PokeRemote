@@ -24,7 +24,7 @@ jobs:
       - run: bun install
       - run: bun run build
         env:
-          BASE_PATH: /pokemon-app
+          BASE_PATH: /PokeRemote
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build
