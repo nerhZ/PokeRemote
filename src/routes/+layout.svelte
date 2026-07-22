@@ -98,6 +98,6 @@
 	</main>
 
 	<footer class="max-w-7xl mx-auto px-6 py-8 text-center text-xs" style="color: var(--muted)">
-		<p>&copy; 2026 PokéRemote · SvelteKit & PokeAPI · Press <kbd>/</kbd> search · <kbd>R</kbd> random</p>
+		<p>Credit to PokeAPI · Press <kbd>/</kbd> search · <kbd>R</kbd> random</p>
 	</footer>
 </div>
