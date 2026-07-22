@@ -11,6 +11,7 @@
     let nextOffset = $state(0);
     let total = $state(0);
     let search = $state("");
+    let sentinel = $state<HTMLDivElement | null>(null);
 
     async function load(append = false) {
         const data = await getItemsList({ limit: 40, offset: append ? nextOffset : 0 });
@@ -18,6 +19,16 @@
         nextOffset = data.next_offset;
         total = data.count;
     }
+
+    $effect(() => {
+        const el = sentinel;
+        if (!el || !!search) return;
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) loadMore();
+        }, { rootMargin: "200px" });
+        observer.observe(el);
+        return () => observer.disconnect();
+    });
 
     onMount(async () => {
         try {
@@ -84,10 +95,10 @@
             {/each}
         </div>
         {#if nextOffset < total && !search}
-            <div class="flex justify-center">
-                <button onclick={loadMore} disabled={loadingMore} class="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm font-semibold cursor-pointer hover:bg-white/10 disabled:opacity-50">
-                    {loadingMore ? "Loading…" : "Load more items"}
-                </button>
+            <div bind:this={sentinel} class="flex justify-center pb-12">
+                {#if loadingMore}
+                    <div class="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                {/if}
             </div>
         {/if}
     {/if}

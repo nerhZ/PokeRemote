@@ -24,6 +24,7 @@
     let recent = $state<ReturnType<typeof getRecent>>([]);
     let showFavoritesOnly = $state(false);
     let expandedId = $state<number | null>(null);
+    let sentinel = $state<HTMLDivElement | null>(null);
 
     async function loadRange(offset: number, limit: number, append = false) {
         const data = await getPokemonList({ limit, offset });
@@ -60,6 +61,16 @@
         loadRange(0, 40, false)
             .catch((e: any) => { error = e.message; })
             .finally(() => { loading = false; });
+    });
+
+    $effect(() => {
+        const el = sentinel;
+        if (!el || activeGen !== "all") return;
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) loadMore();
+        }, { rootMargin: "200px" });
+        observer.observe(el);
+        return () => observer.disconnect();
     });
 
     async function loadMore() {
@@ -293,14 +304,10 @@
                 {/each}
             </div>
             {#if activeType === "all" && activeGen === "all" && nextOffset < totalCount}
-                <div class="flex justify-center pb-16">
-                    <button onclick={loadMore} disabled={loadingMore} class="px-8 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-semibold rounded-xl transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-wait">
-                        {#if loadingMore}
-                            Loading…
-                        {:else}
-                            Load More Pokémon
-                        {/if}
-                    </button>
+                <div bind:this={sentinel} class="flex justify-center pb-16">
+                    {#if loadingMore}
+                        <div class="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                    {/if}
                 </div>
             {/if}
         {/if}
