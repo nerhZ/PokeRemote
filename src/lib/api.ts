@@ -101,70 +101,6 @@ export async function getSpeciesIds(): Promise<number[]> {
   return ids;
 }
 
-/** Species catalog for home grid — forms nested under each species. */
-export const getPokemonList = async ({
-  limit = 40,
-  offset = 0,
-}: { limit?: number; offset?: number } = {}): Promise<{
-  results: PokemonSummary[];
-  count: number;
-  next_offset: number;
-}> => {
-  const response = await fetch(
-    `https://pokeapi.co/api/v2/pokemon-species?limit=${limit}&offset=${offset}`,
-  );
-  const data = await response.json();
-
-  const results = await Promise.all(
-    data.results.map(async (s: any) => {
-      const speciesId = parseIdFromUrl(s.url);
-      try {
-        const speciesRes = await fetch(
-          `https://pokeapi.co/api/v2/pokemon-species/${speciesId}`,
-        );
-        if (!speciesRes.ok) throw new Error("species");
-        const species = await speciesRes.json();
-        const forms = mapVarieties(species.varieties);
-        const defaultForm = forms.find((f) => f.is_default) || forms[0];
-        const defaultName = defaultForm?.name || s.name;
-        const defaultId = defaultForm?.id || speciesId;
-
-        const detailRes = await fetch(
-          `https://pokeapi.co/api/v2/pokemon/${defaultName}`,
-        );
-        const detail = detailRes.ok ? await detailRes.json() : null;
-
-        return {
-          name: defaultName,
-          id: speciesId,
-          image: artworkUrl(defaultId),
-          types: detail ? detail.types.map((t: any) => t.type.name) : [],
-          form_count: forms.length,
-          forms,
-        } as PokemonSummary;
-      } catch {
-        return {
-          name: s.name,
-          id: speciesId,
-          image: artworkUrl(speciesId),
-          types: [],
-          form_count: 1,
-          forms: [
-            {
-              name: s.name,
-              id: speciesId,
-              is_default: true,
-              image: artworkUrl(speciesId),
-            },
-          ],
-        } as PokemonSummary;
-      }
-    }),
-  );
-
-  return { results, count: data.count, next_offset: offset + limit };
-};
-
 export const getPokemonDetail = async (
   name: string,
 ): Promise<PokemonDetail> => {
@@ -518,21 +454,6 @@ export const getAutocompleteList = async (
   }
 };
 
-export const getPokemonCatalogMeta = async (
-  _opts: {} = {},
-): Promise<{ pokemon_count: number; species_count: number }> => {
-  const [poke, species] = await Promise.all([
-    fetch(`https://pokeapi.co/api/v2/pokemon?limit=1`).then((r) => r.json()),
-    fetch(`https://pokeapi.co/api/v2/pokemon-species?limit=1`).then((r) =>
-      r.json(),
-    ),
-  ]);
-  return {
-    pokemon_count: poke.count || TOTAL_POKEMON,
-    species_count: species.count || 1025,
-  };
-};
-
 /** Random entry from the full Pokémon resource list (includes forms). */
 export const getRandomPokemon = async (
   _opts: {} = {},
@@ -590,47 +511,6 @@ export const getItemsList = async ({
     next_offset: offset + limit,
   };
 };
-
-export async function getPokemonByType(
-  type: string,
-): Promise<{ name: string; id: number }[]> {
-  const res = await fetch(`https://pokeapi.co/api/v2/type/${type}`);
-  const data = await res.json();
-  return data.pokemon.map((p: any) => ({
-    name: p.pokemon.name,
-    id: parseIdFromUrl(p.pokemon.url),
-  }));
-}
-
-export async function getPokemonCardById(
-  id: number,
-): Promise<{ name: string; types: string[]; image: string } | null> {
-  try {
-    const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
-    if (!r.ok) return null;
-    const d = await r.json();
-    return {
-      name: d.name,
-      types: d.types.map((t: any) => t.type.name),
-      image: d.sprites.other["official-artwork"].front_default,
-    };
-  } catch {
-    return null;
-  }
-}
-
-export async function getPokemonByGen(
-  gen: string,
-): Promise<{ name: string; id: number }[]> {
-  const genNum = GEN_RANGES.findIndex((g) => g.label === gen) + 1;
-  if (genNum === 0) return [];
-  const res = await fetch(`https://pokeapi.co/api/v2/generation/${genNum}/`);
-  const data = await res.json();
-  return (data.pokemon_species || []).map((s: any) => ({
-    name: s.name,
-    id: parseIdFromUrl(s.url),
-  }));
-}
 
 // ── Grid cache — full species preload ─────────────────────────────────────────
 

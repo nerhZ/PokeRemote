@@ -253,7 +253,7 @@ export interface PokemonDetail {
   forms: PokemonFormSummary[];
 }
 
-export interface MoveInfo {
+interface MoveInfo {
   name: string;
   level: number;
   type: string;

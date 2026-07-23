@@ -16,7 +16,6 @@
 		"format:check": "bun x prettier --check \"src/**/*.{svelte,ts,css,html}\""
 	},
 	"devDependencies": {
-		"@sveltejs/adapter-auto": "^7.0.0",
 		"@sveltejs/adapter-static": "^3.0.10",
 		"@sveltejs/kit": "^2.50.1",
 		"@sveltejs/vite-plugin-svelte": "^6.2.4",
