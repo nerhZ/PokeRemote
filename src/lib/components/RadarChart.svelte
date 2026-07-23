@@ -1,7 +1,16 @@
 <script lang="ts">
-  import { type PokemonDetail } from "$lib/pokemon-types";
-  let { pokemon, color = "#777" }: { pokemon: PokemonDetail; color?: string } =
-    $props();
+  import { type PokemonDetail, formatName } from "$lib/pokemon-types";
+  let {
+    pokemon,
+    color = "#777",
+    overlay,
+    overlayColor = "#555",
+  }: {
+    pokemon: PokemonDetail;
+    color?: string;
+    overlay?: PokemonDetail;
+    overlayColor?: string;
+  } = $props();
 
   const labels: Record<string, string> = {
     hp: "HP",
@@ -16,15 +25,18 @@
     cy = 100,
     maxR = 80;
 
-  let polygon = $derived(
-    pokemon.stats
+  function statPoints(stats: { name: string; base_stat: number }[]) {
+    return stats
       .map((s, i) => {
         const a = -Math.PI / 2 + (i * Math.PI) / 3;
         const r = (s.base_stat / 255) * maxR;
         return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`;
       })
-      .join(" "),
-  );
+      .join(" ");
+  }
+
+  let polygon = $derived(statPoints(pokemon.stats));
+  let overlayPolygon = $derived(overlay ? statPoints(overlay.stats) : "");
 
   let gridRings = $derived(
     [0.25, 0.5, 0.75, 1].map((lvl) =>
@@ -37,12 +49,12 @@
   );
 </script>
 
-<svg viewBox="0 0 200 200" class="mx-auto w-full max-w-56">
+<svg viewBox="0 0 200 200" class="mx-auto w-full">
   {#each gridRings as ring}
     <polygon
       points={ring}
       fill="none"
-      stroke="rgba(255,255,255,0.05)"
+      style="stroke: var(--chart-grid)"
       stroke-width="1"
     />
   {/each}
@@ -53,7 +65,7 @@
       y1={cy}
       x2={cx + maxR * Math.cos(a)}
       y2={cy + maxR * Math.sin(a)}
-      stroke="rgba(255,255,255,0.05)"
+      style="stroke: var(--chart-grid)"
       stroke-width="1"
     />
   {/each}
@@ -64,6 +76,15 @@
     stroke-width="2"
     stroke-linejoin="round"
   />
+  {#if overlay}
+    <polygon
+      points={overlayPolygon}
+      fill="{overlayColor}20"
+      stroke={overlayColor}
+      stroke-width="2"
+      stroke-dasharray="4 2"
+    />
+  {/if}
   {#each pokemon.stats as stat, i}
     {@const a = -Math.PI / 2 + (i * Math.PI) / 3}
     {@const lx = cx + 92 * Math.cos(a)}
@@ -73,9 +94,16 @@
       y={ly}
       text-anchor="middle"
       dominant-baseline="middle"
-      fill="rgba(255,255,255,0.4)"
+      style="fill: var(--chart-label)"
       font-size="8"
       font-weight="700">{labels[stat.name]}</text
     >
   {/each}
 </svg>
+{#if overlay}
+  <div class="mt-2 flex justify-center gap-4 text-xs">
+    <span style="color: {color}">● {formatName(pokemon.name)}</span>
+    <span style="color: {overlayColor}">○ {formatName(overlay.name)}</span>
+  </div>
+{/if}
+

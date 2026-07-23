@@ -483,9 +483,11 @@
                   {statTotal}
                 </div>
               </div>
-              <div class="grid items-center gap-6 md:grid-cols-[200px_1fr]">
+              <div class="flex flex-col items-center gap-6">
                 <RadarChart {pokemon} color={primaryColor} />
-                <StatBars {pokemon} color={primaryColor} />
+                <div class="w-full max-w-md">
+                  <StatBars {pokemon} color={primaryColor} />
+                </div>
               </div>
             </div>
           {:else if tab === "matchups"}

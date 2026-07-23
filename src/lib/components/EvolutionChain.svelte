@@ -70,7 +70,7 @@
         class="text-xs font-semibold"
         style={stage.name === currentName
           ? `color: ${color}`
-          : "color: rgba(255,255,255,0.5)"}>{formatName(stage.name)}</span
+          : "color: var(--muted)"}>{formatName(stage.name)}</span
       >
     </a>
     {#if stage.children.length > 0}

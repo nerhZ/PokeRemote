@@ -31,6 +31,8 @@
     --input-bg: rgba(255, 255, 255, 0.05);
     --kbd-bg: rgba(255, 255, 255, 0.06);
     --shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    --chart-grid: rgba(255, 255, 255, 0.06);
+    --chart-label: rgba(255, 255, 255, 0.4);
     color-scheme: dark;
   }
 
@@ -50,6 +52,8 @@
     --shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
     --color-bg-navy: #f0f3f9;
     --color-card-navy: #ffffff;
+    --chart-grid: var(--border);
+    --chart-label: var(--muted);
     color-scheme: light;
   }
 
@@ -264,6 +268,9 @@
 
 /* ── Backgrounds ── */
 [data-theme="light"] .bg-white\/5,
+[data-theme="light"] .bg-white\/2,
+[data-theme="light"] .bg-white\/3,
+[data-theme="light"] .bg-white\/6,
 [data-theme="light"] .bg-white\/\[0\.02\],
 [data-theme="light"] .bg-white\/\[0\.03\],
 [data-theme="light"] .bg-white\/\[0\.04\],
@@ -282,7 +289,9 @@
 
 /* ── Borders ── */
 [data-theme="light"] .border-white,
+[data-theme="light"] .border-white\/4,
 [data-theme="light"] .border-white\/5,
+[data-theme="light"] .border-white\/6,
 [data-theme="light"] .border-white\/10,
 [data-theme="light"] .border-white\/20,
 [data-theme="light"] .border-white\/25,

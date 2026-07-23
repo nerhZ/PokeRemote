@@ -179,11 +179,11 @@
                 ? 'rgba(255,62,62,0.2)'
                 : c <= -1
                   ? 'rgba(74,222,128,0.2)'
-                  : 'rgba(255,255,255,0.03)'}; border: 1px solid {c >= 2
+                  : 'var(--surface-2)'}; border: 1px solid {c >= 2
                 ? 'rgba(255,62,62,0.3)'
                 : c <= -1
                   ? 'rgba(74,222,128,0.3)'
-                  : 'rgba(255,255,255,0.06)'}"
+                  : 'var(--border)'}"
             >
               <span class="block" style="color: {TYPE_COLORS[t]}"
                 >{t.slice(0, 4)}</span

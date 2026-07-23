@@ -10,6 +10,7 @@
   } from "$lib/pokemon-types";
   import PokemonPicker from "$lib/components/PokemonPicker.svelte";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
+  import RadarChart from "$lib/components/RadarChart.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import { onMount } from "svelte";
 
@@ -90,15 +91,6 @@
     }
   }
 
-  function radarPoints(p: PokemonDetail, color: string) {
-    return p.stats
-      .map((s, i) => {
-        const angle = -Math.PI / 2 + (i * Math.PI) / 3;
-        const r = (s.base_stat / 255) * 80;
-        return `${100 + r * Math.cos(angle)},${100 + r * Math.sin(angle)}`;
-      })
-      .join(" ");
-  }
 </script>
 
 <div class="tool-shell">
@@ -219,39 +211,13 @@
       {@const colorB = TYPE_COLORS[pokemonB.types[0]] || "#777"}
       <div class="panel mb-6">
         <h2 class="mb-4 text-lg font-bold">Shared Radar</h2>
-        <div class="flex justify-center">
-          <svg viewBox="0 0 200 200" class="w-full max-w-72">
-            {#each [0.25, 0.5, 0.75, 1] as lvl}
-              {@const pts = Array.from({ length: 6 }, (_, i) => {
-                const a = -Math.PI / 2 + (i * Math.PI) / 3;
-                const r = 80 * lvl;
-                return `${100 + r * Math.cos(a)},${100 + r * Math.sin(a)}`;
-              }).join(" ")}
-              <polygon
-                points={pts}
-                fill="none"
-                stroke="rgba(255,255,255,0.06)"
-                stroke-width="1"
-              />
-            {/each}
-            <polygon
-              points={radarPoints(pokemonA, colorA)}
-              fill="{colorA}25"
-              stroke={colorA}
-              stroke-width="2"
-            />
-            <polygon
-              points={radarPoints(pokemonB, colorB)}
-              fill="{colorB}20"
-              stroke={colorB}
-              stroke-width="2"
-              stroke-dasharray="4 2"
-            />
-          </svg>
-        </div>
-        <div class="mt-2 flex justify-center gap-4 text-xs">
-          <span style="color: {colorA}">● {formatName(pokemonA.name)}</span>
-          <span style="color: {colorB}">○ {formatName(pokemonB.name)}</span>
+        <div class="mx-auto max-w-sm">
+          <RadarChart
+            pokemon={pokemonA}
+            color={colorA}
+            overlay={pokemonB}
+            overlayColor={colorB}
+          />
         </div>
       </div>
 
@@ -302,7 +268,7 @@
                   ? '#4ade80'
                   : diff < 0
                     ? '#f87171'
-                    : 'rgba(255,255,255,0.3)'}"
+                    : 'var(--muted)'}"
                 >{diff > 0 ? `+${diff}` : diff || ""}</span
               >
             </div>
