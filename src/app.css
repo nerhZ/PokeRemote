@@ -1,200 +1,234 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap");
 @import "tailwindcss";
 
 @theme {
-	--color-bg-navy: #0d1117;
-	--color-card-navy: #161b22;
-	--color-pokemon-red: #ff3e3e;
-	--color-pokemon-blue: #3e7bff;
-	--color-pokemon-yellow: #ffcb05;
-	--color-pokemon-gold: #c7a008;
-	--color-accent: #3884ff;
-	--color-pokemon-green: #4ade80;
-	--font-outfit: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --color-bg-navy: #0d1117;
+  --color-card-navy: #161b22;
+  --color-pokemon-red: #ff3e3e;
+  --color-pokemon-blue: #3e7bff;
+  --color-pokemon-yellow: #ffcb05;
+  --color-pokemon-gold: #c7a008;
+  --color-accent: #3884ff;
+  --color-pokemon-green: #4ade80;
+  --font-outfit:
+    "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
 }
 
 @layer base {
-	:root,
-	[data-theme="dark"] {
-		--bg: #0d1117;
-		--card: #161b22;
-		--text: #e2e8f0;
-		--muted: rgba(226, 232, 240, 0.55);
-		--muted-strong: rgba(226, 232, 240, 0.72);
-		--border: rgba(255, 255, 255, 0.1);
-		--surface: rgba(255, 255, 255, 0.04);
-		--surface-2: rgba(255, 255, 255, 0.07);
-		--surface-3: rgba(255, 255, 255, 0.1);
-		--overlay: rgba(0, 0, 0, 0.4);
-		--input-bg: rgba(255, 255, 255, 0.05);
-		--kbd-bg: rgba(255, 255, 255, 0.06);
-		--shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-		color-scheme: dark;
-	}
+  :root,
+  [data-theme="dark"] {
+    --bg: #0d1117;
+    --card: #161b22;
+    --text: #e2e8f0;
+    --muted: rgba(226, 232, 240, 0.55);
+    --muted-strong: rgba(226, 232, 240, 0.72);
+    --border: rgba(255, 255, 255, 0.1);
+    --surface: rgba(255, 255, 255, 0.04);
+    --surface-2: rgba(255, 255, 255, 0.07);
+    --surface-3: rgba(255, 255, 255, 0.1);
+    --overlay: rgba(0, 0, 0, 0.4);
+    --input-bg: rgba(255, 255, 255, 0.05);
+    --kbd-bg: rgba(255, 255, 255, 0.06);
+    --shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    color-scheme: dark;
+  }
 
-	[data-theme="light"] {
-		--bg: #f0f3f9;
-		--card: #ffffff;
-		--text: #0f172a;
-		--muted: rgba(15, 23, 42, 0.55);
-		--muted-strong: rgba(15, 23, 42, 0.72);
-		--border: rgba(15, 23, 42, 0.12);
-		--surface: #ffffff;
-		--surface-2: rgba(15, 23, 42, 0.04);
-		--surface-3: rgba(15, 23, 42, 0.07);
-		--overlay: rgba(15, 23, 42, 0.08);
-		--input-bg: #ffffff;
-		--kbd-bg: rgba(15, 23, 42, 0.06);
-		--shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
-		--color-bg-navy: #f0f3f9;
-		--color-card-navy: #ffffff;
-		color-scheme: light;
-	}
+  [data-theme="light"] {
+    --bg: #f0f3f9;
+    --card: #ffffff;
+    --text: #0f172a;
+    --muted: rgba(15, 23, 42, 0.55);
+    --muted-strong: rgba(15, 23, 42, 0.72);
+    --border: rgba(15, 23, 42, 0.12);
+    --surface: #ffffff;
+    --surface-2: rgba(15, 23, 42, 0.04);
+    --surface-3: rgba(15, 23, 42, 0.07);
+    --overlay: rgba(15, 23, 42, 0.08);
+    --input-bg: #ffffff;
+    --kbd-bg: rgba(15, 23, 42, 0.06);
+    --shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+    --color-bg-navy: #f0f3f9;
+    --color-card-navy: #ffffff;
+    color-scheme: light;
+  }
 
-	body {
-		@apply font-outfit min-h-screen m-0 p-0;
-		background-color: var(--bg);
-		color: var(--text);
-		background-image:
-			radial-gradient(circle at 10% 20%, rgba(56, 132, 255, 0.07) 0%, transparent 50%),
-			radial-gradient(circle at 90% 60%, rgba(255, 62, 62, 0.05) 0%, transparent 50%),
-			radial-gradient(circle at 50% 90%, rgba(56, 132, 255, 0.04) 0%, transparent 35%);
-	}
+  body {
+    @apply font-outfit m-0 min-h-screen p-0;
+    background-color: var(--bg);
+    color: var(--text);
+    background-image:
+      radial-gradient(
+        circle at 10% 20%,
+        rgba(56, 132, 255, 0.07) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 90% 60%,
+        rgba(255, 62, 62, 0.05) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 50% 90%,
+        rgba(56, 132, 255, 0.04) 0%,
+        transparent 35%
+      );
+  }
 
-	[data-theme="light"] body {
-		background-image:
-			radial-gradient(circle at 10% 20%, rgba(56, 132, 255, 0.1) 0%, transparent 50%),
-			radial-gradient(circle at 90% 60%, rgba(255, 62, 62, 0.07) 0%, transparent 50%),
-			radial-gradient(circle at 50% 90%, rgba(56, 132, 255, 0.06) 0%, transparent 35%);
-	}
+  [data-theme="light"] body {
+    background-image:
+      radial-gradient(
+        circle at 10% 20%,
+        rgba(56, 132, 255, 0.1) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 90% 60%,
+        rgba(255, 62, 62, 0.07) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 50% 90%,
+        rgba(56, 132, 255, 0.06) 0%,
+        transparent 35%
+      );
+  }
 
-	input,
-	select,
-	textarea,
-	button {
-		color: inherit;
-	}
+  input,
+  select,
+  textarea,
+  button {
+    color: inherit;
+  }
 
-	input::placeholder,
-	textarea::placeholder {
-		color: var(--muted);
-		opacity: 1;
-	}
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--muted);
+    opacity: 1;
+  }
 
-	option {
-		background: var(--card);
-		color: var(--text);
-	}
+  option {
+    background: var(--card);
+    color: var(--text);
+  }
 
-	kbd {
-		background: var(--kbd-bg);
-		border: 1px solid var(--border);
-		border-radius: 0.35rem;
-		padding: 0.1rem 0.35rem;
-		font-size: 0.75em;
-	}
+  kbd {
+    background: var(--kbd-bg);
+    border: 1px solid var(--border);
+    border-radius: 0.35rem;
+    padding: 0.1rem 0.35rem;
+    font-size: 0.75em;
+  }
 }
 
 @layer components {
-	.glass-card {
-		@apply backdrop-blur-md border rounded-2xl p-6 transition-all duration-300;
-		background: color-mix(in srgb, var(--card) 92%, transparent);
-		border-color: var(--border);
-		box-shadow: var(--shadow);
-		transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
-	}
+  .glass-card {
+    @apply rounded-2xl border p-6 backdrop-blur-md transition-all duration-300;
+    background: color-mix(in srgb, var(--card) 92%, transparent);
+    border-color: var(--border);
+    box-shadow: var(--shadow);
+    transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
 
-	.glass-card:hover {
-		@apply -translate-y-1;
-		border-color: color-mix(in srgb, var(--color-accent) 45%, var(--border));
-	}
+  .glass-card:hover {
+    @apply -translate-y-1;
+    border-color: color-mix(in srgb, var(--color-accent) 45%, var(--border));
+  }
 
-	.tool-shell {
-		@apply max-w-6xl mx-auto px-6 py-8;
-	}
+  .tool-shell {
+    @apply mx-auto max-w-6xl px-6 py-8;
+  }
 
-	.tool-hero {
-		@apply mb-8;
-	}
+  .tool-hero {
+    @apply mb-8;
+  }
 
-	.tool-hero h1 {
-		@apply text-3xl md:text-4xl font-black mb-2;
-		color: var(--text);
-	}
+  .tool-hero h1 {
+    @apply mb-2 text-3xl font-black md:text-4xl;
+    color: var(--text);
+  }
 
-	.tool-hero p {
-		@apply text-sm md:text-base;
-		color: var(--muted);
-	}
+  .tool-hero p {
+    @apply text-sm md:text-base;
+    color: var(--muted);
+  }
 
-	.panel {
-		@apply rounded-3xl border p-6 md:p-8;
-		background: var(--surface);
-		border-color: var(--border);
-		box-shadow: var(--shadow);
-		color: var(--text);
-	}
+  .panel {
+    @apply rounded-3xl border p-6 md:p-8;
+    background: var(--surface);
+    border-color: var(--border);
+    box-shadow: var(--shadow);
+    color: var(--text);
+  }
 
-	.nav-link {
-		@apply px-3 py-1.5 rounded-lg text-xs font-semibold transition-all no-underline;
-		color: var(--muted);
-	}
+  .nav-link {
+    @apply rounded-lg px-3 py-1.5 text-xs font-semibold no-underline transition-all;
+    color: var(--muted);
+  }
 
-	.nav-link:hover {
-		color: var(--text);
-		background: var(--surface-2);
-	}
+  .nav-link:hover {
+    color: var(--text);
+    background: var(--surface-2);
+  }
 
-	.nav-link-active {
-		background: color-mix(in srgb, var(--color-accent) 18%, transparent) !important;
-		color: var(--color-accent) !important;
-	}
+  .nav-link-active {
+    background: color-mix(
+      in srgb,
+      var(--color-accent) 18%,
+      transparent
+    ) !important;
+    color: var(--color-accent) !important;
+  }
 
-	[data-theme="dark"] .nav-link-active {
-		color: #fff !important;
-		background: color-mix(in srgb, var(--color-accent) 28%, transparent) !important;
-	}
+  [data-theme="dark"] .nav-link-active {
+    color: #fff !important;
+    background: color-mix(
+      in srgb,
+      var(--color-accent) 28%,
+      transparent
+    ) !important;
+  }
 
-	.poke-card {
-		@apply block border rounded-2xl overflow-hidden no-underline transition-all duration-300 relative;
-		background: var(--surface);
-		border-color: var(--border);
-		color: var(--text);
-		box-shadow: var(--shadow);
-	}
+  .poke-card {
+    @apply relative block overflow-hidden rounded-2xl border no-underline transition-all duration-300;
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--text);
+    box-shadow: var(--shadow);
+  }
 
-	.poke-card:hover {
-		@apply -translate-y-1.5;
-		border-color: color-mix(in srgb, var(--color-accent) 35%, var(--border));
-	}
+  .poke-card:hover {
+    @apply -translate-y-1.5;
+    border-color: color-mix(in srgb, var(--color-accent) 35%, var(--border));
+  }
 
-	.type-edge {
-		@apply absolute bottom-0 left-0 right-0 h-1 opacity-80;
-	}
+  .type-edge {
+    @apply absolute right-0 bottom-0 left-0 h-1 opacity-80;
+  }
 
-	.ui-input {
-		background: var(--input-bg);
-		border: 1px solid var(--border);
-		color: var(--text);
-		border-radius: 0.75rem;
-	}
+  .ui-input {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 0.75rem;
+  }
 
-	.ui-input:focus {
-		outline: none;
-		border-color: color-mix(in srgb, var(--color-accent) 55%, var(--border));
-	}
+  .ui-input:focus {
+    outline: none;
+    border-color: color-mix(in srgb, var(--color-accent) 55%, var(--border));
+  }
 
-	.ui-chip {
-		background: var(--surface-2);
-		border: 1px solid var(--border);
-		color: var(--muted-strong);
-	}
+  .ui-chip {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--muted-strong);
+  }
 
-	.ui-chip-active {
-		background: var(--color-accent);
-		border-color: var(--color-accent);
-		color: #fff;
-	}
+  .ui-chip-active {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: #fff;
+  }
 }
 
 /* Light mode: remap hardcoded white/black opacity utilities used in templates */
@@ -205,14 +239,14 @@
 [data-theme="light"] .text-white\/85,
 [data-theme="light"] .text-white\/80,
 [data-theme="light"] .text-white\/70 {
-	color: var(--text) !important;
+  color: var(--text) !important;
 }
 
 [data-theme="light"] .text-white\/60,
 [data-theme="light"] .text-white\/55,
 [data-theme="light"] .text-white\/50,
 [data-theme="light"] .text-white\/45 {
-	color: var(--muted-strong) !important;
+  color: var(--muted-strong) !important;
 }
 
 [data-theme="light"] .text-white\/40,
@@ -220,12 +254,12 @@
 [data-theme="light"] .text-white\/30,
 [data-theme="light"] .text-white\/25,
 [data-theme="light"] .text-white\/20 {
-	color: var(--muted) !important;
+  color: var(--muted) !important;
 }
 
 [data-theme="light"] .hover\:text-white:hover,
 [data-theme="light"] .group-hover\:text-white:is(:where(.group):hover *) {
-	color: var(--text) !important;
+  color: var(--text) !important;
 }
 
 /* ── Backgrounds ── */
@@ -239,11 +273,11 @@
 [data-theme="light"] .hover\:bg-white\/10:hover,
 [data-theme="light"] .hover\:bg-white\/\[0\.05\]:hover,
 [data-theme="light"] .hover\:bg-white\/\[0\.06\]:hover {
-	background-color: var(--surface-2) !important;
+  background-color: var(--surface-2) !important;
 }
 
 [data-theme="light"] .bg-white\/10 {
-	background-color: var(--surface-3) !important;
+  background-color: var(--surface-3) !important;
 }
 
 /* ── Borders ── */
@@ -258,143 +292,165 @@
 [data-theme="light"] .hover\:border-white\/20:hover,
 [data-theme="light"] .hover\:border-white\/25:hover,
 [data-theme="light"] .hover\:border-white\/30:hover {
-	border-color: var(--border) !important;
+  border-color: var(--border) !important;
 }
 
 [data-theme="light"] .border-t.border-white\/\[0\.04\],
 [data-theme="light"] .border-t.border-white\/\[0\.06\],
 [data-theme="light"] .border-l.border-white\/\[0\.06\],
 [data-theme="light"] .border-y {
-	border-color: var(--border);
+  border-color: var(--border);
 }
 
 [data-theme="light"] .placeholder-white\/30::placeholder {
-	color: var(--muted) !important;
+  color: var(--muted) !important;
 }
 
 [data-theme="light"] .bg-black\/30,
 [data-theme="light"] .bg-black\/35,
 [data-theme="light"] .bg-black\/40 {
-	background-color: rgba(15, 23, 42, 0.08) !important;
-	color: var(--text);
+  background-color: rgba(15, 23, 42, 0.08) !important;
+  color: var(--text);
 }
 
 [data-theme="light"] .animate-spin {
-    border-color: rgba(15, 23, 42, 0.15) !important;
-    border-top-color: var(--text) !important;
+  border-color: rgba(15, 23, 42, 0.15) !important;
+  border-top-color: var(--text) !important;
 }
 
 /* Solid white buttons (e.g. "All types" active) keep contrast */
 [data-theme="light"] .bg-white.text-bg-navy,
 [data-theme="light"] .bg-white.border-white {
-	background-color: #0f172a !important;
-	color: #fff !important;
-	border-color: #0f172a !important;
+  background-color: #0f172a !important;
+  color: #fff !important;
+  border-color: #0f172a !important;
 }
 
 [data-theme="light"] .text-bg-navy {
-	color: #0f172a !important;
+  color: #0f172a !important;
 }
 
 /* Accent buttons keep white label text on blue */
 [data-theme="light"] .bg-accent,
 [data-theme="light"] .bg-accent\/20,
 [data-theme="light"] button.bg-accent {
-	color: #fff;
+  color: #fff;
 }
 [data-theme="light"] .bg-accent.text-white,
 [data-theme="light"] .bg-accent .text-white {
-	color: #fff !important;
+  color: #fff !important;
 }
 
 /* Detail/tool chips that intentionally sit on dark badges stay white */
 [data-theme="light"] .from-pokemon-yellow,
 [data-theme="light"] .from-pink-500 {
-	color: #fff;
+  color: #fff;
 }
 
 /* Cards & panels get real white surfaces in light mode */
 [data-theme="light"] .panel,
 [data-theme="light"] .poke-card {
-	background: #ffffff;
-	box-shadow: var(--shadow);
+  background: #ffffff;
+  box-shadow: var(--shadow);
 }
 
 /* Yellow fav/save text needs darker shade for contrast on light bg */
 [data-theme="light"] .text-pokemon-yellow {
-	color: #b8860b !important;
+  color: #b8860b !important;
 }
 
 [data-theme="light"] input,
 [data-theme="light"] select,
 [data-theme="light"] textarea {
-	background-color: #ffffff;
-	color: var(--text);
-	border-color: var(--border);
+  background-color: #ffffff;
+  color: var(--text);
+  border-color: var(--border);
 }
 
 [data-theme="light"] input:focus,
 [data-theme="light"] select:focus,
 [data-theme="light"] textarea:focus {
-	border-color: color-mix(in srgb, var(--color-accent) 50%, var(--border));
+  border-color: color-mix(in srgb, var(--color-accent) 50%, var(--border));
 }
 
 /* Dropdown menus */
 [data-theme="light"] .bg-bg-navy,
 [data-theme="light"] .bg-card-navy {
-	background-color: #ffffff !important;
-	color: var(--text);
-	box-shadow: var(--shadow);
+  background-color: #ffffff !important;
+  color: var(--text);
+  box-shadow: var(--shadow);
 }
 
 @keyframes float {
-	0%, 100% { transform: translateY(0px); }
-	50% { transform: translateY(-20px); }
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
 }
 
 @keyframes bob {
-	0%, 100% { transform: translateY(0px); }
-	50% { transform: translateY(-10px); }
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 @keyframes nav-loading-bar {
-    0% { transform: translateX(-100%); }
-    60% { transform: translateX(200%); }
-    100% { transform: translateX(200%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  60% {
+    transform: translateX(200%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
 }
 
 @keyframes card-enter {
-	from { opacity: 0; transform: translateY(16px) scale(0.97); }
-	to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .card-enter {
-	animation: card-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: card-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 ::selection {
-	background-color: var(--color-accent);
-	color: white;
+  background-color: var(--color-accent);
+  color: white;
 }
 
 ::-webkit-scrollbar {
-	width: 10px;
-	height: 10px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
-	background: var(--bg);
+  background: var(--bg);
 }
 ::-webkit-scrollbar-thumb {
-	background: rgba(128, 128, 128, 0.3);
-	border-radius: 5px;
+  background: rgba(128, 128, 128, 0.3);
+  border-radius: 5px;
 }
 ::-webkit-scrollbar-thumb:hover {
-	background: rgba(128, 128, 128, 0.45);
+  background: rgba(128, 128, 128, 0.45);
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.card-enter,
-	.pokemon-sprite {
-		animation: none !important;
-	}
+  .card-enter,
+  .pokemon-sprite {
+    animation: none !important;
+  }
 }

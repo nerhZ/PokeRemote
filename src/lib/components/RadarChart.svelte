@@ -1,46 +1,81 @@
 <script lang="ts">
-    import { type PokemonDetail } from "$lib/pokemon-types";
-    let { pokemon, color = "#777" }: { pokemon: PokemonDetail; color?: string } = $props();
+  import { type PokemonDetail } from "$lib/pokemon-types";
+  let { pokemon, color = "#777" }: { pokemon: PokemonDetail; color?: string } =
+    $props();
 
-    const labels: Record<string, string> = {
-        hp: "HP", attack: "ATK", defense: "DEF",
-        "special-attack": "SP.ATK", "special-defense": "SP.DEF", speed: "SPD",
-    };
+  const labels: Record<string, string> = {
+    hp: "HP",
+    attack: "ATK",
+    defense: "DEF",
+    "special-attack": "SP.ATK",
+    "special-defense": "SP.DEF",
+    speed: "SPD",
+  };
 
-    const cx = 100, cy = 100, maxR = 80;
+  const cx = 100,
+    cy = 100,
+    maxR = 80;
 
-    let polygon = $derived(
-        pokemon.stats.map((s, i) => {
-            const a = -Math.PI / 2 + (i * Math.PI / 3);
-            const r = (s.base_stat / 255) * maxR;
-            return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`;
-        }).join(" ")
-    );
+  let polygon = $derived(
+    pokemon.stats
+      .map((s, i) => {
+        const a = -Math.PI / 2 + (i * Math.PI) / 3;
+        const r = (s.base_stat / 255) * maxR;
+        return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`;
+      })
+      .join(" "),
+  );
 
-    let gridRings = $derived(
-        [0.25, 0.5, 0.75, 1].map((lvl) =>
-            Array.from({ length: 6 }, (_, i) => {
-                const a = -Math.PI / 2 + (i * Math.PI / 3);
-                const r = maxR * lvl;
-                return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`;
-            }).join(" ")
-        )
-    );
+  let gridRings = $derived(
+    [0.25, 0.5, 0.75, 1].map((lvl) =>
+      Array.from({ length: 6 }, (_, i) => {
+        const a = -Math.PI / 2 + (i * Math.PI) / 3;
+        const r = maxR * lvl;
+        return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`;
+      }).join(" "),
+    ),
+  );
 </script>
 
-<svg viewBox="0 0 200 200" class="w-full max-w-56 mx-auto">
-    {#each gridRings as ring}
-        <polygon points={ring} fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1" />
-    {/each}
-    {#each Array(6) as _, i}
-        {@const a = -Math.PI / 2 + (i * Math.PI / 3)}
-        <line x1={cx} y1={cy} x2={cx + maxR * Math.cos(a)} y2={cy + maxR * Math.sin(a)} stroke="rgba(255,255,255,0.05)" stroke-width="1" />
-    {/each}
-    <polygon points={polygon} fill="{color}30" stroke={color} stroke-width="2" stroke-linejoin="round" />
-    {#each pokemon.stats as stat, i}
-        {@const a = -Math.PI / 2 + (i * Math.PI / 3)}
-        {@const lx = cx + 92 * Math.cos(a)}
-        {@const ly = cy + 92 * Math.sin(a)}
-        <text x={lx} y={ly} text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.4)" font-size="8" font-weight="700">{labels[stat.name]}</text>
-    {/each}
+<svg viewBox="0 0 200 200" class="mx-auto w-full max-w-56">
+  {#each gridRings as ring}
+    <polygon
+      points={ring}
+      fill="none"
+      stroke="rgba(255,255,255,0.05)"
+      stroke-width="1"
+    />
+  {/each}
+  {#each Array(6) as _, i}
+    {@const a = -Math.PI / 2 + (i * Math.PI) / 3}
+    <line
+      x1={cx}
+      y1={cy}
+      x2={cx + maxR * Math.cos(a)}
+      y2={cy + maxR * Math.sin(a)}
+      stroke="rgba(255,255,255,0.05)"
+      stroke-width="1"
+    />
+  {/each}
+  <polygon
+    points={polygon}
+    fill="{color}30"
+    stroke={color}
+    stroke-width="2"
+    stroke-linejoin="round"
+  />
+  {#each pokemon.stats as stat, i}
+    {@const a = -Math.PI / 2 + (i * Math.PI) / 3}
+    {@const lx = cx + 92 * Math.cos(a)}
+    {@const ly = cy + 92 * Math.sin(a)}
+    <text
+      x={lx}
+      y={ly}
+      text-anchor="middle"
+      dominant-baseline="middle"
+      fill="rgba(255,255,255,0.4)"
+      font-size="8"
+      font-weight="700">{labels[stat.name]}</text
+    >
+  {/each}
 </svg>

@@ -1,23 +1,32 @@
 <script lang="ts">
-    interface Tab {
-        id: string;
-        label: string;
-    }
+  interface Tab {
+    id: string;
+    label: string;
+  }
 
-    let { tabs, active, color = "#777", onchange }: {
-        tabs: Tab[];
-        active: string;
-        color?: string;
-        onchange: (id: string) => void;
-    } = $props();
+  let {
+    tabs,
+    active,
+    color = "#777",
+    onchange,
+  }: {
+    tabs: Tab[];
+    active: string;
+    color?: string;
+    onchange: (id: string) => void;
+  } = $props();
 </script>
 
-<div class="flex gap-1 overflow-x-auto mb-5 p-1 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-    {#each tabs as t}
-        <button
-            onclick={() => onchange(t.id)}
-            class="flex-1 min-w-18 px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wide cursor-pointer border-0 transition-all"
-            style={active === t.id ? `background-color: ${color}33; color: #fff` : "background: transparent; color: var(--muted)"}
-        >{t.label}</button>
-    {/each}
+<div
+  class="mb-5 flex gap-1 overflow-x-auto rounded-2xl border border-white/6 bg-white/3 p-1"
+>
+  {#each tabs as t}
+    <button
+      onclick={() => onchange(t.id)}
+      class="min-w-18 flex-1 cursor-pointer rounded-xl border-0 px-3 py-2 text-xs font-bold tracking-wide uppercase transition-all"
+      style={active === t.id
+        ? `background-color: ${color}33; color: #fff`
+        : "background: transparent; color: var(--muted)"}>{t.label}</button
+    >
+  {/each}
 </div>
