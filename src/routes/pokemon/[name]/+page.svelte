@@ -484,7 +484,9 @@
                 </div>
               </div>
               <div class="flex flex-col items-center gap-6">
-                <RadarChart {pokemon} color={primaryColor} />
+                <div class="mx-auto w-full max-w-sm">
+                  <RadarChart {pokemon} color={primaryColor} />
+                </div>
                 <div class="w-full max-w-md">
                   <StatBars {pokemon} color={primaryColor} />
                 </div>

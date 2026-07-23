@@ -172,6 +172,22 @@ export const getPokemonDetail = async (
     species?.id ?? (parseIdFromUrl(data.species?.url || "") || data.id);
   const speciesName = species?.name ?? data.species?.name ?? data.name;
 
+  let movesCount = data.moves?.length ?? 0;
+  if (movesCount === 0 && forms.length > 1) {
+    const defaultForm = forms.find((f) => f.is_default);
+    if (defaultForm && defaultForm.name !== data.name) {
+      try {
+        const defRes = await fetch(
+          `https://pokeapi.co/api/v2/pokemon/${defaultForm.id}`,
+        );
+        if (defRes.ok) {
+          const defData = await defRes.json();
+          movesCount = defData.moves?.length ?? 0;
+        }
+      } catch {}
+    }
+  }
+
   return {
     name: data.name,
     id: data.id,
@@ -187,7 +203,7 @@ export const getPokemonDetail = async (
     })),
     abilities,
     base_experience: data.base_experience,
-    moves_count: data.moves?.length ?? 0,
+    moves_count: movesCount,
     cries: data.cries?.latest ?? null,
     flavor_text: extractFlavorText(species),
     genus: extractGenus(species),

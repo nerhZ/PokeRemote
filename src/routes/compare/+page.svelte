@@ -211,7 +211,7 @@
       {@const colorB = TYPE_COLORS[pokemonB.types[0]] || "#777"}
       <div class="panel mb-6">
         <h2 class="mb-4 text-lg font-bold">Shared Radar</h2>
-        <div class="mx-auto max-w-sm">
+        <div class="mx-auto w-full max-w-sm">
           <RadarChart
             pokemon={pokemonA}
             color={colorA}
