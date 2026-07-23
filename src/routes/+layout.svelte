@@ -33,11 +33,13 @@
   }
 
   onMount(() => {
-    const loader = document.getElementById("app-loader");
-    if (loader) {
-      loader.style.opacity = "0";
-      setTimeout(() => loader.remove(), 550);
-    }
+    setTimeout(() => {
+      const loader = document.getElementById("app-loader");
+      if (loader) {
+        loader.style.opacity = "0";
+        setTimeout(() => loader.remove(), 350);
+      }
+    }, 300);
 
     theme = getTheme();
     applyTheme();

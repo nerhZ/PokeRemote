@@ -37,6 +37,14 @@
   let showFavoritesOnly = $state(false);
   let expandedId = $state<number | null>(null);
 
+  function dismissLoader() {
+    const loader = document.getElementById("app-loader");
+    if (loader) {
+      loader.style.opacity = "0";
+      setTimeout(() => loader.remove(), 350);
+    }
+  }
+
   onMount(() => {
     favorites = getFavorites();
     recent = getRecent();
@@ -48,10 +56,12 @@
       .then(({ data }) => {
         allPokemon = data;
         loadPhase = "ready";
+        dismissLoader();
       })
       .catch((e: any) => {
         error = e.message || "Failed to load Pokémon";
         loadPhase = "error";
+        dismissLoader();
       });
   });
 
