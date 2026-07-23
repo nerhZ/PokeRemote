@@ -301,25 +301,20 @@
             <div class="text-[10px] font-bold tracking-wider text-white/40 uppercase">Moves</div>
             <div class="mt-2 space-y-2">
               {#each Array(4) as _, mi}
-                <div class="relative">
-                  <input
-                    type="text"
-                    list="moves-datalist"
-                    placeholder="Move {mi + 1}..."
-                    value={s.moves[mi] || ""}
-                    oninput={(e) => {
-                      const val = (e.target as HTMLInputElement).value;
-                      sets = sets.map((set, idx) => idx === i ? { ...set, moves: set.moves.map((m, j) => j === mi ? val : m) } : set);
-                    }}
-                    class="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-accent/50"
-                  />
-                </div>
+                <select
+                  value={s.moves[mi] || ""}
+                  onchange={(e) => {
+                    const val = (e.target as HTMLSelectElement).value;
+                    sets = sets.map((set, idx) => idx === i ? { ...set, moves: set.moves.map((m, j) => j === mi ? val : m) } : set);
+                  }}
+                  class="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none"
+                >
+                  <option value="">Move {mi + 1}...</option>
+                  {#each moveOptions as m}
+                    <option value={m}>{capitalize(m.replace(/-/g, " "))}</option>
+                  {/each}
+                </select>
               {/each}
-              <datalist id="moves-datalist">
-                {#each moveOptions as m}
-                  <option value={m}></option>
-                {/each}
-              </datalist>
             </div>
           </div>
           <div class="space-y-4">
