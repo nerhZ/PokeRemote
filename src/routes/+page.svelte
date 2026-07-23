@@ -78,11 +78,11 @@
         return () => window.removeEventListener("scroll", onScroll);
     });
 
-    async function loadMore() {
+    async function loadMore(limit = 40) {
         if (loadingMore || searching) return;
         loadingMore = true;
         try {
-            await loadRange(nextOffset, 40, true);
+            await loadRange(nextOffset, limit, true);
         } catch (e: any) {
             error = e.message;
         } finally {
@@ -187,7 +187,7 @@
     $effect(() => {
         if (searching || loading || loadingMore) return;
         if (nextOffset >= totalCount) return;
-        if (filtered.length < 20) loadMore();
+        if (filtered.length < 20) loadMore(100);
     });
 </script>
 
