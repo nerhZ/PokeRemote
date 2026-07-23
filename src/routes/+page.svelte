@@ -161,7 +161,7 @@
                   types: f.types,
               }))
             : searching ? searchResults : pokemon;
-        if (activeTypes.length > 0) result = result.filter((p) => p.types.some((t: string) => activeTypes.includes(t)));
+        if (activeTypes.length > 0) result = result.filter((p) => activeTypes.every((t: string) => p.types.includes(t)));
         if (activeGens.length > 0) {
             result = result.filter((p) => activeGens.some((gl) => {
                 const gen = GEN_RANGES.find((g) => g.label === gl);
@@ -250,7 +250,7 @@
                         <option value="name-desc">Name Z-A</option>
                     </select>
                 </div>
-                <p class="text-[10px] mt-1" style="color: var(--muted)">Click to toggle · select multiple to combine filters</p>
+                <p class="text-[10px] mt-1" style="color: var(--muted)">Click to toggle · types narrow by AND, gens broaden by OR</p>
             </div>
             <div class="mt-3 space-y-2 {filtersOpen ? 'block' : 'hidden md:block'}">
                 <div class="flex flex-wrap gap-1.5">
