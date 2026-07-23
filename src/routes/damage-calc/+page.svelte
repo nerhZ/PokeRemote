@@ -1,7 +1,7 @@
 <script lang="ts">
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
-    import { base } from "$app/paths";
+    import { resolve } from "$app/paths";
     import { getPokemonDetail, getAutocompleteList, getPokemonMoves } from "$lib/api";
     import { TYPE_COLORS, TYPE_CHART, calculateDamage, formatName, capitalize, type PokemonDetail, type PokemonMoves } from "$lib/pokemon-types";
     import PokemonPicker from "$lib/components/PokemonPicker.svelte";
@@ -48,7 +48,7 @@
         if (selectedMove) params.set("move", selectedMove.name);
         if (level !== 50) params.set("lv", String(level));
         const q = params.toString();
-        goto(q ? `${base}/damage-calc?${q}` : `${base}/damage-calc`, { replaceState: true, keepFocus: true, noScroll: true });
+        goto(q ? resolve('/damage-calc') + `?${q}` : resolve('/damage-calc'), { replaceState: true, keepFocus: true, noScroll: true });
     }
 
     async function selectAttacker(name: string, preferMove?: string | null, gen?: number) {

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from "$app/state";
 	import { goto } from "$app/navigation";
-	import { base } from "$app/paths";
+	import { resolve } from "$app/paths";
 	import { onMount } from "svelte";
 	import { applyTheme, getTheme, setTheme, type ThemeMode } from "$lib/storage";
 	import { getRandomPokemon } from "$lib/api";
@@ -19,7 +19,7 @@
 		{ href: "/damage-calc", label: "Damage", icon: "⚔" },
 		{ href: "/rankings", label: "Rankings", icon: "★" },
 		{ href: "/items", label: "Items", icon: "◆" },
-	];
+	] as const;
 
 	function isActive(href: string) {
 		if (href === "/") return page.url.pathname === "/";
@@ -47,8 +47,8 @@
 			if (e.key === "r" || e.key === "R") {
 				if (!e.metaKey && !e.ctrlKey && !e.altKey) {
 					getRandomPokemon({})
-						.then((r) => { goto(`${base}/pokemon/${r.name}`); })
-						.catch(() => { goto(`${base}/pokemon/${Math.floor(Math.random() * TOTAL_SPECIES) + 1}`); });
+						.then((r) => { goto(resolve(`/pokemon/${r.name}`)); })
+						.catch(() => { goto(resolve(`/pokemon/${Math.floor(Math.random() * TOTAL_SPECIES) + 1}`)); });
 				}
 			}
 		}
@@ -64,14 +64,14 @@
 <div class="flex flex-col min-h-screen">
 	<header class="py-3 border-b sticky top-0 z-50 backdrop-blur-md" style="background: color-mix(in srgb, var(--bg) 85%, transparent); border-color: var(--border)">
 		<nav class="max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between gap-3">
-			<a href="{base}/" class="flex items-center gap-2.5 text-xl md:text-2xl font-extrabold tracking-tighter no-underline" style="color: var(--text)">
+			<a href={resolve('/')} class="flex items-center gap-2.5 text-xl md:text-2xl font-extrabold tracking-tighter no-underline" style="color: var(--text)">
 				<div class="size-7 rounded-full border-2 border-slate-800 relative bg-linear-to-b from-pokemon-red from-50% to-white to-50% after:content-[''] after:absolute after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:w-2.5 after:h-2.5 after:bg-white after:border-2 after:border-slate-800 after:rounded-full"></div>
 				PokéRemote
 			</a>
 
 			<div class="hidden md:flex items-center gap-1 flex-wrap">
 				{#each links as link}
-					<a href="{base}{link.href}" class="nav-link {isActive(link.href) ? 'nav-link-active' : ''}">{link.icon} {link.label}</a>
+					<a href={resolve(link.href)} class="nav-link {isActive(link.href) ? 'nav-link-active' : ''}">{link.icon} {link.label}</a>
 				{/each}
 				<button onclick={toggleTheme} class="nav-link cursor-pointer border-0 bg-transparent" aria-label="Toggle theme" title="Toggle theme">
 					{theme === "dark" ? "☀" : "☾"}
@@ -87,7 +87,7 @@
 		{#if mobileOpen}
 			<div class="md:hidden border-t px-4 py-3 flex flex-col gap-1" style="border-color: var(--border); background: var(--bg)">
 				{#each links as link}
-					<a href="{base}{link.href}" onclick={() => (mobileOpen = false)} class="nav-link {isActive(link.href) ? 'nav-link-active' : ''} block">{link.icon} {link.label}</a>
+					<a href={resolve(link.href)} onclick={() => (mobileOpen = false)} class="nav-link {isActive(link.href) ? 'nav-link-active' : ''} block">{link.icon} {link.label}</a>
 				{/each}
 				<p class="text-[10px] px-3 pt-2" style="color: var(--muted)">Shortcuts: <kbd>/</kbd> search · <kbd>R</kbd> random</p>
 			</div>

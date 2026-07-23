@@ -1,7 +1,7 @@
 <script lang="ts">
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
-    import { base } from "$app/paths";
+    import { resolve } from "$app/paths";
     import { getPokemonDetail, getAutocompleteList } from "$lib/api";
     import { TYPE_COLORS, ALL_TYPES, formatName, capitalize, type PokemonDetail } from "$lib/pokemon-types";
     import { saveTeam, getSavedTeams } from "$lib/storage";
@@ -47,7 +47,7 @@
         const params = new URLSearchParams();
         if (team.length) params.set("p", team.map((t) => t.name).join(","));
         const q = params.toString();
-        goto(q ? `${base}/team-builder?${q}` : `${base}/team-builder`, { replaceState: true, keepFocus: true, noScroll: true });
+        goto(q ? resolve('/team-builder') + `?${q}` : resolve('/team-builder'), { replaceState: true, keepFocus: true, noScroll: true });
     }
 
     async function addToTeam(name: string) {
@@ -73,7 +73,7 @@
 
     function exportTeam() {
         saved = saveTeam(teamName || "My Team", team);
-        const url = `${window.location.origin}${base}/team-builder?p=${team.map((t) => t.name).join(",")}`;
+        const url = `${window.location.origin}${resolve('/team-builder')}?p=${team.map((t) => t.name).join(",")}`;
         navigator.clipboard?.writeText(url);
         copied = true;
         setTimeout(() => (copied = false), 2000);

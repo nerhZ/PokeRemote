@@ -1,7 +1,7 @@
 <script lang="ts">
     import { getStatRankings } from "$lib/api";
     import { TYPE_COLORS, formatName, capitalize, TOTAL_POKEMON, type StatRankings } from "$lib/pokemon-types";
-    import { base } from "$app/paths";
+    import { resolve } from "$app/paths";
     import TypeBadge from "$lib/components/TypeBadge.svelte";
     import EmptyState from "$lib/components/EmptyState.svelte";
     import { onMount } from "svelte";
@@ -113,7 +113,7 @@
         {/if}
         <div class="space-y-2">
             {#each activeList as entry, i}
-                <a href="{base}/pokemon/{entry.name}" class="flex items-center gap-3 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:border-white/20 hover:bg-white/[0.05] transition-all no-underline group">
+                <a href={resolve(`/pokemon/${entry.name}`)} class="flex items-center gap-3 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:border-white/20 hover:bg-white/[0.05] transition-all no-underline group">
                     <span class="w-8 text-center text-lg font-black" style="color: {medalColor(i)}">#{i + 1}</span>
                     <img src={entry.image} alt={entry.name} class="w-12 h-12 object-contain group-hover:scale-110 transition-transform" />
                     <div class="flex-1 min-w-0">
