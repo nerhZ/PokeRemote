@@ -33,6 +33,12 @@
   }
 
   onMount(() => {
+    const loader = document.getElementById("app-loader");
+    if (loader) {
+      loader.style.opacity = "0";
+      setTimeout(() => loader.remove(), 550);
+    }
+
     theme = getTheme();
     applyTheme();
 
