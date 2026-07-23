@@ -5,7 +5,6 @@
   import { getPokemonDetail, getPokemonMoves, getSpeciesIds } from "$lib/api";
   import {
     TYPE_COLORS,
-    TOTAL_SPECIES,
     formLabel,
     formatName,
     capitalize,
