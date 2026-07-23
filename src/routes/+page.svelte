@@ -65,7 +65,7 @@
             .finally(() => { loading = false; });
 
         function onScroll() {
-            if (loading || loadingMore || searching || activeGens.length > 0 || nextOffset >= totalCount) return;
+            if (loading || loadingMore || searching || nextOffset >= totalCount) return;
             const bottom = window.innerHeight + window.scrollY;
             const docH = document.documentElement.scrollHeight;
             if (docH - bottom < 600) {
@@ -79,7 +79,7 @@
     });
 
     async function loadMore() {
-        if (loadingMore || activeGens.length > 0) return;
+        if (loadingMore || searching) return;
         loadingMore = true;
         try {
             await loadRange(nextOffset, 40, true);
@@ -182,6 +182,15 @@
         else if (sortBy === "name-asc") sorted.sort((a, b) => a.name.localeCompare(b.name));
         else if (sortBy === "name-desc") sorted.sort((a, b) => b.name.localeCompare(a.name));
         return sorted;
+    });
+
+    $effect(() => {
+        if (searching || loading || loadingMore) return;
+        if (nextOffset >= totalCount) return;
+        const count = filtered.length;
+        if (count < 20 && document.documentElement.scrollHeight <= window.innerHeight) {
+            loadMore();
+        }
     });
 </script>
 
