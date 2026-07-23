@@ -3,16 +3,7 @@
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
   import { onMount, untrack } from "svelte";
-  import {
-    getPokemonList,
-    getPokemonCatalogMeta,
-    getRandomPokemon,
-    getAutocompleteList,
-    getPokemonDetail,
-    getPokemonByType,
-    getPokemonCardById,
-    getPokemonByGen,
-  } from "$lib/api";
+  import { getRandomPokemon, getAllPokemonSummaries } from "$lib/api";
   import {
     TYPE_COLORS,
     GEN_RANGES,
@@ -32,157 +23,36 @@
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
 
-  let pokemon = $state<any[]>([]);
-  let loading = $state(true);
-  let loadingMore = $state(false);
-  let error = $state<string | null>(null);
+  let allPokemon = $state<any[]>([]);
+  let loadProgress = $state({ done: 0, total: 0 });
+  let loadPhase = $state<"idle" | "loading" | "ready" | "error">("idle");
+  let error = $state<string | undefined>(undefined);
   let searchQuery = $state("");
   let activeTypes = $state<string[]>([]);
   let activeGens = $state<string[]>([]);
   let sortBy = $state("id-asc");
-  let nextOffset = $state(0);
-  let totalCount = $state(0);
-  let pokemonTotal = $state(TOTAL_POKEMON);
   let filtersOpen = $state(false);
   let favorites = $state<FavEntry[]>([]);
   let recent = $state<ReturnType<typeof getRecent>>([]);
   let showFavoritesOnly = $state(false);
   let expandedId = $state<number | null>(null);
-  let scrollFired = false;
-  let allNames: { name: string; id: number }[] = $state([]);
-  let searching = $state(false);
-  let typeFiltering = $state(false);
-  let typeResults = $state<any[]>([]);
-  let typeGen = 0;
-  let genFiltering = $state(false);
-  let genResults = $state<any[]>([]);
-  let genGen = 0;
 
-  async function loadByTypes(types: string[], gen: number) {
-    typeFiltering = true;
-    try {
-      const perType = await Promise.all(types.map((t) => getPokemonByType(t)));
-      if (gen !== typeGen) return;
-      let combined = perType[0];
-      for (let i = 1; i < perType.length; i++) {
-        const ids = new Set(perType[i].map((p) => p.id));
-        combined = combined.filter((p) => ids.has(p.id));
-      }
-      combined.sort((a, b) => a.id - b.id);
-      if (gen !== typeGen) return;
-      typeResults = [];
-      const batchSize = 10;
-      for (let i = 0; i < combined.length; i += batchSize) {
-        if (gen !== typeGen) return;
-        const batch = combined.slice(i, i + batchSize);
-        const results = await Promise.all(
-          batch.map(async (n) => {
-            const existing = pokemon.find((p) => p.id === n.id);
-            if (existing) return existing;
-            try {
-              const card = await getPokemonCardById(n.id);
-              if (!card) return null;
-              return {
-                name: card.name,
-                id: n.id,
-                image: card.image,
-                types: card.types,
-                form_count: 1,
-                forms: [],
-              };
-            } catch {
-              return null;
-            }
-          }),
-        );
-        typeResults = [...typeResults, ...results.filter(Boolean)];
-      }
-      const ids = new Set<number>();
-      typeResults = typeResults.filter((p) => {
-        if (ids.has(p.id)) return false;
-        ids.add(p.id);
-        return true;
+  onMount(() => {
+    favorites = getFavorites();
+    recent = getRecent();
+    loadPhase = "loading";
+
+    getAllPokemonSummaries((done, total) => {
+      loadProgress = { done, total };
+    })
+      .then(({ data }) => {
+        allPokemon = data;
+        loadPhase = "ready";
+      })
+      .catch((e: any) => {
+        error = e.message || "Failed to load Pokémon";
+        loadPhase = "error";
       });
-    } catch {
-    } finally {
-      if (gen === typeGen) typeFiltering = false;
-    }
-  }
-
-  $effect(() => {
-    const types = activeTypes;
-    if (types.length === 0) {
-      typeResults = [];
-      ++typeGen;
-      return;
-    }
-    loadByTypes(types, ++typeGen);
-  });
-
-  async function loadByGens(gens: string[], gen: number) {
-    genFiltering = true;
-    try {
-      const perGen = await Promise.all(gens.map((g) => getPokemonByGen(g)));
-      if (gen !== genGen) return;
-      const seen = new Set<number>();
-      const combined: { name: string; id: number }[] = [];
-      for (const list of perGen) {
-        for (const p of list) {
-          if (!seen.has(p.id)) {
-            seen.add(p.id);
-            combined.push(p);
-          }
-        }
-      }
-      combined.sort((a, b) => a.id - b.id);
-      if (gen !== genGen) return;
-      genResults = [];
-      const batchSize = 10;
-      for (let i = 0; i < combined.length; i += batchSize) {
-        if (gen !== genGen) return;
-        const batch = combined.slice(i, i + batchSize);
-        const results = await Promise.all(
-          batch.map(async (n) => {
-            const existing = pokemon.find((p) => p.id === n.id);
-            if (existing) return existing;
-            try {
-              const card = await getPokemonCardById(n.id);
-              if (!card) return null;
-              return {
-                name: card.name,
-                id: n.id,
-                image: card.image,
-                types: card.types,
-                form_count: 1,
-                forms: [],
-              };
-            } catch {
-              return null;
-            }
-          }),
-        );
-        genResults = [...genResults, ...results.filter(Boolean)];
-      }
-      const ids = new Set<number>();
-      genResults = genResults.filter((p) => {
-        if (ids.has(p.id)) return false;
-        ids.add(p.id);
-        return true;
-      });
-    } catch {
-    } finally {
-      if (gen === genGen) genFiltering = false;
-    }
-  }
-
-  $effect(() => {
-    const gens = activeGens;
-    if (gens.length === 0) {
-      genResults = [];
-      ++genGen;
-      return;
-    }
-    loadByGens(gens, ++genGen);
   });
 
   $effect(() => {
@@ -199,73 +69,6 @@
       }
     }
   });
-
-  async function loadRange(offset: number, limit: number, append = false) {
-    const data = await getPokemonList({ limit, offset });
-    pokemon = append ? [...pokemon, ...data.results] : data.results;
-    nextOffset = data.next_offset;
-    totalCount = data.count;
-  }
-
-  onMount(() => {
-    favorites = getFavorites();
-    recent = getRecent();
-    getPokemonCatalogMeta({})
-      .then((m) => {
-        pokemonTotal = m.pokemon_count;
-      })
-      .catch(() => {});
-    getAutocompleteList({})
-      .then((c) => {
-        allNames = c.results;
-      })
-      .catch(() => {});
-    loadRange(0, 40, false)
-      .catch((e: any) => {
-        error = e.message;
-      })
-      .finally(() => {
-        loading = false;
-      });
-
-    function onScroll() {
-      if (
-        loading ||
-        loadingMore ||
-        searching ||
-        typeFiltering ||
-        genFiltering ||
-        activeTypes.length > 0 ||
-        activeGens.length > 0 ||
-        showFavoritesOnly ||
-        nextOffset >= totalCount
-      )
-        return;
-      const bottom = window.innerHeight + window.scrollY;
-      const docH = document.documentElement.scrollHeight;
-      if (docH - bottom < 600) {
-        if (scrollFired) return;
-        scrollFired = true;
-        loadMore().finally(() => {
-          scrollFired = false;
-        });
-      }
-    }
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  });
-
-  async function loadMore(limit = 40) {
-    if (loadingMore || searching) return;
-    loadingMore = true;
-    try {
-      await loadRange(nextOffset, limit, true);
-    } catch (e: any) {
-      error = e.message;
-    } finally {
-      loadingMore = false;
-    }
-  }
 
   async function randomPokemon() {
     try {
@@ -295,74 +98,31 @@
     });
   }
 
-  let searchResults = $state<any[]>([]);
-  let searchLoading = $state(false);
-  let searchGen = 0;
-
-  async function runSearch(q: string) {
-    const gen = ++searchGen;
-    searching = true;
-    searchLoading = true;
-    const matches = allNames
-      .filter(
-        (n) => n.name.toLowerCase().includes(q) || String(n.id).includes(q),
-      )
-      .slice(0, 40);
-    const results = await Promise.all(
-      matches.map(async (n) => {
-        const existing = pokemon.find((p) => p.name === n.name);
-        if (existing) return existing;
-        try {
-          const d = await getPokemonDetail(n.name);
-          return {
-            name: d.name,
-            id: d.id,
-            image: d.sprites.other["official-artwork"].front_default,
-            types: d.types,
-            form_count: d.forms.length,
-            forms: d.forms,
-          };
-        } catch {
-          return null;
-        }
-      }),
-    );
-    if (gen !== searchGen) return;
-    searchResults = results.filter(Boolean);
-    searchLoading = false;
-  }
-
-  $effect(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q || allNames.length === 0) {
-      searching = false;
-      searchResults = [];
-      return;
-    }
-    runSearch(q);
-  });
-
   let filtered = $derived.by(() => {
-    let result = showFavoritesOnly
-      ? favorites.map((f) => ({
-          id: f.id,
-          name: f.name,
-          image: f.image,
-          types: f.types,
-        }))
-      : searching
-        ? searchResults
-        : activeTypes.length > 0
-          ? typeResults
-          : activeGens.length > 0
-            ? genResults
-            : pokemon;
+    let result = allPokemon;
+
+    if (showFavoritesOnly) {
+      const favIds = new Set(favorites.map((f) => f.id));
+      result = result.filter((p) => favIds.has(p.id));
+    }
+
+    if (activeTypes.length > 0) {
+      result = result.filter((p) =>
+        activeTypes.every((t) => p.types.includes(t)),
+      );
+    }
+
+    if (activeGens.length > 0) {
+      result = result.filter((p) => activeGens.includes(p.gen));
+    }
+
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
         (p) => p.name.toLowerCase().includes(q) || String(p.id).includes(q),
       );
     }
+
     const sorted = [...result];
     if (sortBy === "id-asc") sorted.sort((a, b) => a.id - b.id);
     else if (sortBy === "id-desc") sorted.sort((a, b) => b.id - a.id);
@@ -371,22 +131,6 @@
     else if (sortBy === "name-desc")
       sorted.sort((a, b) => b.name.localeCompare(a.name));
     return sorted;
-  });
-
-  $effect(() => {
-    if (
-      searching ||
-      typeFiltering ||
-      genFiltering ||
-      activeTypes.length > 0 ||
-      activeGens.length > 0 ||
-      showFavoritesOnly ||
-      loading ||
-      loadingMore
-    )
-      return;
-    if (nextOffset >= totalCount) return;
-    if (filtered.length < 20) loadMore(100);
   });
 </script>
 
@@ -410,7 +154,7 @@
       >
         <span class="bg-pokemon-green h-2 w-2 animate-pulse rounded-full"
         ></span>
-        {totalCount || TOTAL_SPECIES} species · {pokemonTotal} forms · {favorites.length}
+        {allPokemon.length || TOTAL_SPECIES} species · {TOTAL_POKEMON} forms · {favorites.length}
         favorites
       </div>
       <h1
@@ -593,35 +337,31 @@
       </div>
     </div>
 
-    {#if loading}
-      <div
-        class="grid grid-cols-2 gap-4 pb-16 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
-      >
-        {#each Array(15) as _}
-          <div
-            class="overflow-hidden rounded-2xl border border-white/5 bg-white/3"
-          >
-            <div class="aspect-square animate-pulse bg-white/3"></div>
-            <div class="space-y-2 p-4">
-              <div class="h-3 w-16 animate-pulse rounded-full bg-white/6"></div>
-              <div class="h-5 w-24 animate-pulse rounded-full bg-white/6"></div>
-            </div>
+    {#if loadPhase === "loading"}
+      <div class="flex flex-col items-center justify-center py-20">
+        <div class="relative mb-8 h-24 w-24 animate-spin">
+          <div class="from-pokemon-red absolute inset-0 rounded-full border-4 border-slate-700 bg-linear-to-b from-50% to-white to-50% opacity-80"></div>
+          <div class="absolute top-1/2 right-0 left-0 h-1 -translate-y-1/2 bg-slate-800"></div>
+          <div class="absolute top-1/2 left-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-slate-800 bg-white"></div>
+        </div>
+        {#if loadProgress.total > 0}
+          <p class="text-sm font-semibold" style="color: var(--text)">
+            Loading {loadProgress.done} / {loadProgress.total} species...
+          </p>
+          <div class="mt-4 h-1.5 w-64 overflow-hidden rounded-full bg-white/6">
+            <div class="bg-accent h-full rounded-full transition-all duration-300" style="width: {(loadProgress.done / (loadProgress.total || 1)) * 100}%"></div>
           </div>
-        {/each}
+        {:else}
+          <p class="text-sm" style="color: var(--muted)">Loading Pokédex...</p>
+        {/if}
       </div>
-    {:else if error}
+    {:else if loadPhase === "error"}
       <EmptyState
         title="Failed to load Pokémon"
         subtitle={error}
         actionLabel="Try again"
         onaction={() => window.location.reload()}
       />
-    {:else if filtered.length === 0 && (searchLoading || typeFiltering || genFiltering)}
-      <div class="flex justify-center py-16">
-        <div
-          class="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white"
-        ></div>
-      </div>
     {:else if filtered.length === 0}
       <EmptyState
         title="No Pokémon found"
@@ -743,36 +483,7 @@
           </div>
         {/each}
       </div>
-      {#if loadingMore}
-        <div
-          class="grid grid-cols-2 gap-3 pb-4 sm:grid-cols-3 md:grid-cols-4 md:gap-4 lg:grid-cols-5"
-        >
-          {#each Array(10) as _}
-            <div
-              class="overflow-hidden rounded-2xl border border-white/5 bg-white/3"
-            >
-              <div class="aspect-square animate-pulse bg-white/3"></div>
-              <div class="space-y-2 p-4">
-                <div
-                  class="h-3 w-16 animate-pulse rounded-full bg-white/6"
-                ></div>
-                <div
-                  class="h-5 w-24 animate-pulse rounded-full bg-white/6"
-                ></div>
-              </div>
-            </div>
-          {/each}
-        </div>
-      {/if}
-      {#if activeTypes.length === 0 && activeGens.length === 0 && nextOffset < totalCount}
-        <div class="flex justify-center pb-16">
-          {#if loadingMore && activeTypes.length === 0 && activeGens.length === 0 && !showFavoritesOnly}
-            <div
-              class="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white"
-            ></div>
-          {/if}
-        </div>
-      {/if}
+
     {/if}
   </div>
 </div>

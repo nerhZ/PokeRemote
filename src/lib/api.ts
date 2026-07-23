@@ -3,6 +3,7 @@ import {
   artworkUrl,
   computeTypeEffectiveness,
   GEN_RANGES,
+  getGeneration,
   type PokemonSummary,
   type PokemonDetail,
   type PokemonFormSummary,
@@ -629,4 +630,139 @@ export async function getPokemonByGen(
     name: s.name,
     id: parseIdFromUrl(s.url),
   }));
+}
+
+// ── Grid cache — full species preload ─────────────────────────────────────────
+
+interface CachedPokemonSummary {
+  name: string;
+  id: number;
+  image: string;
+  types: string[];
+  form_count: number;
+  forms: PokemonFormSummary[];
+  gen: string;
+}
+
+interface GridCache {
+  version: number;
+  timestamp: number;
+  speciesCount: number;
+  data: CachedPokemonSummary[];
+}
+
+const GRID_CACHE_KEY = "pokeremote:grid-cache";
+const GRID_CACHE_VERSION = 1;
+
+function readGridCache(): GridCache | null {
+  try {
+    const raw = localStorage.getItem(GRID_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed.version !== GRID_CACHE_VERSION) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeGridCache(cache: GridCache) {
+  try {
+    localStorage.setItem(GRID_CACHE_KEY, JSON.stringify(cache));
+  } catch {}
+}
+
+export async function getAllPokemonSummaries(
+  onProgress?: (done: number, total: number) => void,
+): Promise<{ data: CachedPokemonSummary[]; fromCache: boolean }> {
+  const cached = readGridCache();
+  if (cached) {
+    try {
+      const speciesRes = await fetch(
+        `https://pokeapi.co/api/v2/pokemon-species?limit=1`,
+      );
+      if (speciesRes.ok) {
+        const { count } = await speciesRes.json();
+        if (cached.speciesCount === count) {
+          return { data: cached.data, fromCache: true };
+        }
+      }
+    } catch {}
+  }
+
+  const speciesRes = await fetch(
+    `https://pokeapi.co/api/v2/pokemon-species?limit=1025&offset=0`,
+  );
+  const speciesData = await speciesRes.json();
+  const { results, count } = speciesData;
+
+  const entries: CachedPokemonSummary[] = [];
+  const total = results.length;
+  let done = 0;
+
+  const promises = results.map(async (s: any) => {
+    const speciesId = parseIdFromUrl(s.url);
+    try {
+      const [speciesData, pokeData] = await Promise.all([
+        fetch(
+          `https://pokeapi.co/api/v2/pokemon-species/${speciesId}`,
+        ).then((r) => (r.ok ? r.json() : null)),
+        fetch(`https://pokeapi.co/api/v2/pokemon/${s.name}`).then((r) =>
+          r.ok ? r.json() : null,
+        ),
+      ]);
+
+      if (!speciesData) throw new Error("species fetch failed");
+
+      const forms = mapVarieties(speciesData.varieties);
+      const types = pokeData
+        ? pokeData.types.map((t: any) => t.type.name)
+        : [];
+      const gen = getGeneration(speciesId);
+      const defaultForm = forms.find((f) => f.is_default) || forms[0];
+      const displayName = defaultForm?.name || s.name;
+
+      entries.push({
+        name: displayName,
+        id: speciesId,
+        image: artworkUrl(speciesId),
+        types,
+        form_count: forms.length,
+        forms,
+        gen,
+      });
+    } catch {
+      entries.push({
+        name: s.name,
+        id: speciesId,
+        image: artworkUrl(speciesId),
+        types: [],
+        form_count: 1,
+        forms: [
+          {
+            name: s.name,
+            id: speciesId,
+            is_default: true,
+            image: artworkUrl(speciesId),
+          },
+        ],
+        gen: getGeneration(speciesId),
+      });
+    }
+    done++;
+    onProgress?.(done, total);
+  });
+
+  await Promise.all(promises);
+
+  entries.sort((a, b) => a.id - b.id);
+
+  writeGridCache({
+    version: GRID_CACHE_VERSION,
+    timestamp: Date.now(),
+    speciesCount: count,
+    data: entries,
+  });
+
+  return { data: entries, fromCache: false };
 }
