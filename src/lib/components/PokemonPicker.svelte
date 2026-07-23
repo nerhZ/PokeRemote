@@ -21,9 +21,14 @@
   let suggestions = $derived.by(() => {
     const q = value.trim().toLowerCase();
     const list = q
-      ? options.filter(
-          (n) => n.name.toLowerCase().includes(q) || String(n.id).includes(q),
-        )
+      ? options.filter((n) => {
+          const name = n.name.toLowerCase().replace(/-/g, " ");
+          const tokens = q.split(/\s+/).filter(Boolean);
+          return tokens.every(
+            (token) =>
+              name.includes(token) || String(n.id).includes(token),
+          );
+        })
       : options;
     return list.slice(0, 10);
   });
