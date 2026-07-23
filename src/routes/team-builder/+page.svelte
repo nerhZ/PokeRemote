@@ -7,7 +7,6 @@
     TYPE_COLORS,
     ALL_TYPES,
     formatName,
-    capitalize,
     type PokemonDetail,
   } from "$lib/pokemon-types";
   import { saveTeam, getSavedTeams } from "$lib/storage";

@@ -6,7 +6,6 @@
   import {
     TYPE_COLORS,
     formatName,
-    capitalize,
     type PokemonDetail,
   } from "$lib/pokemon-types";
   import PokemonPicker from "$lib/components/PokemonPicker.svelte";

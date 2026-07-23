@@ -3,7 +3,6 @@
   import {
     TYPE_COLORS,
     formatName,
-    capitalize,
     TOTAL_POKEMON,
     type StatRankings,
   } from "$lib/pokemon-types";

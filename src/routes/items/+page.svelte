@@ -1,7 +1,6 @@
 <script lang="ts">
   import { getItemsList } from "$lib/api";
   import EmptyState from "$lib/components/EmptyState.svelte";
-  import { capitalize } from "$lib/pokemon-types";
   import { onMount } from "svelte";
 
   let items = $state<any[]>([]);
