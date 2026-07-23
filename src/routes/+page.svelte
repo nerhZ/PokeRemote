@@ -3,7 +3,7 @@
     import { page } from "$app/state";
     import { base } from "$app/paths";
     import { onMount, untrack } from "svelte";
-    import { getPokemonList, getPokemonCatalogMeta, getRandomPokemon, getAutocompleteList, getPokemonDetail } from "$lib/api";
+    import { getPokemonList, getPokemonCatalogMeta, getRandomPokemon, getAutocompleteList, getPokemonDetail, getPokemonByType, getPokemonCardById, getPokemonByGen } from "$lib/api";
     import { TYPE_COLORS, GEN_RANGES, ALL_TYPES, TOTAL_SPECIES, TOTAL_POKEMON, formLabel, formatName, getGeneration } from "$lib/pokemon-types";
     import { getFavorites, toggleFavorite, getRecent, type FavEntry } from "$lib/storage";
     import TypeBadge from "$lib/components/TypeBadge.svelte";
@@ -28,6 +28,96 @@
     let scrollFired = false;
     let allNames: { name: string; id: number }[] = $state([]);
     let searching = $state(false);
+    let typeFiltering = $state(false);
+    let typeResults = $state<any[]>([]);
+    let typeGen = 0;
+    let genFiltering = $state(false);
+    let genResults = $state<any[]>([]);
+    let genGen = 0;
+
+    async function loadByTypes(types: string[], gen: number) {
+        typeFiltering = true;
+        try {
+            const perType = await Promise.all(types.map((t) => getPokemonByType(t)));
+            if (gen !== typeGen) return;
+            let combined = perType[0];
+            for (let i = 1; i < perType.length; i++) {
+                const ids = new Set(perType[i].map((p) => p.id));
+                combined = combined.filter((p) => ids.has(p.id));
+            }
+            combined.sort((a, b) => a.id - b.id);
+            if (gen !== typeGen) return;
+            typeResults = [];
+            const batchSize = 10;
+            for (let i = 0; i < combined.length; i += batchSize) {
+                if (gen !== typeGen) return;
+                const batch = combined.slice(i, i + batchSize);
+                const results = await Promise.all(batch.map(async (n) => {
+                    const existing = pokemon.find((p) => p.id === n.id);
+                    if (existing) return existing;
+                    try {
+                        const card = await getPokemonCardById(n.id);
+                        if (!card) return null;
+                        return { name: card.name, id: n.id, image: card.image, types: card.types, form_count: 1, forms: [] };
+                    } catch { return null; }
+                }));
+                typeResults = [...typeResults, ...results.filter(Boolean)];
+            }
+            const ids = new Set<number>();
+            typeResults = typeResults.filter((p) => { if (ids.has(p.id)) return false; ids.add(p.id); return true; });
+        } catch {} finally {
+            if (gen === typeGen) typeFiltering = false;
+        }
+    }
+
+    $effect(() => {
+        const types = activeTypes;
+        if (types.length === 0) { typeResults = []; ++typeGen; return; }
+        loadByTypes(types, ++typeGen);
+    });
+
+    async function loadByGens(gens: string[], gen: number) {
+        genFiltering = true;
+        try {
+            const perGen = await Promise.all(gens.map((g) => getPokemonByGen(g)));
+            if (gen !== genGen) return;
+            const seen = new Set<number>();
+            const combined: { name: string; id: number }[] = [];
+            for (const list of perGen) {
+                for (const p of list) {
+                    if (!seen.has(p.id)) { seen.add(p.id); combined.push(p); }
+                }
+            }
+            combined.sort((a, b) => a.id - b.id);
+            if (gen !== genGen) return;
+            genResults = [];
+            const batchSize = 10;
+            for (let i = 0; i < combined.length; i += batchSize) {
+                if (gen !== genGen) return;
+                const batch = combined.slice(i, i + batchSize);
+                const results = await Promise.all(batch.map(async (n) => {
+                    const existing = pokemon.find((p) => p.id === n.id);
+                    if (existing) return existing;
+                    try {
+                        const card = await getPokemonCardById(n.id);
+                        if (!card) return null;
+                        return { name: card.name, id: n.id, image: card.image, types: card.types, form_count: 1, forms: [] };
+                    } catch { return null; }
+                }));
+                genResults = [...genResults, ...results.filter(Boolean)];
+            }
+            const ids = new Set<number>();
+            genResults = genResults.filter((p) => { if (ids.has(p.id)) return false; ids.add(p.id); return true; });
+        } catch {} finally {
+            if (gen === genGen) genFiltering = false;
+        }
+    }
+
+    $effect(() => {
+        const gens = activeGens;
+        if (gens.length === 0) { genResults = []; ++genGen; return; }
+        loadByGens(gens, ++genGen);
+    });
 
     $effect(() => {
         const p = page.url.pathname;
@@ -39,7 +129,7 @@
                 searchQuery = '';
                 activeTypes = [];
                 showFavoritesOnly = false;
-                if (untrack(() => activeGens.length > 0)) { activeGens = []; loadRange(0, 40, false); }
+                if (untrack(() => activeGens.length > 0)) activeGens = [];
             }
         }
     });
@@ -65,7 +155,7 @@
             .finally(() => { loading = false; });
 
         function onScroll() {
-            if (loading || loadingMore || searching || nextOffset >= totalCount) return;
+            if (loading || loadingMore || searching || typeFiltering || genFiltering || activeTypes.length > 0 || activeGens.length > 0 || nextOffset >= totalCount) return;
             const bottom = window.innerHeight + window.scrollY;
             const docH = document.documentElement.scrollHeight;
             if (docH - bottom < 600) {
@@ -160,14 +250,7 @@
                   image: f.image,
                   types: f.types,
               }))
-            : searching ? searchResults : pokemon;
-        if (activeTypes.length > 0) result = result.filter((p) => activeTypes.every((t: string) => p.types.includes(t)));
-        if (activeGens.length > 0) {
-            result = result.filter((p) => activeGens.some((gl) => {
-                const gen = GEN_RANGES.find((g) => g.label === gl);
-                return gen && p.id >= gen.min && p.id <= gen.max;
-            }));
-        }
+            : searching ? searchResults : activeTypes.length > 0 ? typeResults : activeGens.length > 0 ? genResults : pokemon;
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
             result = result.filter((p) => p.name.toLowerCase().includes(q) || String(p.id).includes(q));
@@ -181,7 +264,7 @@
     });
 
     $effect(() => {
-        if (searching || loading || loadingMore) return;
+        if (searching || typeFiltering || genFiltering || activeTypes.length > 0 || activeGens.length > 0 || loading || loadingMore) return;
         if (nextOffset >= totalCount) return;
         if (filtered.length < 20) loadMore(100);
     });
@@ -267,7 +350,7 @@
                     {/each}
                 </div>
                 <div class="flex flex-wrap gap-1.5">
-                    <button onclick={() => { activeGens = []; loadRange(0, 40, false); }} class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-pointer border {activeGens.length === 0 ? 'bg-accent text-white border-accent' : 'bg-white/5 text-white/55 border-white/10'}">
+                    <button onclick={() => { activeGens = []; }} class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-pointer border {activeGens.length === 0 ? 'bg-accent text-white border-accent' : 'bg-white/5 text-white/55 border-white/10'}">
                         All gens{#if activeGens.length > 0}<span class="ml-1 px-1.5 py-0.5 rounded-full text-[8px] bg-white/20 text-white">{activeGens.length}</span>{/if}
                     </button>
                     {#each GEN_RANGES as gen}
@@ -301,7 +384,7 @@
                 <div class="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
             </div>
         {:else if filtered.length === 0}
-            <EmptyState title="No Pokémon found" subtitle="Try another filter, generation, or clear favorites mode" actionLabel="Reset filters" onaction={() => { searchQuery = ""; activeTypes = []; activeGens = []; showFavoritesOnly = false; loadRange(0, 40, false); }} />
+            <EmptyState title="No Pokémon found" subtitle="Try another filter, generation, or clear favorites mode" actionLabel="Reset filters" onaction={() => { searchQuery = ""; activeTypes = []; activeGens = []; showFavoritesOnly = false; }} />
         {:else}
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4 pb-8">
                 {#each filtered as p, i (p.id)}
@@ -333,7 +416,7 @@
                                     {#each p.types || [] as type}
                                         <TypeBadge {type} size="xs" />
                                     {/each}
-                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white/80 ml-auto" style="background: {primaryColor}33">{getGeneration(p.id).split(" ")[1].replace(/[()]/g, "")}</span>
+                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white/80 ml-auto" style="background: {primaryColor}33">{getGeneration(p.id).split(" ")[1]?.replace(/[()]/g, "") ?? "?"}</span>
                                 </div>
                             </div>
                             <div class="type-edge" style="background: linear-gradient(90deg, {primaryColor}, {TYPE_COLORS[p.types?.[1]] || primaryColor})"></div>
@@ -370,7 +453,7 @@
             {/if}
             {#if activeTypes.length === 0 && activeGens.length === 0 && nextOffset < totalCount}
                 <div class="flex justify-center pb-16">
-                    {#if loadingMore}
+            {#if loadingMore && activeTypes.length === 0 && activeGens.length === 0}
                         <div class="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
                     {/if}
                 </div>

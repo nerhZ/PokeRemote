@@ -1,4 +1,4 @@
-import { TOTAL_POKEMON, artworkUrl, computeTypeEffectiveness, type PokemonSummary, type PokemonDetail, type PokemonFormSummary, type PokemonMoves, type EvolutionStage, type RankingEntry, type StatRankings } from "$lib/pokemon-types";
+import { TOTAL_POKEMON, artworkUrl, computeTypeEffectiveness, GEN_RANGES, type PokemonSummary, type PokemonDetail, type PokemonFormSummary, type PokemonMoves, type EvolutionStage, type RankingEntry, type StatRankings } from "$lib/pokemon-types";
 
 // ── Internal helpers ─────────────────────────────────────────────────────────
 
@@ -427,3 +427,36 @@ export const getItemsList = async ({ limit = 60, offset = 0 }: { limit?: number;
     );
     return { results: results.filter(Boolean), count: data.count, next_offset: offset + limit };
 };
+
+export async function getPokemonByType(type: string): Promise<{ name: string; id: number }[]> {
+    const res = await fetch(`https://pokeapi.co/api/v2/type/${type}`);
+    const data = await res.json();
+    return data.pokemon.map((p: any) => ({
+        name: p.pokemon.name,
+        id: parseIdFromUrl(p.pokemon.url),
+    }));
+}
+
+export async function getPokemonCardById(id: number): Promise<{ name: string; types: string[]; image: string } | null> {
+    try {
+        const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
+        if (!r.ok) return null;
+        const d = await r.json();
+        return {
+            name: d.name,
+            types: d.types.map((t: any) => t.type.name),
+            image: d.sprites.other["official-artwork"].front_default,
+        };
+    } catch { return null; }
+}
+
+export async function getPokemonByGen(gen: string): Promise<{ name: string; id: number }[]> {
+    const genNum = GEN_RANGES.findIndex((g) => g.label === gen) + 1;
+    if (genNum === 0) return [];
+    const res = await fetch(`https://pokeapi.co/api/v2/generation/${genNum}/`);
+    const data = await res.json();
+    return (data.pokemon_species || []).map((s: any) => ({
+        name: s.name,
+        id: parseIdFromUrl(s.url),
+    }));
+}
