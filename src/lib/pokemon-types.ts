@@ -314,10 +314,6 @@ export function formatName(name: string): string {
   return name.split("-").map(titleWord).join(" ");
 }
 
-export function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
 function titleWord(w: string): string {
   if (!w) return w;
   if (w === "gmax") return "Gigantamax";
