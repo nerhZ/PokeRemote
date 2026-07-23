@@ -28,6 +28,7 @@
     let scrollFired = false;
     let allNames: { name: string; id: number }[] = $state([]);
     let searching = $state(false);
+    let lastFilteredCount = 0;
 
     $effect(() => {
         const p = page.url.pathname;
@@ -185,9 +186,11 @@
     });
 
     $effect(() => {
+        const c = filtered.length;
         if (searching || loading || loadingMore) return;
         if (nextOffset >= totalCount) return;
-        if (filtered.length < 20) loadMore();
+        if (c < 20 && c > lastFilteredCount) loadMore();
+        lastFilteredCount = c;
     });
 </script>
 
