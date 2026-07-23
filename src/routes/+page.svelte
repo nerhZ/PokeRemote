@@ -155,7 +155,7 @@
             .finally(() => { loading = false; });
 
         function onScroll() {
-            if (loading || loadingMore || searching || typeFiltering || genFiltering || activeTypes.length > 0 || activeGens.length > 0 || nextOffset >= totalCount) return;
+            if (loading || loadingMore || searching || typeFiltering || genFiltering || activeTypes.length > 0 || activeGens.length > 0 || showFavoritesOnly || nextOffset >= totalCount) return;
             const bottom = window.innerHeight + window.scrollY;
             const docH = document.documentElement.scrollHeight;
             if (docH - bottom < 600) {
@@ -264,7 +264,7 @@
     });
 
     $effect(() => {
-        if (searching || typeFiltering || genFiltering || activeTypes.length > 0 || activeGens.length > 0 || loading || loadingMore) return;
+        if (searching || typeFiltering || genFiltering || activeTypes.length > 0 || activeGens.length > 0 || showFavoritesOnly || loading || loadingMore) return;
         if (nextOffset >= totalCount) return;
         if (filtered.length < 20) loadMore(100);
     });
@@ -379,7 +379,7 @@
             </div>
         {:else if error}
             <EmptyState title="Failed to load Pokémon" subtitle={error} actionLabel="Try again" onaction={() => window.location.reload()} />
-        {:else if filtered.length === 0 && searchLoading}
+        {:else if filtered.length === 0 && (searchLoading || typeFiltering || genFiltering)}
             <div class="flex justify-center py-16">
                 <div class="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
             </div>
@@ -453,7 +453,7 @@
             {/if}
             {#if activeTypes.length === 0 && activeGens.length === 0 && nextOffset < totalCount}
                 <div class="flex justify-center pb-16">
-            {#if loadingMore && activeTypes.length === 0 && activeGens.length === 0}
+            {#if loadingMore && activeTypes.length === 0 && activeGens.length === 0 && !showFavoritesOnly}
                         <div class="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
                     {/if}
                 </div>
