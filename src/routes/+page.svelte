@@ -4,7 +4,7 @@
     import { base } from "$app/paths";
     import { onMount, untrack } from "svelte";
     import { getPokemonList, getPokemonCatalogMeta, getRandomPokemon, getAutocompleteList, getPokemonDetail } from "$lib/api";
-    import { TYPE_COLORS, GEN_RANGES, ALL_TYPES, TOTAL_SPECIES, TOTAL_POKEMON, formLabel, formatName } from "$lib/pokemon-types";
+    import { TYPE_COLORS, GEN_RANGES, ALL_TYPES, TOTAL_SPECIES, TOTAL_POKEMON, formLabel, formatName, getGeneration } from "$lib/pokemon-types";
     import { getFavorites, toggleFavorite, getRecent, type FavEntry } from "$lib/storage";
     import TypeBadge from "$lib/components/TypeBadge.svelte";
     import EmptyState from "$lib/components/EmptyState.svelte";
@@ -152,10 +152,6 @@
         runSearch(q);
     });
 
-    let availableTypes = $derived(
-        ALL_TYPES.filter((t) => pokemon.some((p) => p.types.includes(t))).sort()
-    );
-
     let filtered = $derived.by(() => {
         let result = showFavoritesOnly
             ? favorites.map((f) => ({
@@ -261,7 +257,7 @@
                     <button onclick={() => (activeTypes = [])} class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-pointer border {activeTypes.length === 0 ? 'bg-white text-bg-navy border-white' : 'bg-white/5 text-white/55 border-white/10'}">
                         All types{#if activeTypes.length > 0}<span class="ml-1 px-1.5 py-0.5 rounded-full text-[8px] bg-accent text-white">{activeTypes.length}</span>{/if}
                     </button>
-                    {#each availableTypes.length ? availableTypes : ALL_TYPES.slice(0, 12) as t}
+                    {#each ALL_TYPES as t}
                         {@const sel = activeTypes.includes(t)}
                         <button
                             onclick={() => (activeTypes = sel ? activeTypes.filter((x) => x !== t) : [...activeTypes, t])}
@@ -333,10 +329,11 @@
                             </div>
                             <div class="p-3 pt-2 border-t border-white/[0.04]">
                                 <h3 class="text-sm font-bold text-white/85 group-hover:text-white transition-colors">{formatName(p.name)}</h3>
-                                <div class="flex flex-wrap gap-1 mt-1.5">
+                                <div class="flex flex-wrap items-center gap-1 mt-1.5">
                                     {#each p.types || [] as type}
                                         <TypeBadge {type} size="xs" />
                                     {/each}
+                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white/80 ml-auto" style="background: {primaryColor}33">{getGeneration(p.id).split(" ")[1].replace(/[()]/g, "")}</span>
                                 </div>
                             </div>
                             <div class="type-edge" style="background: linear-gradient(90deg, {primaryColor}, {TYPE_COLORS[p.types?.[1]] || primaryColor})"></div>
