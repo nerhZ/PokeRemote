@@ -99,6 +99,6 @@
 	</main>
 
 	<footer class="max-w-7xl mx-auto px-6 py-8 text-center text-xs" style="color: var(--muted)">
-		<p>Credit to PokeAPI · Press <kbd>/</kbd> search · <kbd>R</kbd> random</p>
+		<p>Credit to PokeAPI · Pokémon and Pokémon character names are trademarks of Nintendo · Press <kbd>/</kbd> search · <kbd>R</kbd> random</p>
 	</footer>
 </div>
