@@ -187,10 +187,7 @@
     $effect(() => {
         if (searching || loading || loadingMore) return;
         if (nextOffset >= totalCount) return;
-        const count = filtered.length;
-        if (count < 20 && document.documentElement.scrollHeight <= window.innerHeight) {
-            loadMore();
-        }
+        if (filtered.length < 20) loadMore();
     });
 </script>
 
