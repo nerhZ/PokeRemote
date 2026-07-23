@@ -84,19 +84,35 @@ export function getSavedTeams(): {
   name: string;
   ids: number[];
   names: string[];
+  moves: string[][];
+  ability: string[];
+  nature: string[];
 }[] {
-  return read(TEAM_KEY, []);
+  return read(TEAM_KEY, []).map((t: any) => ({
+    name: t.name,
+    ids: t.ids ?? [],
+    names: t.names ?? [],
+    moves: t.moves ?? t.ids?.map(() => []) ?? [],
+    ability: t.ability ?? t.ids?.map(() => "") ?? [],
+    nature: t.nature ?? t.ids?.map(() => "") ?? [],
+  }));
 }
 
 export function saveTeam(
   name: string,
   members: { id: number; name: string }[],
+  moves: string[][] = [],
+  ability: string[] = [],
+  nature: string[] = [],
 ) {
   const teams = getSavedTeams().filter((t) => t.name !== name);
   teams.unshift({
     name,
     ids: members.map((m) => m.id),
     names: members.map((m) => m.name),
+    moves,
+    ability,
+    nature,
   });
   write(TEAM_KEY, teams.slice(0, 12));
   return teams;

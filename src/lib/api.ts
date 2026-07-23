@@ -717,3 +717,15 @@ export async function searchItems(
 
   return results.filter(Boolean);
 }
+
+export async function getPokemonMetadata(
+  name: string,
+): Promise<{ moves: string[]; abilities: string[] }> {
+  const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
+  if (!res.ok) return { moves: [], abilities: [] };
+  const data = await res.json();
+  return {
+    moves: data.moves.map((m: any) => m.move.name),
+    abilities: data.abilities.map((a: any) => a.ability.name),
+  };
+}

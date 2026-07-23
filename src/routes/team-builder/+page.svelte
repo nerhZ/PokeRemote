@@ -2,11 +2,13 @@
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { getPokemonDetail, getAutocompleteList } from "$lib/api";
+  import { getPokemonDetail, getAutocompleteList, getPokemonMetadata } from "$lib/api";
   import {
     TYPE_COLORS,
     ALL_TYPES,
+    NATURES,
     formatName,
+    capitalize,
     type PokemonDetail,
   } from "$lib/pokemon-types";
   import { saveTeam, getSavedTeams } from "$lib/storage";
@@ -23,6 +25,12 @@
   let saved = $state<ReturnType<typeof getSavedTeams>>([]);
   let copied = $state(false);
 
+  let editingIndex = $state<number | null>(null);
+  let moveOptions = $state<string[]>([]);
+  let abilityOptions = $state<string[]>([]);
+  let editLoading = $state(false);
+  let sets = $state<{ moves: string[]; ability: string; nature: string }[]>([]);
+
   onMount(async () => {
     saved = getSavedTeams();
     try {
@@ -30,6 +38,33 @@
       allNames = catalog.results;
     } catch {}
   });
+
+  function initSet() {
+    return { moves: ["", "", "", ""], ability: "", nature: "" };
+  }
+
+  async function editPokemon(i: number) {
+    if (editingIndex === i) { editingIndex = null; return; }
+    editingIndex = i;
+    editLoading = true;
+    const p = team[i];
+    while (sets.length <= i) sets = [...sets, initSet()];
+    try {
+      const meta = await getPokemonMetadata(p.name);
+      moveOptions = meta.moves;
+      abilityOptions = meta.abilities;
+    } catch {
+      moveOptions = [];
+      abilityOptions = [];
+    } finally {
+      editLoading = false;
+    }
+  }
+
+  function saveSet() {
+    editingIndex = null;
+    syncUrl();
+  }
 
   $effect(() => {
     const p = page.url.searchParams.get("p");
@@ -48,9 +83,36 @@
     })();
   });
 
+  function encodeSets() {
+    return sets
+      .slice(0, team.length)
+      .map((s) => {
+        const parts = [s.moves.join("|"), s.ability || "_", s.nature || "_"];
+        return parts.join("-");
+      })
+      .join(",");
+  }
+
+  function decodeSets(raw: string) {
+    const parts = raw.split(",");
+    const decoded: { moves: string[]; ability: string; nature: string }[] = [];
+    for (const part of parts) {
+      const [movesRaw, ability, nature] = part.split("-");
+      decoded.push({
+        moves: (movesRaw || "").split("|").filter(Boolean).slice(0, 4),
+        ability: ability === "_" ? "" : ability,
+        nature: nature === "_" ? "" : nature,
+      });
+    }
+    return decoded;
+  }
+
   function syncUrl() {
     const params = new URLSearchParams();
     if (team.length) params.set("p", team.map((t) => t.name).join(","));
+    if (sets.some((s) => s.moves.some((m) => m) || s.ability || s.nature)) {
+      params.set("s", encodeSets());
+    }
     const q = params.toString();
     goto(q ? resolve("/team-builder") + `?${q}` : resolve("/team-builder"), {
       replaceState: true,
@@ -67,6 +129,7 @@
       const detail = await getPokemonDetail(name);
       if (!team.some((t) => t.id === detail.id)) {
         team = [...team, detail];
+        sets = [...sets, initSet()];
         syncUrl();
       }
     } catch {
@@ -76,14 +139,25 @@
   }
 
   function removeFromTeam(id: number) {
+    const idx = team.findIndex((p) => p.id === id);
     team = team.filter((p) => p.id !== id);
+    sets = sets.filter((_, i) => i !== idx);
+    if (editingIndex === idx) editingIndex = null;
     syncUrl();
   }
 
   function exportTeam() {
-    saved = saveTeam(teamName || "My Team", team);
-    const url = `${window.location.origin}${resolve("/team-builder")}?p=${team.map((t) => t.name).join(",")}`;
-    navigator.clipboard?.writeText(url);
+    const moves = sets.map((s) => s.moves);
+    const ability = sets.map((s) => s.ability);
+    const nature = sets.map((s) => s.nature);
+    saved = saveTeam(teamName || "My Team", team, moves, ability, nature);
+    syncUrl();
+    const url = new URL(resolve("/team-builder"), window.location.origin);
+    url.searchParams.set("p", team.map((t) => t.name).join(","));
+    if (sets.some((s) => s.moves.some((m) => m) || s.ability || s.nature)) {
+      url.searchParams.set("s", encodeSets());
+    }
+    navigator.clipboard?.writeText(url.toString());
     copied = true;
     setTimeout(() => (copied = false), 2000);
   }
@@ -104,12 +178,22 @@
 
   let teamWeak = $derived(ALL_TYPES.filter((t) => coverage[t] >= 2));
   let teamSafe = $derived(ALL_TYPES.filter((t) => coverage[t] <= -1));
+
+  function hoverTitle(i: number) {
+    const s = sets[i];
+    if (!s) return "";
+    const parts: string[] = [];
+    if (s.moves.some((m) => m)) parts.push(s.moves.filter((m) => m).map((m) => capitalize(m.replace(/-/g, " "))).join(" / "));
+    if (s.ability) parts.push("Ability: " + capitalize(s.ability.replace(/-/g, " ")));
+    if (s.nature) parts.push(s.nature + " nature");
+    return parts.join("\n");
+  }
 </script>
 
 <div class="tool-shell">
   <div class="tool-hero">
     <h1>Team Builder</h1>
-    <p>Six slots, type heat map, shareable links, and local team saves.</p>
+    <p>Six slots, movesets, share with competitive setups.</p>
   </div>
 
   <div class="panel mb-6 max-w-xl p-4!">
@@ -130,13 +214,27 @@
       {#if team[i]}
         {@const p = team[i]}
         {@const color = TYPE_COLORS[p.types[0]] || "#777"}
-        <a
-          href={resolve(`/pokemon/${p.name}`)}
-          class="panel relative p-3! text-center transition-all hover:-translate-y-1 no-underline"
+        {@const hasSet = sets[i] && (sets[i].moves.some((m) => m) || sets[i].ability || sets[i].nature)}
+        <div
+          class="panel relative p-3! text-center transition-all hover:-translate-y-1 cursor-pointer"
           style="box-shadow: inset 0 0 0 1px {color}40"
+          onclick={() => editPokemon(i)}
+          role="button"
+          tabindex="0"
+          onkeydown={(e) => { if (e.key === "Enter") editPokemon(i); }}
+          title={hoverTitle(i)}
         >
+          <div class="absolute top-1.5 left-1.5 z-10 flex gap-1">
+            <a
+              href={resolve(`/pokemon/${p.name}`)}
+              onclick={(e) => e.stopPropagation()}
+              class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-white/10 bg-black/20 text-xs text-white/50 no-underline hover:text-white"
+              title="Open Pokédex"
+            >◉</a
+            >
+          </div>
           <button
-            onclick={(e) => { e.preventDefault(); removeFromTeam(p.id); }}
+            onclick={(e) => { e.stopPropagation(); removeFromTeam(p.id); }}
             class="bg-pokemon-red/20 text-pokemon-red absolute top-1.5 right-1.5 z-10 h-6 w-6 cursor-pointer rounded-md border-0 text-xs font-bold hover:bg-pokemon-red/40 transition-colors"
             >×</button
           >
@@ -151,7 +249,12 @@
           <div class="mt-1 flex justify-center gap-0.5">
             {#each p.types as t}<TypeBadge type={t} size="xs" />{/each}
           </div>
-        </a>
+          {#if hasSet}
+            <div class="bg-pokemon-green/20 text-pokemon-green mt-1.5 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold">
+              set
+            </div>
+          {/if}
+        </div>
       {:else}
         <div
           class="flex min-h-36 items-center justify-center rounded-3xl border border-dashed border-white/10 text-xs text-white/20"
@@ -162,10 +265,104 @@
     {/each}
   </div>
 
+  {#if editingIndex != null && team[editingIndex]}
+    {@const i = editingIndex}
+    {@const p = team[i]}
+    {@const s = sets[i] ?? initSet()}
+    {@const color = TYPE_COLORS[p.types[0]] || "#777"}
+    <div class="panel mb-8 max-w-2xl">
+      <div class="mb-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <img
+            src={p.sprites.other["official-artwork"].front_default}
+            alt={p.name}
+            class="h-12 w-12 object-contain"
+          />
+          <div>
+            <div class="text-lg font-bold" style="color: var(--text)">{formatName(p.name)}</div>
+            <div class="flex gap-1">
+              {#each p.types as t}<TypeBadge type={t} size="xs" />{/each}
+            </div>
+          </div>
+        </div>
+        <button
+          onclick={saveSet}
+          class="bg-accent hover:bg-accent/80 cursor-pointer rounded-xl border-0 px-5 py-2 text-sm font-semibold text-white">Done</button
+        >
+      </div>
+
+      {#if editLoading}
+        <div class="flex justify-center py-8">
+          <div class="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
+        </div>
+      {:else}
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <div class="text-[10px] font-bold tracking-wider text-white/40 uppercase">Moves</div>
+            <div class="mt-2 space-y-2">
+              {#each Array(4) as _, mi}
+                <div class="relative">
+                  <input
+                    type="text"
+                    list="moves-datalist"
+                    placeholder="Move {mi + 1}..."
+                    value={s.moves[mi] || ""}
+                    oninput={(e) => {
+                      const val = (e.target as HTMLInputElement).value;
+                      sets = sets.map((set, idx) => idx === i ? { ...set, moves: set.moves.map((m, j) => j === mi ? val : m) } : set);
+                    }}
+                    class="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-accent/50"
+                  />
+                </div>
+              {/each}
+              <datalist id="moves-datalist">
+                {#each moveOptions as m}
+                  <option value={m}></option>
+                {/each}
+              </datalist>
+            </div>
+          </div>
+          <div class="space-y-4">
+            <div>
+              <div class="text-[10px] font-bold tracking-wider text-white/40 uppercase">Ability</div>
+              <select
+                value={s.ability}
+                onchange={(e) => {
+                  sets = sets.map((set, idx) => idx === i ? { ...set, ability: (e.target as HTMLSelectElement).value } : set);
+                }}
+                class="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none"
+              >
+                <option value="">None</option>
+                {#each abilityOptions as a}
+                  <option value={a}>{capitalize(a.replace(/-/g, " "))}</option>
+                {/each}
+              </select>
+            </div>
+            <div>
+              <div class="text-[10px] font-bold tracking-wider text-white/40 uppercase">Nature</div>
+              <select
+                value={s.nature}
+                onchange={(e) => {
+                  sets = sets.map((set, idx) => idx === i ? { ...set, nature: (e.target as HTMLSelectElement).value } : set);
+                }}
+                class="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none"
+              >
+                <option value="">None</option>
+                {#each NATURES as n}
+                  <option value={n}>{n}</option>
+                {/each}
+              </select>
+            </div>
+          </div>
+        </div>
+      {/if}
+    </div>
+  {/if}
+
   {#if team.length === 0}
     <EmptyState
       title="Build your team"
-      subtitle="Add up to 6 Pokémon to see defensive coverage and export a share link."
+      subtitle="Add up to 6 Pokémon, click a card to configure movesets, and export a share link."
     />
   {:else}
     <div class="mb-6 grid gap-4 md:grid-cols-2">
