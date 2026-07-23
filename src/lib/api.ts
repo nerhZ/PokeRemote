@@ -766,3 +766,58 @@ export async function getAllPokemonSummaries(
 
   return { data: entries, fromCache: false };
 }
+
+// ── Item search ──────────────────────────────────────────────────────────────
+
+let _itemNamesCache: { name: string; id: number }[] | null = null;
+
+async function getAllItemNames(): Promise<
+  { name: string; id: number }[]
+> {
+  if (_itemNamesCache) return _itemNamesCache;
+  const head = await fetch(`https://pokeapi.co/api/v2/item?limit=1`);
+  const { count } = await head.json();
+  const res = await fetch(
+    `https://pokeapi.co/api/v2/item?limit=${count}&offset=0`,
+  );
+  const data = await res.json();
+  _itemNamesCache = data.results.map((i: any) => ({
+    name: i.name,
+    id: parseIdFromUrl(i.url),
+  }));
+  return _itemNamesCache as { name: string; id: number }[];
+}
+
+export async function searchItems(
+  query: string,
+  limit = 30,
+): Promise<any[]> {
+  const q = query.toLowerCase();
+  const allNames = await getAllItemNames();
+  const matches = allNames.filter((n) => n.name.includes(q)).slice(0, limit);
+
+  const results = await Promise.all(
+    matches.map(async (m) => {
+      try {
+        const r = await fetch(`https://pokeapi.co/api/v2/item/${m.id}`);
+        if (!r.ok) return null;
+        const d = await r.json();
+        const effect = d.effect_entries?.find(
+          (e: any) => e.language.name === "en",
+        );
+        return {
+          name: d.name,
+          id: d.id,
+          sprite: d.sprites?.default ?? null,
+          category: d.category?.name ?? null,
+          cost: d.cost ?? 0,
+          effect: effect?.short_effect ?? null,
+        };
+      } catch {
+        return null;
+      }
+    }),
+  );
+
+  return results.filter(Boolean);
+}

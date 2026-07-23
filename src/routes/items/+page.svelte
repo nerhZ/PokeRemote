@@ -1,75 +1,47 @@
 <script lang="ts">
-  import { getItemsList } from "$lib/api";
+  import { getItemsList, searchItems } from "$lib/api";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import { onMount } from "svelte";
 
   let items = $state<any[]>([]);
   let loading = $state(true);
-  let loadingMore = $state(false);
   let error = $state<string | null>(null);
-  let nextOffset = $state(0);
   let total = $state(0);
   let search = $state("");
-  let scrollFired = false;
+  let searchResults = $state<any[]>([]);
+  let searchLoading = $state(false);
+  let searchGen = 0;
 
-  async function load(append = false) {
-    const data = await getItemsList({
-      limit: 40,
-      offset: append ? nextOffset : 0,
-    });
-    items = append ? [...items, ...data.results] : data.results;
-    nextOffset = data.next_offset;
-    total = data.count;
-  }
-
-  onMount(() => {
-    (async () => {
-      try {
-        await load(false);
-      } catch (e: any) {
-        error = e.message;
-      } finally {
-        loading = false;
-      }
-    })();
-
-    function onScroll() {
-      if (loading || loadingMore || !!search || nextOffset >= total) return;
-      const bottom = window.innerHeight + window.scrollY;
-      const docH = document.documentElement.scrollHeight;
-      if (docH - bottom < 600) {
-        if (scrollFired) return;
-        scrollFired = true;
-        loadMore().finally(() => {
-          scrollFired = false;
-        });
-      }
-    }
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  });
-
-  async function loadMore() {
-    if (loadingMore) return;
-    loadingMore = true;
+  onMount(async () => {
     try {
-      await load(true);
+      const data = await getItemsList({ limit: 40, offset: 0 });
+      items = data.results;
+      total = data.count;
     } catch (e: any) {
       error = e.message;
     } finally {
-      loadingMore = false;
+      loading = false;
     }
-  }
+  });
 
-  let filtered = $derived(
-    search
-      ? items.filter(
-          (i) =>
-            i.name.includes(search.toLowerCase()) ||
-            (i.effect || "").toLowerCase().includes(search.toLowerCase()),
-        )
-      : items,
-  );
+  $effect(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) {
+      searchResults = [];
+      searchLoading = false;
+      return;
+    }
+    const gen = ++searchGen;
+    searchLoading = true;
+    searchItems(q).then((results) => {
+      if (gen === searchGen) {
+        searchResults = results;
+        searchLoading = false;
+      }
+    });
+  });
+
+  let filtered = $derived(search ? searchResults : items);
 </script>
 
 <div class="tool-shell">
@@ -86,7 +58,7 @@
     <input
       type="search"
       bind:value={search}
-      placeholder="Filter loaded items..."
+      placeholder="Search all items..."
       class="focus:border-accent/50 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm placeholder-white/30 outline-none"
     />
   </div>
@@ -99,10 +71,16 @@
     </div>
   {:else if error}
     <EmptyState title="Failed to load items" subtitle={error} />
+  {:else if search && searchLoading}
+    <div class="flex justify-center py-16">
+      <div
+        class="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white"
+      ></div>
+    </div>
   {:else if filtered.length === 0}
     <EmptyState
       title="No items match"
-      subtitle="Try another search or load more."
+      subtitle="No items match."
     />
   {:else}
     <div class="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -134,21 +112,5 @@
         </div>
       {/each}
     </div>
-    {#if loadingMore}
-      <div class="grid grid-cols-1 gap-3 pb-4 sm:grid-cols-2 lg:grid-cols-3">
-        {#each Array(6) as _}<div
-            class="h-24 animate-pulse rounded-2xl bg-white/3"
-          ></div>{/each}
-      </div>
-    {/if}
-    {#if nextOffset < total && !search}
-      <div class="flex justify-center pb-12">
-        {#if loadingMore}
-          <div
-            class="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white"
-          ></div>
-        {/if}
-      </div>
-    {/if}
   {/if}
 </div>

@@ -12,8 +12,8 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint:tailwind": "bunx @laststance/tailwind-suggest-canonical-classes \"src/**/*.{ts,js,html,svelte}\" --check",
 		"fix:tailwind": "bunx @laststance/tailwind-suggest-canonical-classes \"src/**/*.{ts,js,html,svelte}\"",
-    "format": "bun x prettier --write \"src/**/*.{svelte,ts,css,html}\"",
-    "format:check": "bun x prettier --check \"src/**/*.{svelte,ts,css,html}\""
+		"format": "bun x prettier --write \"src/**/*.{svelte,ts,css,html}\"",
+		"format:check": "bun x prettier --check \"src/**/*.{svelte,ts,css,html}\""
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^7.0.0",
@@ -21,6 +21,7 @@
 		"@sveltejs/kit": "^2.50.1",
 		"@sveltejs/vite-plugin-svelte": "^6.2.4",
 		"@tailwindcss/vite": "^4.1.18",
+		"knip": "^6.29.0",
 		"prettier": "^3.9.6",
 		"prettier-plugin-svelte": "^4.1.1",
 		"prettier-plugin-tailwindcss": "^0.8.1",
