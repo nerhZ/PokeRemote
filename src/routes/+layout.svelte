@@ -87,7 +87,7 @@
 		{#if mobileOpen}
 			<div class="md:hidden border-t px-4 py-3 flex flex-col gap-1" style="border-color: var(--border); background: var(--bg)">
 				{#each links as link}
-					<a href={link.href} onclick={() => (mobileOpen = false)} class="nav-link {isActive(link.href) ? 'nav-link-active' : ''} block">{link.icon} {link.label}</a>
+					<a href="{base}{link.href}" onclick={() => (mobileOpen = false)} class="nav-link {isActive(link.href) ? 'nav-link-active' : ''} block">{link.icon} {link.label}</a>
 				{/each}
 				<p class="text-[10px] px-3 pt-2" style="color: var(--muted)">Shortcuts: <kbd>/</kbd> search · <kbd>R</kbd> random</p>
 			</div>
