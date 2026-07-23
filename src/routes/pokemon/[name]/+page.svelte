@@ -254,7 +254,7 @@
                 src={spriteUrl}
                 alt={pokemon.name}
                 class="relative z-10 w-full max-w-80 object-contain drop-shadow-2xl"
-                style="animation: bob 3s ease-in-out infinite; view-transition-name: pokemon-{pokemon.id}"
+                style="animation: bob 3s ease-in-out infinite"
               />
             </div>
             <div class="absolute top-4 left-4 flex flex-wrap gap-1.5">
