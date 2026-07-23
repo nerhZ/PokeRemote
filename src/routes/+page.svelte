@@ -118,8 +118,16 @@
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (p) => p.name.toLowerCase().includes(q) || String(p.id).includes(q),
+      const tokens = q.split(/\s+/).filter(Boolean);
+      result = result.filter((p) =>
+        tokens.every(
+          (token) =>
+            p.name.toLowerCase().includes(token) ||
+            String(p.id).includes(token) ||
+            (p.forms || []).some((f: any) =>
+              f.name.toLowerCase().includes(token),
+            ),
+        ),
       );
     }
 
