@@ -207,8 +207,12 @@
     </div>
 
     {#if pokemonA && pokemonB}
-      {@const colorA = TYPE_COLORS[pokemonA.types[0]] || "#777"}
-      {@const colorB = TYPE_COLORS[pokemonB.types[0]] || "#777"}
+      {@const colorA = TYPE_COLORS[pokemonA.types[0]] || "#3e7bff"}
+      {@const colorB = (() => {
+        const a = pokemonA.types[0];
+        const alt = pokemonB.types.find((t) => t !== a);
+        return alt ? TYPE_COLORS[alt] : "#ff3e3e";
+      })()}
       <div class="panel mb-6">
         <h2 class="mb-4 text-lg font-bold">Shared Radar</h2>
         <div class="mx-auto w-full max-w-sm">
