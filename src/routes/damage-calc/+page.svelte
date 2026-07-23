@@ -216,19 +216,22 @@
           class="mt-2 h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white"
         ></div>{/if}
       {#if attacker}
-        <div class="mt-4 flex items-center gap-3 rounded-xl bg-white/2 p-3">
+        <a
+          href={resolve(`/pokemon/${attacker.name}`)}
+          class="mt-4 flex items-center gap-3 rounded-xl bg-white/2 p-3 no-underline transition-colors hover:bg-white/5"
+        >
           <img
             src={attacker.sprites.other["official-artwork"].front_default}
             alt={attacker.name}
             class="h-14 w-14 object-contain"
           />
           <div>
-            <div class="text-sm font-bold">{formatName(attacker.name)}</div>
+            <div class="text-sm font-bold" style="color: var(--text)">{formatName(attacker.name)}</div>
             <div class="mt-1 flex gap-1">
               {#each attacker.types as t}<TypeBadge type={t} size="xs" />{/each}
             </div>
           </div>
-        </div>
+        </a>
         {#if moveList}
           <div class="mt-4 mb-2 flex items-center gap-2">
             <span class="text-xs text-white/40">Level</span>
@@ -280,19 +283,22 @@
           class="mt-2 h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white"
         ></div>{/if}
       {#if defender}
-        <div class="mt-4 flex items-center gap-3 rounded-xl bg-white/2 p-3">
+        <a
+          href={resolve(`/pokemon/${defender.name}`)}
+          class="mt-4 flex items-center gap-3 rounded-xl bg-white/2 p-3 no-underline transition-colors hover:bg-white/5"
+        >
           <img
             src={defender.sprites.other["official-artwork"].front_default}
             alt={defender.name}
             class="h-14 w-14 object-contain"
           />
           <div>
-            <div class="text-sm font-bold">{formatName(defender.name)}</div>
+            <div class="text-sm font-bold" style="color: var(--text)">{formatName(defender.name)}</div>
             <div class="mt-1 flex gap-1">
               {#each defender.types as t}<TypeBadge type={t} size="xs" />{/each}
             </div>
           </div>
-        </div>
+        </a>
         <div class="mt-3 flex items-center gap-2">
           <span class="text-xs text-white/40">Level</span>
           <input

@@ -152,14 +152,17 @@
         {#if p}
           {@const color = TYPE_COLORS[p.types[0]] || "#777"}
           <div class="panel" style="box-shadow: inset 0 0 0 1px {color}33">
-            <div class="mb-5 flex items-center gap-4">
+            <a
+              href={resolve(`/pokemon/${p.name}`)}
+              class="mb-5 flex items-center gap-4 rounded-xl p-2 no-underline transition-colors hover:bg-white/5"
+            >
               <img
                 src={p.sprites.other["official-artwork"].front_default}
                 alt={p.name}
                 class="h-20 w-20 object-contain drop-shadow-xl"
               />
               <div>
-                <div class="text-xl font-black">{formatName(p.name)}</div>
+                <div class="text-xl font-black" style="color: var(--text)">{formatName(p.name)}</div>
                 <div class="text-xs text-white/40">
                   #{String(p.id).padStart(3, "0")}
                 </div>
@@ -167,7 +170,7 @@
                   {#each p.types as t}<TypeBadge type={t} size="xs" />{/each}
                 </div>
               </div>
-            </div>
+            </a>
             <div class="space-y-2">
               {#each p.stats as stat}
                 <div class="flex items-center gap-2">

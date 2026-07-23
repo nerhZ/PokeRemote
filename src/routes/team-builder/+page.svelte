@@ -130,13 +130,14 @@
       {#if team[i]}
         {@const p = team[i]}
         {@const color = TYPE_COLORS[p.types[0]] || "#777"}
-        <div
-          class="panel relative p-3! text-center"
+        <a
+          href={resolve(`/pokemon/${p.name}`)}
+          class="panel relative p-3! text-center transition-all hover:-translate-y-1 no-underline"
           style="box-shadow: inset 0 0 0 1px {color}40"
         >
           <button
-            onclick={() => removeFromTeam(p.id)}
-            class="bg-pokemon-red/20 text-pokemon-red absolute top-1.5 right-1.5 h-6 w-6 cursor-pointer rounded-md border-0 text-xs font-bold"
+            onclick={(e) => { e.preventDefault(); removeFromTeam(p.id); }}
+            class="bg-pokemon-red/20 text-pokemon-red absolute top-1.5 right-1.5 z-10 h-6 w-6 cursor-pointer rounded-md border-0 text-xs font-bold hover:bg-pokemon-red/40 transition-colors"
             >×</button
           >
           <img
@@ -144,13 +145,13 @@
             alt={p.name}
             class="mx-auto h-16 w-16 object-contain"
           />
-          <div class="mt-1 truncate text-xs font-bold">
+          <div class="mt-1 truncate text-xs font-bold" style="color: var(--text)">
             {formatName(p.name)}
           </div>
           <div class="mt-1 flex justify-center gap-0.5">
             {#each p.types as t}<TypeBadge type={t} size="xs" />{/each}
           </div>
-        </div>
+        </a>
       {:else}
         <div
           class="flex min-h-36 items-center justify-center rounded-3xl border border-dashed border-white/10 text-xs text-white/20"
