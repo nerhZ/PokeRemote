@@ -48,6 +48,8 @@
     Record<string, { moves: MoveOption[]; abilities: AbilityOption[] }>
   >({});
   let moveDropdowns = $state<Record<string, boolean>>({});
+  let abilityDropdowns = $state<Record<string, boolean>>({});
+  let natureDropdowns = $state<Record<string, boolean>>({});
   let sets = $state<
     { moves: string[]; ability: string; nature: string; evs: EvSpread }[]
   >([]);
@@ -132,6 +134,22 @@
     );
     const key = `${i}-${slot}`;
     moveDropdowns = { ...moveDropdowns, [key]: false };
+  }
+
+  function pickAbility(name: string) {
+    if (editingIndex == null) return;
+    sets = sets.map((set, idx) =>
+      idx === editingIndex ? { ...set, ability: name } : set,
+    );
+    abilityDropdowns = {};
+  }
+
+  function pickNature(name: string) {
+    if (editingIndex == null) return;
+    sets = sets.map((set, idx) =>
+      idx === editingIndex ? { ...set, nature: name } : set,
+    );
+    natureDropdowns = {};
   }
 
   function saveSet() {
@@ -557,25 +575,50 @@
               >
                 Ability
               </div>
-              <select
-                value={s.ability}
-                onchange={(e) => {
-                  sets = sets.map((set, idx) =>
-                    idx === i
-                      ? {
-                          ...set,
-                          ability: (e.target as HTMLSelectElement).value,
-                        }
-                      : set,
-                  );
-                }}
-                class="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none"
-              >
-                <option value="">None</option>
-                {#each abilityOptions as a}
-                  <option value={a.name}>{formatName(a.name)}</option>
-                {/each}
-              </select>
+              <div class="relative">
+                <button
+                  type="button"
+                  onclick={() => {
+                    abilityDropdowns = {
+                      ...abilityDropdowns,
+                      [`ability-${i}`]: !abilityDropdowns[`ability-${i}`],
+                    };
+                  }}
+                  class="mt-2 w-full cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left text-xs text-white/70 outline-none hover:border-white/20"
+                >
+                  {s.ability ? formatName(s.ability) : "None"}
+                </button>
+                {#if abilityDropdowns[`ability-${i}`]}
+                  <div
+                    class="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border bg-(--card) p-1 shadow-2xl"
+                    style="border-color: var(--border)"
+                  >
+                    <button
+                      type="button"
+                      onclick={() => pickAbility("")}
+                      class="w-full cursor-pointer rounded-lg border-0 bg-transparent px-3 py-2 text-left text-xs text-white/40 hover:bg-white/5"
+                      >None</button
+                    >
+                    {#each abilityOptions as a}
+                      <button
+                        type="button"
+                        onclick={() => pickAbility(a.name)}
+                        class="flex w-full flex-col gap-0.5 rounded-lg border-0 bg-transparent px-3 py-2 text-left text-xs text-white/70 hover:bg-white/5 {s.ability ===
+                        a.name
+                          ? 'bg-white/10'
+                          : ''}"
+                      >
+                        <span>{formatName(a.name)}</span>
+                        {#if a.description}
+                          <span class="text-[10px] leading-tight text-white/30"
+                            >{a.description}</span
+                          >
+                        {/if}
+                      </button>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
             </div>
             <div>
               <div
@@ -583,25 +626,48 @@
               >
                 Nature
               </div>
-              <select
-                value={s.nature}
-                onchange={(e) => {
-                  sets = sets.map((set, idx) =>
-                    idx === i
-                      ? {
-                          ...set,
-                          nature: (e.target as HTMLSelectElement).value,
-                        }
-                      : set,
-                  );
-                }}
-                class="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none"
-              >
-                <option value="">None</option>
-                {#each NATURES as n}
-                  <option value={n}>{n}</option>
-                {/each}
-              </select>
+              <div class="relative">
+                <button
+                  type="button"
+                  onclick={() => {
+                    natureDropdowns = {
+                      ...natureDropdowns,
+                      [`nature-${i}`]: !natureDropdowns[`nature-${i}`],
+                    };
+                  }}
+                  class="mt-2 w-full cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left text-xs text-white/70 outline-none hover:border-white/20"
+                >
+                  {s.nature || "None"}
+                </button>
+                {#if natureDropdowns[`nature-${i}`]}
+                  <div
+                    class="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border bg-(--card) p-1 shadow-2xl"
+                    style="border-color: var(--border)"
+                  >
+                    <button
+                      type="button"
+                      onclick={() => pickNature("")}
+                      class="w-full cursor-pointer rounded-lg border-0 bg-transparent px-3 py-2 text-left text-xs text-white/40 hover:bg-white/5"
+                      >None</button
+                    >
+                    {#each NATURES as n}
+                      <button
+                        type="button"
+                        onclick={() => pickNature(n)}
+                        class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left text-xs text-white/70 hover:bg-white/5 {s.nature ===
+                        n
+                          ? 'bg-white/10'
+                          : ''}"
+                      >
+                        <span>{n}</span>
+                        <span class="text-[10px] text-white/30"
+                          >{NATURES_MODIFIERS[n]}</span
+                        >
+                      </button>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
             </div>
             <div>
               <div class="flex items-center justify-between">
