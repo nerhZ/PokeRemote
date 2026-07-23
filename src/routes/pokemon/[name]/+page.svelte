@@ -7,7 +7,7 @@
     TYPE_COLORS,
     formLabel,
     formatName,
-    capitalize,
+    STAT_LABELS,
     type PokemonDetail,
     type PokemonMoves,
   } from "$lib/pokemon-types";
@@ -100,15 +100,6 @@
       if (gen === moveGen) movesLoading = false;
     }
   }
-
-  const statLabels: Record<string, string> = {
-    hp: "HP",
-    attack: "ATK",
-    defense: "DEF",
-    "special-attack": "SP.ATK",
-    "special-defense": "SP.DEF",
-    speed: "SPD",
-  };
 
   let prevId = $derived(
     speciesIds.length > 0 && pokemon
@@ -422,7 +413,7 @@
                     >
                       <div class="mb-1 flex items-center gap-2">
                         <span class="text-sm font-bold"
-                          >{capitalize(ability.name.replace(/-/g, " "))}</span
+                          >{formatName(ability.name)}</span
                         >
                         {#if ability.is_hidden}<span
                             class="rounded bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/50 uppercase"
@@ -548,7 +539,7 @@
                         <TypeBadge type={m.type} size="xs" />
                         <span
                           class="flex-1 truncate font-semibold text-white/80"
-                          >{capitalize(m.name.replace(/-/g, " "))}</span
+                          >{formatName(m.name)}</span
                         >
                         <span
                           class="text-[10px] text-white/30"

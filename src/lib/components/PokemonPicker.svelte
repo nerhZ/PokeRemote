@@ -25,8 +25,7 @@
           const name = n.name.toLowerCase().replace(/-/g, " ");
           const tokens = q.split(/\s+/).filter(Boolean);
           return tokens.every(
-            (token) =>
-              name.includes(token) || String(n.id).includes(token),
+            (token) => name.includes(token) || String(n.id).includes(token),
           );
         })
       : options;

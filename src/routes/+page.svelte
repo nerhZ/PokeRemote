@@ -358,16 +358,26 @@
     {#if loadPhase === "loading"}
       <div class="flex flex-col items-center justify-center py-20">
         <div class="relative mb-8 h-24 w-24 animate-spin">
-          <div class="from-pokemon-red absolute inset-0 rounded-full border-4 border-slate-700 bg-linear-to-b from-50% to-white to-50% opacity-80"></div>
-          <div class="absolute top-1/2 right-0 left-0 h-1 -translate-y-1/2 bg-slate-800"></div>
-          <div class="absolute top-1/2 left-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-slate-800 bg-white"></div>
+          <div
+            class="from-pokemon-red absolute inset-0 rounded-full border-4 border-slate-700 bg-linear-to-b from-50% to-white to-50% opacity-80"
+          ></div>
+          <div
+            class="absolute top-1/2 right-0 left-0 h-1 -translate-y-1/2 bg-slate-800"
+          ></div>
+          <div
+            class="absolute top-1/2 left-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-slate-800 bg-white"
+          ></div>
         </div>
         {#if loadProgress.total > 0}
           <p class="text-sm font-semibold" style="color: var(--text)">
             Loading {loadProgress.done} / {loadProgress.total} species...
           </p>
           <div class="mt-4 h-1.5 w-64 overflow-hidden rounded-full bg-white/6">
-            <div class="bg-accent h-full rounded-full transition-all duration-300" style="width: {(loadProgress.done / (loadProgress.total || 1)) * 100}%"></div>
+            <div
+              class="bg-accent h-full rounded-full transition-all duration-300"
+              style="width: {(loadProgress.done / (loadProgress.total || 1)) *
+                100}%"
+            ></div>
           </div>
         {:else}
           <p class="text-sm" style="color: var(--muted)">Loading Pokédex...</p>
@@ -405,8 +415,7 @@
             <a
               href={resolve(`/pokemon/${p.name}`)}
               class="poke-card card-enter group"
-              style="animation-delay: {Math.min(i, 15) *
-                35}ms"
+              style="animation-delay: {Math.min(i, 15) * 35}ms"
             >
               <div
                 class="relative flex aspect-square items-center justify-center p-5"
@@ -501,7 +510,6 @@
           </div>
         {/each}
       </div>
-
     {/if}
   </div>
 </div>

@@ -12,7 +12,6 @@
     TYPE_CHART,
     calculateDamage,
     formatName,
-    capitalize,
     type PokemonDetail,
     type PokemonMoves,
   } from "$lib/pokemon-types";
@@ -226,7 +225,9 @@
             class="h-14 w-14 object-contain"
           />
           <div>
-            <div class="text-sm font-bold" style="color: var(--text)">{formatName(attacker.name)}</div>
+            <div class="text-sm font-bold" style="color: var(--text)">
+              {formatName(attacker.name)}
+            </div>
             <div class="mt-1 flex gap-1">
               {#each attacker.types as t}<TypeBadge type={t} size="xs" />{/each}
             </div>
@@ -259,9 +260,7 @@
                   style="color: {TYPE_COLORS[m.type] || '#777'}"
                   class="font-bold">{m.type.slice(0, 3).toUpperCase()}</span
                 >
-                <span class="flex-1 truncate"
-                  >{capitalize(m.name.replace(/-/g, " "))}</span
-                >
+                <span class="flex-1 truncate">{formatName(m.name)}</span>
                 <span class="text-white/30">{m.power ?? "—"}</span>
               </button>
             {/each}
@@ -293,7 +292,9 @@
             class="h-14 w-14 object-contain"
           />
           <div>
-            <div class="text-sm font-bold" style="color: var(--text)">{formatName(defender.name)}</div>
+            <div class="text-sm font-bold" style="color: var(--text)">
+              {formatName(defender.name)}
+            </div>
             <div class="mt-1 flex gap-1">
               {#each defender.types as t}<TypeBadge type={t} size="xs" />{/each}
             </div>

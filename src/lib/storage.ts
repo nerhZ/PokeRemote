@@ -80,6 +80,15 @@ export function applyTheme() {
   document.documentElement.dataset.theme = getTheme();
 }
 
+export type EvSpread = {
+  hp: number;
+  atk: number;
+  def: number;
+  spa: number;
+  spd: number;
+  spe: number;
+};
+
 export function getSavedTeams(): {
   name: string;
   ids: number[];
@@ -87,6 +96,7 @@ export function getSavedTeams(): {
   moves: string[][];
   ability: string[];
   nature: string[];
+  evs: EvSpread[];
 }[] {
   return read(TEAM_KEY, []).map((t: any) => ({
     name: t.name,
@@ -95,6 +105,10 @@ export function getSavedTeams(): {
     moves: t.moves ?? t.ids?.map(() => []) ?? [],
     ability: t.ability ?? t.ids?.map(() => "") ?? [],
     nature: t.nature ?? t.ids?.map(() => "") ?? [],
+    evs:
+      t.evs ??
+      t.ids?.map(() => ({ hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 })) ??
+      [],
   }));
 }
 
@@ -104,6 +118,7 @@ export function saveTeam(
   moves: string[][] = [],
   ability: string[] = [],
   nature: string[] = [],
+  evs: EvSpread[] = [],
 ) {
   const teams = getSavedTeams().filter((t) => t.name !== name);
   teams.unshift({
@@ -113,6 +128,7 @@ export function saveTeam(
     moves,
     ability,
     nature,
+    evs,
   });
   write(TEAM_KEY, teams.slice(0, 12));
   return teams;

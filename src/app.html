@@ -1,5 +1,8 @@
 <!doctype html>
-<html lang="en" style="margin:0;padding:0;background-color:#0d1117;min-height:100%">
+<html
+  lang="en"
+  style="margin: 0; padding: 0; background-color: #0d1117; min-height: 100%"
+>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -15,7 +18,8 @@
           var t = localStorage.getItem("pokeremote:theme");
           if (t !== "light" && t !== "dark") t = "dark";
           document.documentElement.dataset.theme = t;
-          if (t === "light") document.documentElement.style.backgroundColor = "#f0f3f9";
+          if (t === "light")
+            document.documentElement.style.backgroundColor = "#f0f3f9";
         } catch (e) {
           document.documentElement.dataset.theme = "dark";
         }
@@ -29,9 +33,17 @@
       });
     </script>
     <style>
-      html { font-size: 16px; min-height: 100%; background-color: #0d1117; }
+      html {
+        font-size: 16px;
+        min-height: 100%;
+        background-color: #0d1117;
+      }
       body {
-        font-family: "Outfit", system-ui, -apple-system, sans-serif;
+        font-family:
+          "Outfit",
+          system-ui,
+          -apple-system,
+          sans-serif;
         font-size: 14px;
         background-color: #0d1117;
         color: #e2e8f0;
@@ -41,7 +53,9 @@
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
-      [data-theme="light"] html { background-color: #f0f3f9; }
+      [data-theme="light"] html {
+        background-color: #f0f3f9;
+      }
       [data-theme="light"] body {
         background-color: #f0f3f9;
         color: #0f172a;
@@ -52,9 +66,21 @@
         z-index: 99999;
         background-color: #0d1117;
         background-image:
-          radial-gradient(circle at 10% 20%, rgba(56,132,255,0.07) 0%, transparent 50%),
-          radial-gradient(circle at 90% 60%, rgba(255,62,62,0.05) 0%, transparent 50%),
-          radial-gradient(circle at 50% 90%, rgba(56,132,255,0.04) 0%, transparent 35%);
+          radial-gradient(
+            circle at 10% 20%,
+            rgba(56, 132, 255, 0.07) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 90% 60%,
+            rgba(255, 62, 62, 0.05) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 50% 90%,
+            rgba(56, 132, 255, 0.04) 0%,
+            transparent 35%
+          );
         display: flex;
         align-items: center;
         justify-content: center;
@@ -63,9 +89,21 @@
       [data-theme="light"] #app-loader {
         background-color: #f0f3f9;
         background-image:
-          radial-gradient(circle at 10% 20%, rgba(56,132,255,0.1) 0%, transparent 50%),
-          radial-gradient(circle at 90% 60%, rgba(255,62,62,0.07) 0%, transparent 50%),
-          radial-gradient(circle at 50% 90%, rgba(56,132,255,0.06) 0%, transparent 35%);
+          radial-gradient(
+            circle at 10% 20%,
+            rgba(56, 132, 255, 0.1) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 90% 60%,
+            rgba(255, 62, 62, 0.07) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 50% 90%,
+            rgba(56, 132, 255, 0.06) 0%,
+            transparent 35%
+          );
       }
     </style>
     %sveltekit.head%

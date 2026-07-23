@@ -5,6 +5,7 @@
   import { getPokemonDetail, getAutocompleteList } from "$lib/api";
   import {
     TYPE_COLORS,
+    STAT_LABELS,
     formatName,
     type PokemonDetail,
   } from "$lib/pokemon-types";
@@ -23,15 +24,6 @@
   let loadingA = $state(false);
   let loadingB = $state(false);
   let effectGen = 0;
-
-  const statLabels: Record<string, string> = {
-    hp: "HP",
-    attack: "ATK",
-    defense: "DEF",
-    "special-attack": "SP.ATK",
-    "special-defense": "SP.DEF",
-    speed: "SPD",
-  };
 
   onMount(async () => {
     try {
@@ -90,7 +82,6 @@
       loadingB = false;
     }
   }
-
 </script>
 
 <div class="tool-shell">
@@ -162,7 +153,9 @@
                 class="h-20 w-20 object-contain drop-shadow-xl"
               />
               <div>
-                <div class="text-xl font-black" style="color: var(--text)">{formatName(p.name)}</div>
+                <div class="text-xl font-black" style="color: var(--text)">
+                  {formatName(p.name)}
+                </div>
                 <div class="text-xs text-white/40">
                   #{String(p.id).padStart(3, "0")}
                 </div>
@@ -176,7 +169,7 @@
                 <div class="flex items-center gap-2">
                   <span
                     class="w-12 text-right text-[10px] font-bold text-white/45"
-                    >{statLabels[stat.name]}</span
+                    >{STAT_LABELS[stat.name]}</span
                   >
                   <span class="w-7 text-xs font-black" style="color: {color}"
                     >{stat.base_stat}</span
@@ -248,7 +241,7 @@
                   )}
             <div class="flex items-center gap-3">
               <span class="w-12 text-right text-[10px] font-bold text-white/45"
-                >{statLabels[statA.name]}</span
+                >{STAT_LABELS[statA.name]}</span
               >
               <span
                 class="w-7 text-right text-xs font-bold"

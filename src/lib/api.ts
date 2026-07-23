@@ -600,9 +600,9 @@ export async function getAllPokemonSummaries(
     const speciesId = parseIdFromUrl(s.url);
     try {
       const [speciesData, pokeData] = await Promise.all([
-        fetch(
-          `https://pokeapi.co/api/v2/pokemon-species/${speciesId}`,
-        ).then((r) => (r.ok ? r.json() : null)),
+        fetch(`https://pokeapi.co/api/v2/pokemon-species/${speciesId}`).then(
+          (r) => (r.ok ? r.json() : null),
+        ),
         fetch(`https://pokeapi.co/api/v2/pokemon/${s.name}`).then((r) =>
           r.ok ? r.json() : null,
         ),
@@ -611,9 +611,7 @@ export async function getAllPokemonSummaries(
       if (!speciesData) throw new Error("species fetch failed");
 
       const forms = mapVarieties(speciesData.varieties);
-      const types = pokeData
-        ? pokeData.types.map((t: any) => t.type.name)
-        : [];
+      const types = pokeData ? pokeData.types.map((t: any) => t.type.name) : [];
       const gen = getGeneration(speciesId);
       const defaultForm = forms.find((f) => f.is_default) || forms[0];
       const displayName = defaultForm?.name || s.name;
@@ -667,9 +665,7 @@ export async function getAllPokemonSummaries(
 
 let _itemNamesCache: { name: string; id: number }[] | null = null;
 
-async function getAllItemNames(): Promise<
-  { name: string; id: number }[]
-> {
+async function getAllItemNames(): Promise<{ name: string; id: number }[]> {
   if (_itemNamesCache) return _itemNamesCache;
   const head = await fetch(`https://pokeapi.co/api/v2/item?limit=1`);
   const { count } = await head.json();
@@ -684,10 +680,7 @@ async function getAllItemNames(): Promise<
   return _itemNamesCache as { name: string; id: number }[];
 }
 
-export async function searchItems(
-  query: string,
-  limit = 30,
-): Promise<any[]> {
+export async function searchItems(query: string, limit = 30): Promise<any[]> {
   const q = query.toLowerCase();
   const allNames = await getAllItemNames();
   const matches = allNames.filter((n) => n.name.includes(q)).slice(0, limit);
@@ -718,14 +711,83 @@ export async function searchItems(
   return results.filter(Boolean);
 }
 
-export async function getPokemonMetadata(
-  name: string,
-): Promise<{ moves: string[]; abilities: string[] }> {
+export async function getPokemonMetadata(name: string): Promise<{
+  moves: {
+    name: string;
+    type: string;
+    power: number | null;
+    accuracy: number | null;
+    pp: number | null;
+    effect: string | null;
+  }[];
+  abilities: { name: string; description: string | null }[];
+}> {
   const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
   if (!res.ok) return { moves: [], abilities: [] };
   const data = await res.json();
+
+  const moveNames: string[] = Array.from(
+    new Set(data.moves.map((m: any) => m.move.name)),
+  );
+  const abilityUrls = data.abilities.map((a: any) => a.ability.url);
+
+  const batchSize = 20;
+  const moveDetails: any[] = [];
+  for (let i = 0; i < moveNames.length; i += batchSize) {
+    const batch = moveNames.slice(i, i + batchSize);
+    const results = await Promise.all(
+      batch.map(async (moveName: string) => {
+        try {
+          const mr = await fetch(`https://pokeapi.co/api/v2/move/${moveName}`);
+          if (!mr.ok) return null;
+          const md = await mr.json();
+          const effect = md.effect_entries?.find(
+            (e: any) => e.language.name === "en",
+          );
+          return {
+            name: md.name,
+            type: md.type?.name ?? "???",
+            power: md.power ?? null,
+            accuracy: md.accuracy ?? null,
+            pp: md.pp ?? null,
+            effect: effect?.short_effect ?? effect?.effect ?? null,
+          };
+        } catch {
+          return null;
+        }
+      }),
+    );
+    moveDetails.push(...results.filter(Boolean));
+  }
+
+  const abilityDetails = await Promise.all(
+    abilityUrls.map(async (url: string) => {
+      try {
+        const ar = await fetch(url);
+        if (!ar.ok) return null;
+        const ad = await ar.json();
+        const entry = ad.effect_entries?.find(
+          (e: any) => e.language.name === "en",
+        );
+        const flavor = ad.flavor_text_entries?.find(
+          (e: any) => e.language.name === "en",
+        );
+        return {
+          name: ad.name,
+          description:
+            entry?.short_effect ||
+            entry?.effect ||
+            flavor?.flavor_text?.replace(/[\n\f\r]/g, " ") ||
+            null,
+        };
+      } catch {
+        return null;
+      }
+    }),
+  );
+
   return {
-    moves: data.moves.map((m: any) => m.move.name),
-    abilities: data.abilities.map((a: any) => a.ability.name),
+    moves: moveDetails,
+    abilities: abilityDetails.filter(Boolean),
   };
 }

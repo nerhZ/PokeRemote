@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { type PokemonDetail, formatName } from "$lib/pokemon-types";
+  import {
+    type PokemonDetail,
+    formatName,
+    STAT_LABELS,
+  } from "$lib/pokemon-types";
   let {
     pokemon,
     color = "#777",
@@ -11,15 +15,6 @@
     overlay?: PokemonDetail;
     overlayColor?: string;
   } = $props();
-
-  const labels: Record<string, string> = {
-    hp: "HP",
-    attack: "ATK",
-    defense: "DEF",
-    "special-attack": "SP.ATK",
-    "special-defense": "SP.DEF",
-    speed: "SPD",
-  };
 
   const cx = 100,
     cy = 100,
@@ -96,7 +91,7 @@
       dominant-baseline="middle"
       style="fill: var(--chart-label)"
       font-size="8"
-      font-weight="700">{labels[stat.name]}</text
+      font-weight="700">{STAT_LABELS[stat.name]}</text
     >
   {/each}
 </svg>
@@ -106,4 +101,3 @@
     <span style="color: {overlayColor}">○ {formatName(overlay.name)}</span>
   </div>
 {/if}
-
