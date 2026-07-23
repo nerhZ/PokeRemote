@@ -10,11 +10,19 @@ This project uses **Bun** as its package manager and runtime. The lockfile is `b
 
 ### Available scripts
 
-| Command              | Purpose                     |
-|----------------------|-----------------------------|
-| `bun run dev`        | Start dev server            |
-| `bun run build`      | Production build            |
-| `bun run check`      | Type-check (svelte-check)   |
-| `bun run preview`    | Preview production build    |
+| Command                  | Purpose                     |
+|--------------------------|-----------------------------|
+| `bun run dev`            | Start dev server            |
+| `bun run build`          | Production build            |
+| `bun run check`          | Type-check (svelte-check)   |
+| `bun run preview`        | Preview production build    |
+| `bun run format:check`   | Check formatting (prettier) |
+| `bun run format`         | Fix formatting (prettier)   |
+| `bun run lint:tailwind`  | Check Tailwind class order  |
+| `bun run fix:tailwind`   | Fix Tailwind class order    |
+
+### Before committing
+
+Always run `bun run check` and `bun run format` (or at minimum `bun run format:check`) to ensure clean type-checking and consistent formatting before finalizing changes.
 
 The `npm` and `node` aliases may exist but are **not** the canonical toolchain for this repo.
