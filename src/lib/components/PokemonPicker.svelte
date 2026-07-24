@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { formatName } from "$lib/pokemon-types";
+  import { formatName, tokenMatch } from "$lib/pokemon-types";
 
   interface Props {
     value?: string;
@@ -19,15 +19,9 @@
   let open = $state(false);
 
   let suggestions = $derived.by(() => {
-    const q = value.trim().toLowerCase();
+    const q = value.trim();
     const list = q
-      ? options.filter((n) => {
-          const name = n.name.toLowerCase().replace(/-/g, " ");
-          const tokens = q.split(/\s+/).filter(Boolean);
-          return tokens.every(
-            (token) => name.includes(token) || String(n.id).includes(token),
-          );
-        })
+      ? options.filter((n) => tokenMatch(q, n.name, n.id))
       : options;
     return list.slice(0, 10);
   });

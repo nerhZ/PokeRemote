@@ -13,6 +13,7 @@
     formLabel,
     formatName,
     getGeneration,
+    tokenMatch,
   } from "$lib/pokemon-types";
   import {
     getFavorites,
@@ -127,16 +128,12 @@
     }
 
     if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      const tokens = q.split(/\s+/).filter(Boolean);
       result = result.filter((p) =>
-        tokens.every(
-          (token) =>
-            p.name.toLowerCase().includes(token) ||
-            String(p.id).includes(token) ||
-            (p.forms || []).some((f: any) =>
-              f.name.toLowerCase().includes(token),
-            ),
+        tokenMatch(
+          searchQuery,
+          p.name,
+          p.id,
+          (p.forms || []).map((f: any) => f.name),
         ),
       );
     }

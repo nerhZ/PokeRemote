@@ -324,6 +324,23 @@ function titleWord(w: string): string {
   return w.charAt(0).toUpperCase() + w.slice(1);
 }
 
+/** Multi-token search match against name and ID. */
+export function tokenMatch(
+  query: string,
+  name: string,
+  id: number,
+  extraTerms?: string[],
+): boolean {
+  const q = query.toLowerCase();
+  const tokens = q.split(/\s+/).filter(Boolean);
+  return tokens.every(
+    (token) =>
+      name.toLowerCase().includes(token) ||
+      String(id).includes(token) ||
+      extraTerms?.some((t) => t.toLowerCase().includes(token)),
+  );
+}
+
 export function computeTypeEffectiveness(
   defendingTypes: string[],
 ): TypeMatchup {

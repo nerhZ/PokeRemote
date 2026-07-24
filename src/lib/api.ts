@@ -71,6 +71,22 @@ function buildEvolutionTree(chain: any): EvolutionStage | null {
   return stage;
 }
 
+function extractEnglishAbilityEffect(data: any): string | null {
+  const primary = data.effect_entries?.find(
+    (e: any) => e.language.name === "en",
+  );
+  const fallback = data.flavor_text_entries?.find(
+    (e: any) => e.language.name === "en",
+  );
+  const entry = primary || fallback;
+  return (
+    entry?.short_effect ||
+    entry?.effect ||
+    entry?.flavor_text?.replace(/[\n\f\r]/g, " ") ||
+    null
+  );
+}
+
 function mapVarieties(varieties: any[] | undefined): PokemonFormSummary[] {
   if (!varieties?.length) return [];
   return varieties.map((v: any) => {
@@ -136,14 +152,7 @@ export const getPokemonDetail = async (
         const ar = await fetch(a.ability.url);
         if (ar.ok) {
           const ad = await ar.json();
-          const entry =
-            ad.effect_entries?.find((e: any) => e.language.name === "en") ||
-            ad.flavor_text_entries?.find((e: any) => e.language.name === "en");
-          description =
-            entry?.short_effect ||
-            entry?.effect ||
-            entry?.flavor_text?.replace(/[\n\f\r]/g, " ") ||
-            null;
+          description = extractEnglishAbilityEffect(ad);
         }
       } catch {}
       return { name: a.ability.name, is_hidden: !!a.is_hidden, description };
@@ -766,19 +775,9 @@ export async function getPokemonMetadata(name: string): Promise<{
         const ar = await fetch(url);
         if (!ar.ok) return null;
         const ad = await ar.json();
-        const entry = ad.effect_entries?.find(
-          (e: any) => e.language.name === "en",
-        );
-        const flavor = ad.flavor_text_entries?.find(
-          (e: any) => e.language.name === "en",
-        );
         return {
           name: ad.name,
-          description:
-            entry?.short_effect ||
-            entry?.effect ||
-            flavor?.flavor_text?.replace(/[\n\f\r]/g, " ") ||
-            null,
+          description: extractEnglishAbilityEffect(ad),
         };
       } catch {
         return null;

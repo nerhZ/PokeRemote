@@ -202,6 +202,20 @@
     </p>
   </div>
 
+  {#if attacker || defender}
+    <div class="mb-6 flex items-center gap-2">
+      <span class="text-xs text-white/40">Level</span>
+      <input
+        type="number"
+        bind:value={level}
+        onchange={syncUrl}
+        min={1}
+        max={100}
+        class="w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs outline-none"
+      />
+    </div>
+  {/if}
+
   <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
     <div class="panel">
       <h2 class="mb-3 text-xs font-bold tracking-wider text-white/40 uppercase">
@@ -233,17 +247,6 @@
           </div>
         </a>
         {#if moveList}
-          <div class="mt-4 mb-2 flex items-center gap-2">
-            <span class="text-xs text-white/40">Level</span>
-            <input
-              type="number"
-              bind:value={level}
-              onchange={syncUrl}
-              min={1}
-              max={100}
-              class="w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs outline-none"
-            />
-          </div>
           <div
             class="grid max-h-56 grid-cols-1 gap-1.5 overflow-y-auto sm:grid-cols-2"
           >
@@ -297,17 +300,6 @@
             </div>
           </div>
         </a>
-        <div class="mt-3 flex items-center gap-2">
-          <span class="text-xs text-white/40">Level</span>
-          <input
-            type="number"
-            bind:value={level}
-            onchange={syncUrl}
-            min={1}
-            max={100}
-            class="w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs outline-none"
-          />
-        </div>
         {@const defHp =
           Math.floor(
             ((2 *
