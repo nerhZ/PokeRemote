@@ -28,7 +28,8 @@
   let searchAtt = $state("");
   let searchDef = $state("");
   let selectedMove = $state<any>(null);
-  let level = $state(50);
+  let attLevel = $state(50);
+  let defLevel = $state(50);
   let loadingAtt = $state(false);
   let loadingDef = $state(false);
   let effectGen = 0;
@@ -45,8 +46,10 @@
     const att = page.url.searchParams.get("att");
     const def = page.url.searchParams.get("def");
     const mv = page.url.searchParams.get("move");
-    const lv = page.url.searchParams.get("lv");
-    if (lv) level = Math.min(100, Math.max(1, parseInt(lv, 10) || 50));
+    const al = page.url.searchParams.get("al");
+    const dl = page.url.searchParams.get("dl");
+    if (al) attLevel = Math.min(100, Math.max(1, parseInt(al, 10) || 50));
+    if (dl) defLevel = Math.min(100, Math.max(1, parseInt(dl, 10) || 50));
     (async () => {
       if (att && attacker?.name !== att) await selectAttacker(att, mv, gen);
       if (def && defender?.name !== def) await selectDefender(def, gen);
@@ -58,7 +61,8 @@
     if (attacker) params.set("att", attacker.name);
     if (defender) params.set("def", defender.name);
     if (selectedMove) params.set("move", selectedMove.name);
-    if (level !== 50) params.set("lv", String(level));
+    if (attLevel !== 50) params.set("al", String(attLevel));
+    if (defLevel !== 50) params.set("dl", String(defLevel));
     const q = params.toString();
     goto(q ? resolve("/damage-calc") + `?${q}` : resolve("/damage-calc"), {
       replaceState: true,
@@ -111,7 +115,7 @@
     syncUrl();
   }
 
-  function statValue(base: number, hp = false) {
+  function statValue(base: number, level: number, hp = false) {
     return hp
       ? Math.floor(((2 * base + 31) * level) / 100) + level + 10
       : Math.floor(((2 * base + 31) * level) / 100 + 5);
@@ -155,9 +159,9 @@
       : (defender.stats.find((s) => s.name === "defense")?.base_stat ?? 0);
     const baseHp = defender.stats.find((s) => s.name === "hp")?.base_stat ?? 0;
 
-    const atk = statValue(baseAtk);
-    const def = statValue(baseDef);
-    const hp = statValue(baseHp, true);
+    const atk = statValue(baseAtk, attLevel);
+    const def = statValue(baseDef, defLevel);
+    const hp = statValue(baseHp, defLevel, true);
 
     let effectiveness = 1;
     for (const dt of defender.types) {
@@ -168,7 +172,7 @@
     const stab = attacker.types.includes(move.type);
 
     const { min, max } = calculateDamage({
-      level,
+      level: attLevel,
       power: move.power,
       attack: atk,
       defense: def,
@@ -204,20 +208,6 @@
     </p>
   </div>
 
-  {#if attacker || defender}
-    <div class="mb-6 flex items-center gap-2">
-      <span class="text-xs text-white/40">Level</span>
-      <input
-        type="number"
-        bind:value={level}
-        onchange={syncUrl}
-        min={1}
-        max={100}
-        class="w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs outline-none"
-      />
-    </div>
-  {/if}
-
   <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
     <div class="panel">
       <h2 class="mb-3 text-xs font-bold tracking-wider text-white/40 uppercase">
@@ -249,6 +239,17 @@
           </div>
         </a>
         {#if moveList}
+          <div class="mt-4 mb-2 flex items-center gap-2">
+            <span class="text-xs text-white/40">Level</span>
+            <input
+              type="number"
+              bind:value={attLevel}
+              onchange={syncUrl}
+              min={1}
+              max={100}
+              class="w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs outline-none"
+            />
+          </div>
           <div
             class="grid max-h-56 grid-cols-1 gap-1.5 overflow-y-auto sm:grid-cols-2"
           >
@@ -302,21 +303,32 @@
             </div>
           </div>
         </a>
+        <div class="mt-3 flex items-center gap-2">
+          <span class="text-xs text-white/40">Level</span>
+          <input
+            type="number"
+            bind:value={defLevel}
+            onchange={syncUrl}
+            min={1}
+            max={100}
+            class="w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs outline-none"
+          />
+        </div>
         {@const defHp =
           Math.floor(
             ((2 *
               (defender.stats.find((s) => s.name === "hp")?.base_stat ?? 0) +
               31) *
-              level) /
+              defLevel) /
               100,
           ) +
-          level +
+          defLevel +
           10}
         {@const defDef = Math.floor(
           ((2 *
             (defender.stats.find((s) => s.name === "defense")?.base_stat ?? 0) +
             31) *
-            level) /
+            defLevel) /
             100 +
             5,
         )}
@@ -325,7 +337,7 @@
             (defender.stats.find((s) => s.name === "special-defense")
               ?.base_stat ?? 0) +
             31) *
-            level) /
+            defLevel) /
             100 +
             5,
         )}
