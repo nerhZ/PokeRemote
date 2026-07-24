@@ -126,7 +126,7 @@
             <img
               src={item.sprite}
               alt={item.name}
-              class="image-pixelated h-10 w-10 shrink-0 object-contain"
+              class="h-10 w-10 shrink-0 object-contain"
               style="image-rendering: pixelated"
             />
           {:else}

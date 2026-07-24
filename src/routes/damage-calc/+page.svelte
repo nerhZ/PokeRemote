@@ -314,32 +314,19 @@
             class="w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs outline-none"
           />
         </div>
-        {@const defHp =
-          Math.floor(
-            ((2 *
-              (defender.stats.find((s) => s.name === "hp")?.base_stat ?? 0) +
-              31) *
-              defLevel) /
-              100,
-          ) +
-          defLevel +
-          10}
-        {@const defDef = Math.floor(
-          ((2 *
-            (defender.stats.find((s) => s.name === "defense")?.base_stat ?? 0) +
-            31) *
-            defLevel) /
-            100 +
-            5,
+        {@const defHp = statValue(
+          defender.stats.find((s) => s.name === "hp")?.base_stat ?? 0,
+          defLevel,
+          true,
         )}
-        {@const defSpd = Math.floor(
-          ((2 *
-            (defender.stats.find((s) => s.name === "special-defense")
-              ?.base_stat ?? 0) +
-            31) *
-            defLevel) /
-            100 +
-            5,
+        {@const defDef = statValue(
+          defender.stats.find((s) => s.name === "defense")?.base_stat ?? 0,
+          defLevel,
+        )}
+        {@const defSpd = statValue(
+          defender.stats.find((s) => s.name === "special-defense")?.base_stat ??
+            0,
+          defLevel,
         )}
         <div class="mt-3 grid grid-cols-3 gap-1.5 text-center">
           <div class="rounded-lg bg-white/3 px-2 py-1.5">

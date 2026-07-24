@@ -2,9 +2,7 @@ import {
   TOTAL_POKEMON,
   artworkUrl,
   computeTypeEffectiveness,
-  GEN_RANGES,
   getGeneration,
-  type PokemonSummary,
   type PokemonDetail,
   type PokemonFormSummary,
   type PokemonMoves,
@@ -398,6 +396,7 @@ export const getStatRankings = async ({
     name: string;
     id: number;
     image: string;
+    types: string[];
     stats: Record<string, number>;
   }[] = [];
 
@@ -430,7 +429,11 @@ export const getStatRankings = async ({
         }
       }),
     );
-    allStats.push(...(results.filter(Boolean) as any[]));
+    allStats.push(
+      ...results.filter(
+        (r): r is NonNullable<(typeof results)[number]> => r != null,
+      ),
+    );
   }
 
   function top10(key: string): RankingEntry[] {
@@ -443,7 +446,7 @@ export const getStatRankings = async ({
         id: p.id,
         image: p.image,
         value: p.stats[key],
-        types: (p as any).types,
+        types: p.types,
       }));
   }
 
@@ -693,13 +696,13 @@ async function getAllItemNames(): Promise<{ name: string; id: number }[]> {
     name: i.name,
     id: parseIdFromUrl(i.url),
   }));
-  return _itemNamesCache as { name: string; id: number }[];
+  return _itemNamesCache!;
 }
 
-export async function searchItems(query: string, limit = 30): Promise<any[]> {
+export async function searchItems(query: string): Promise<any[]> {
   const q = query.toLowerCase();
   const allNames = await getAllItemNames();
-  const matches = allNames.filter((n) => n.name.includes(q)).slice(0, limit);
+  const matches = allNames.filter((n) => n.name.includes(q)).slice(0, 30);
 
   const results = await Promise.all(
     matches.map(async (m) => {

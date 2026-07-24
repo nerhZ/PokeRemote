@@ -173,15 +173,6 @@ export interface PokemonFormSummary {
   image: string;
 }
 
-export interface PokemonSummary {
-  name: string;
-  id: number;
-  image: string;
-  types: string[];
-  form_count: number;
-  forms: PokemonFormSummary[];
-}
-
 export interface EvolutionStage {
   name: string;
   id: number;

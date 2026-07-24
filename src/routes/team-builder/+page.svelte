@@ -264,15 +264,17 @@
     return decoded;
   }
 
+  function hasSets() {
+    return sets.some(
+      (s) =>
+        s.moves.some((m) => m) || s.ability || s.nature || evTotal(s.evs) > 0,
+    );
+  }
+
   function syncUrl() {
     const params = new URLSearchParams();
     if (team.length) params.set("p", team.map((t) => t.name).join(","));
-    if (
-      sets.some(
-        (s) =>
-          s.moves.some((m) => m) || s.ability || s.nature || evTotal(s.evs) > 0,
-      )
-    ) {
+    if (hasSets()) {
       params.set("s", encodeSets());
     }
     const q = params.toString();
@@ -320,12 +322,7 @@
     syncUrl();
     const url = new URL(resolve("/team-builder"), window.location.origin);
     url.searchParams.set("p", team.map((t) => t.name).join(","));
-    if (
-      sets.some(
-        (s) =>
-          s.moves.some((m) => m) || s.ability || s.nature || evTotal(s.evs) > 0,
-      )
-    ) {
+    if (hasSets()) {
       url.searchParams.set("s", encodeSets());
     }
     navigator.clipboard?.writeText(url.toString());
