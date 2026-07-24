@@ -228,17 +228,11 @@
             {@const statB = pokemonB.stats[i]}
             {@const diff = statA.base_stat - statB.base_stat}
             {@const maxBoth = Math.max(statA.base_stat, statB.base_stat) || 1}
-            {@const leftW = Math.max(
-              0,
-              Math.min(100, (statA.base_stat / maxBoth) * 100),
-            )}
-            {@const rightW =
-              diff > 0
-                ? 0
-                : Math.max(
-                    0,
-                    Math.min(100, (statB.base_stat / maxBoth) * 100 - leftW),
-                  )}
+            {@const leftW = (statA.base_stat / maxBoth) * 100}
+            {@const rightW = (statB.base_stat / maxBoth) * 100}
+            {@const totalW = leftW + rightW}
+            {@const leftWS = (leftW / totalW) * 100}
+            {@const rightWS = (rightW / totalW) * 100}
             <div class="flex items-center gap-3">
               <span class="w-12 text-right text-[10px] font-bold text-white/45"
                 >{STAT_LABELS[statA.name]}</span
@@ -252,11 +246,11 @@
               >
                 <div
                   class="h-full"
-                  style="width: {leftW}%; background: {colorA}"
+                  style="width: {leftWS}%; background: {colorA}"
                 ></div>
                 <div
                   class="h-full"
-                  style="width: {rightW}%; background: {colorB}"
+                  style="width: {rightWS}%; background: {colorB}"
                 ></div>
               </div>
               <span class="w-7 text-xs font-bold" style="color: {colorB}"

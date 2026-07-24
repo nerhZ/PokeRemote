@@ -100,6 +100,7 @@
   }
 
   async function editPokemon(i: number) {
+    evWarning = "";
     if (editingIndex === i) {
       editingIndex = null;
       return;
