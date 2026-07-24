@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getItemsList, searchItems } from "$lib/api";
+  import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import { onMount } from "svelte";
 
@@ -113,9 +114,7 @@
     <EmptyState title="Failed to load items" subtitle={error} />
   {:else if search && searchLoading}
     <div class="flex justify-center py-16">
-      <div
-        class="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white"
-      ></div>
+      <LoadingSpinner size="lg" />
     </div>
   {:else if filtered.length === 0}
     <EmptyState title="No items match" subtitle="No items match." />
@@ -160,9 +159,7 @@
       {#if nextOffset < total}
         <div class="flex justify-center pb-12">
           {#if loadingMore}
-            <div
-              class="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white"
-            ></div>
+            <LoadingSpinner size="md" />
           {/if}
         </div>
       {/if}

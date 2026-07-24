@@ -18,6 +18,7 @@
   import { saveTeam, getSavedTeams, type EvSpread } from "$lib/storage";
   import PokemonPicker from "$lib/components/PokemonPicker.svelte";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
+  import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import { onMount } from "svelte";
 
@@ -384,9 +385,7 @@
       placeholder={team.length >= 6 ? "Team is full" : "Add a Pokémon..."}
       onselect={addToTeam}
     />
-    {#if loading}<div
-        class="mt-2 h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white"
-      ></div>{/if}
+    {#if loading}<div class="mt-2"><LoadingSpinner size="sm" /></div>{/if}
   </div>
 
   <div class="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
@@ -490,9 +489,7 @@
 
       {#if editLoading}
         <div class="flex justify-center py-8">
-          <div
-            class="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white"
-          ></div>
+          <LoadingSpinner size="md" />
         </div>
       {:else}
         <div class="grid gap-4 md:grid-cols-2">

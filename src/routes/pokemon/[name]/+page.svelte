@@ -13,6 +13,7 @@
   } from "$lib/pokemon-types";
   import { pushRecent, toggleFavorite, isFavorite } from "$lib/storage";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
+  import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import RadarChart from "$lib/components/RadarChart.svelte";
   import StatBars from "$lib/components/StatBars.svelte";
@@ -493,9 +494,7 @@
               <h2 class="mb-4 text-lg font-bold">Moves</h2>
               {#if movesLoading}
                 <div class="flex justify-center py-10">
-                  <div
-                    class="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white"
-                  ></div>
+                  <LoadingSpinner size="md" />
                 </div>
               {:else if moves}
                 <div class="mb-4 flex flex-wrap gap-2">

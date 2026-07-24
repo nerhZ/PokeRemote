@@ -17,6 +17,7 @@
   } from "$lib/pokemon-types";
   import PokemonPicker from "$lib/components/PokemonPicker.svelte";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
+  import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import { onMount } from "svelte";
 
@@ -211,9 +212,7 @@
         options={allNames}
         onselect={(n) => selectAttacker(n)}
       />
-      {#if loadingAtt}<div
-          class="mt-2 h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white"
-        ></div>{/if}
+      {#if loadingAtt}<div class="mt-2"><LoadingSpinner size="sm" /></div>{/if}
       {#if attacker}
         <a
           href={resolve(`/pokemon/${attacker.name}`)}
@@ -278,9 +277,7 @@
         options={allNames}
         onselect={selectDefender}
       />
-      {#if loadingDef}<div
-          class="mt-2 h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white"
-        ></div>{/if}
+      {#if loadingDef}<div class="mt-2"><LoadingSpinner size="sm" /></div>{/if}
       {#if defender}
         <a
           href={resolve(`/pokemon/${defender.name}`)}
