@@ -111,6 +111,30 @@
     syncUrl();
   }
 
+  function statValue(base: number, hp = false) {
+    return hp
+      ? Math.floor(((2 * base + 31) * level) / 100) + level + 10
+      : Math.floor(((2 * base + 31) * level) / 100 + 5);
+  }
+
+  function estimateKO(min: number, max: number, hp: number): string {
+    if (min >= hp) return "OHKO";
+    if (max >= hp) return "OHKO (high roll)";
+    if (min * 2 >= hp) return "2HKO";
+    if (max * 2 >= hp) return "2HKO (high roll)";
+    if (min * 3 >= hp) return "3HKO";
+    return "4HKO+";
+  }
+
+  function effectivenessLabel(effectiveness: number): string {
+    if (effectiveness === 0) return "No effect";
+    if (effectiveness === 0.25) return "Not very effective (¼×)";
+    if (effectiveness === 0.5) return "Not very effective (½×)";
+    if (effectiveness === 2) return "Super effective (2×)";
+    if (effectiveness === 4) return "Super effective (4×)";
+    return "Normal (1×)";
+  }
+
   let damageResult = $derived.by(() => {
     if (!attacker || !defender || !selectedMove) return null;
     const move = selectedMove;
@@ -119,11 +143,6 @@
         noDamage: true as const,
         label: "This move deals no direct damage.",
       };
-
-    const calcStat = (base: number, hp = false) =>
-      hp
-        ? Math.floor(((2 * base + 31) * level) / 100) + level + 10
-        : Math.floor(((2 * base + 31) * level) / 100 + 5);
 
     const isSpecial = move.damage_class === "special";
     const baseAtk = isSpecial
@@ -136,9 +155,9 @@
       : (defender.stats.find((s) => s.name === "defense")?.base_stat ?? 0);
     const baseHp = defender.stats.find((s) => s.name === "hp")?.base_stat ?? 0;
 
-    const atk = calcStat(baseAtk);
-    const def = calcStat(baseDef);
-    const hp = calcStat(baseHp, true);
+    const atk = statValue(baseAtk);
+    const def = statValue(baseDef);
+    const hp = statValue(baseHp, true);
 
     let effectiveness = 1;
     for (const dt of defender.types) {
@@ -158,36 +177,19 @@
       isCritical: false,
     });
 
-    const minPct = Math.round((min / hp) * 100);
-    const maxPct = Math.round((max / hp) * 100);
-
-    let effLabel = "Normal (1×)";
-    if (effectiveness === 0) effLabel = "No effect";
-    else if (effectiveness === 0.25) effLabel = "Not very effective (¼×)";
-    else if (effectiveness === 0.5) effLabel = "Not very effective (½×)";
-    else if (effectiveness === 2) effLabel = "Super effective (2×)";
-    else if (effectiveness === 4) effLabel = "Super effective (4×)";
-
-    let ko = "4HKO+";
-    if (min >= hp) ko = "OHKO";
-    else if (min * 2 >= hp) ko = "2HKO";
-    else if (max >= hp) ko = "OHKO (high roll)";
-    else if (min * 3 >= hp) ko = "3HKO";
-    else if (max * 2 >= hp) ko = "2HKO (high roll)";
-
     return {
       min,
       max,
-      minPct,
-      maxPct,
+      minPct: Math.round((min / hp) * 100),
+      maxPct: Math.round((max / hp) * 100),
       effectiveness,
-      effLabel,
+      effLabel: effectivenessLabel(effectiveness),
       stab,
       isSpecial,
       atk,
       def,
       hp,
-      ko,
+      ko: estimateKO(min, max, hp),
       noDamage: false as const,
     };
   });

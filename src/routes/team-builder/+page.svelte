@@ -159,49 +159,51 @@
     syncUrl();
   }
 
-  $effect(() => {
+  async function loadTeamFromUrl() {
     const p = page.url.searchParams.get("p");
     if (!p) return;
-    if (loadingTeam) return;
     const names = p.split(",").filter(Boolean).slice(0, 6);
     const current = team.map((t) => t.name).join(",");
     if (names.join(",") === current) return;
     const rawSets = page.url.searchParams.get("s");
     const decoded = rawSets ? decodeSets(rawSets) : [];
     loadingTeam = true;
-    (async () => {
-      try {
-        for (const n of names) {
-          if (team.some((t) => t.name === n)) continue;
-          try {
-            const d = await getPokemonDetail(n);
-            if (!team.some((t) => t.id === d.id)) {
-              team = [...team, d];
-              while (sets.length < team.length) sets = [...sets, initSet()];
-            }
-          } catch {}
-          if (!metaCache[n]) {
-            try {
-              const meta = await getPokemonMetadata(n);
-              metaCache[n] = { moves: meta.moves, abilities: meta.abilities };
-            } catch {}
+    try {
+      for (const n of names) {
+        if (team.some((t) => t.name === n)) continue;
+        try {
+          const d = await getPokemonDetail(n);
+          if (!team.some((t) => t.id === d.id)) {
+            team = [...team, d];
+            while (sets.length < team.length) sets = [...sets, initSet()];
           }
+        } catch {}
+        if (!metaCache[n]) {
+          try {
+            const meta = await getPokemonMetadata(n);
+            metaCache[n] = { moves: meta.moves, abilities: meta.abilities };
+          } catch {}
         }
-        while (sets.length < decoded.length)
-          sets = [
-            ...sets,
-            ...decoded.slice(sets.length).map((d) => ({ ...initSet(), ...d })),
-          ];
-        for (let i = 0; i < Math.min(sets.length, decoded.length); i++) {
-          if (decoded[i])
-            sets = sets.map((s, idx) =>
-              idx === i ? { ...s, ...decoded[i] } : s,
-            );
-        }
-      } finally {
-        loadingTeam = false;
       }
-    })();
+      while (sets.length < decoded.length)
+        sets = [
+          ...sets,
+          ...decoded.slice(sets.length).map((d) => ({ ...initSet(), ...d })),
+        ];
+      for (let i = 0; i < Math.min(sets.length, decoded.length); i++) {
+        if (decoded[i])
+          sets = sets.map((s, idx) =>
+            idx === i ? { ...s, ...decoded[i] } : s,
+          );
+      }
+    } finally {
+      loadingTeam = false;
+    }
+  }
+
+  $effect(() => {
+    if (loadingTeam) return;
+    loadTeamFromUrl();
   });
 
   function evsEncode(evs: EvSpread) {

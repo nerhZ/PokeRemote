@@ -87,6 +87,64 @@ function extractEnglishAbilityEffect(data: any): string | null {
   );
 }
 
+async function fetchAbilityDetail(
+  a: any,
+): Promise<{ name: string; is_hidden: boolean; description: string | null }> {
+  let description: string | null = null;
+  try {
+    const ar = await fetch(a.ability.url);
+    if (ar.ok) {
+      const ad = await ar.json();
+      description = extractEnglishAbilityEffect(ad);
+    }
+  } catch {}
+  return { name: a.ability.name, is_hidden: !!a.is_hidden, description };
+}
+
+async function fetchLocations(
+  pokemonId: number,
+): Promise<{ area: string; method: string; chance: number | null }[]> {
+  try {
+    const locRes = await fetch(
+      `https://pokeapi.co/api/v2/pokemon/${pokemonId}/encounters`,
+    );
+    if (locRes.ok) {
+      const locData = await locRes.json();
+      return locData.slice(0, 12).map((loc: any) => {
+        const detail = loc.version_details?.[0]?.encounter_details?.[0];
+        return {
+          area: loc.location_area?.name?.replace(/-/g, " ") ?? "Unknown",
+          method: detail?.method?.name?.replace(/-/g, " ") ?? "walk",
+          chance: detail?.chance ?? null,
+        };
+      });
+    }
+  } catch {}
+  return [];
+}
+
+async function resolveMovesCount(
+  data: any,
+  forms: PokemonFormSummary[],
+): Promise<number> {
+  let movesCount = data.moves?.length ?? 0;
+  if (movesCount === 0 && forms.length > 1) {
+    const defaultForm = forms.find((f) => f.is_default);
+    if (defaultForm && defaultForm.name !== data.name) {
+      try {
+        const defRes = await fetch(
+          `https://pokeapi.co/api/v2/pokemon/${defaultForm.id}`,
+        );
+        if (defRes.ok) {
+          const defData = await defRes.json();
+          movesCount = defData.moves?.length ?? 0;
+        }
+      } catch {}
+    }
+  }
+  return movesCount;
+}
+
 function mapVarieties(varieties: any[] | undefined): PokemonFormSummary[] {
   if (!varieties?.length) return [];
   return varieties.map((v: any) => {
@@ -124,7 +182,6 @@ export const getPokemonDetail = async (
   if (!pokeRes.ok) throw new Error("Pokemon not found");
   const data = await pokeRes.json();
 
-  // Always resolve species via pokemon.species (works for forms like venusaur-mega)
   let species: any = null;
   if (data.species?.url) {
     try {
@@ -145,57 +202,15 @@ export const getPokemonDetail = async (
   const types = data.types.map((t: any) => t.type.name);
   const forms = mapVarieties(species?.varieties);
 
-  const abilities = await Promise.all(
-    (data.abilities || []).map(async (a: any) => {
-      let description: string | null = null;
-      try {
-        const ar = await fetch(a.ability.url);
-        if (ar.ok) {
-          const ad = await ar.json();
-          description = extractEnglishAbilityEffect(ad);
-        }
-      } catch {}
-      return { name: a.ability.name, is_hidden: !!a.is_hidden, description };
-    }),
-  );
-
-  let locations: { area: string; method: string; chance: number | null }[] = [];
-  try {
-    const locRes = await fetch(
-      `https://pokeapi.co/api/v2/pokemon/${data.id}/encounters`,
-    );
-    if (locRes.ok) {
-      const locData = await locRes.json();
-      locations = locData.slice(0, 12).map((loc: any) => {
-        const detail = loc.version_details?.[0]?.encounter_details?.[0];
-        return {
-          area: loc.location_area?.name?.replace(/-/g, " ") ?? "Unknown",
-          method: detail?.method?.name?.replace(/-/g, " ") ?? "walk",
-          chance: detail?.chance ?? null,
-        };
-      });
-    }
-  } catch {}
+  const [abilities, locations, movesCount] = await Promise.all([
+    Promise.all((data.abilities || []).map(fetchAbilityDetail)),
+    fetchLocations(data.id),
+    resolveMovesCount(data, forms),
+  ]);
 
   const speciesId =
     species?.id ?? (parseIdFromUrl(data.species?.url || "") || data.id);
   const speciesName = species?.name ?? data.species?.name ?? data.name;
-
-  let movesCount = data.moves?.length ?? 0;
-  if (movesCount === 0 && forms.length > 1) {
-    const defaultForm = forms.find((f) => f.is_default);
-    if (defaultForm && defaultForm.name !== data.name) {
-      try {
-        const defRes = await fetch(
-          `https://pokeapi.co/api/v2/pokemon/${defaultForm.id}`,
-        );
-        if (defRes.ok) {
-          const defData = await defRes.json();
-          movesCount = defData.moves?.length ?? 0;
-        }
-      } catch {}
-    }
-  }
 
   return {
     name: data.name,
@@ -378,12 +393,6 @@ export const getStatRankings = async ({
   );
   const listData = await listRes.json();
 
-  const batchSize = 25;
-  const batches: { name: string; url: string }[][] = [];
-  for (let i = 0; i < listData.results.length; i += batchSize) {
-    batches.push(listData.results.slice(i, i + batchSize));
-  }
-
   const allStats: {
     name: string;
     id: number;
@@ -391,41 +400,36 @@ export const getStatRankings = async ({
     stats: Record<string, number>;
   }[] = [];
 
-  const concurrency = 8;
-  for (let i = 0; i < batches.length; i += concurrency) {
-    const group = batches.slice(i, i + concurrency);
+  for (let i = 0; i < listData.results.length; i += 25) {
+    const batch = listData.results.slice(i, i + 25);
     const results = await Promise.all(
-      group.map((batch) =>
-        Promise.all(
-          batch.map(async (p: any) => {
-            const id = parseIdFromUrl(p.url);
-            try {
-              const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
-              if (!r.ok) return null;
-              const d = await r.json();
-              const stats: Record<string, number> = {};
-              let total = 0;
-              for (const s of d.stats) {
-                const key = s.stat.name.replace("-", "_");
-                stats[key] = s.base_stat;
-                total += s.base_stat;
-              }
-              stats.total = total;
-              return {
-                name: p.name,
-                id,
-                image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`,
-                types: d.types.map((t: any) => t.type.name),
-                stats,
-              };
-            } catch {
-              return null;
-            }
-          }),
-        ),
-      ),
+      batch.map(async (p: any) => {
+        const id = parseIdFromUrl(p.url);
+        try {
+          const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
+          if (!r.ok) return null;
+          const d = await r.json();
+          const stats: Record<string, number> = {};
+          let total = 0;
+          for (const s of d.stats) {
+            const key = s.stat.name.replace("-", "_");
+            stats[key] = s.base_stat;
+            total += s.base_stat;
+          }
+          stats.total = total;
+          return {
+            name: p.name,
+            id,
+            image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`,
+            types: d.types.map((t: any) => t.type.name),
+            stats,
+          };
+        } catch {
+          return null;
+        }
+      }),
     );
-    allStats.push(...(results.flat().filter(Boolean) as any[]));
+    allStats.push(...(results.filter(Boolean) as any[]));
   }
 
   function top10(key: string): RankingEntry[] {
@@ -601,62 +605,62 @@ export async function getAllPokemonSummaries(
   const speciesData = await speciesRes.json();
   const { results, count } = speciesData;
 
-  const entries: CachedPokemonSummary[] = [];
   const total = results.length;
   let done = 0;
 
-  const promises = results.map(async (s: any) => {
-    const speciesId = parseIdFromUrl(s.url);
-    try {
-      const [speciesData, pokeData] = await Promise.all([
-        fetch(`https://pokeapi.co/api/v2/pokemon-species/${speciesId}`).then(
-          (r) => (r.ok ? r.json() : null),
-        ),
-        fetch(`https://pokeapi.co/api/v2/pokemon/${s.name}`).then((r) =>
-          r.ok ? r.json() : null,
-        ),
-      ]);
+  const entries: CachedPokemonSummary[] = await Promise.all(
+    results.map(async (s: any) => {
+      const speciesId = parseIdFromUrl(s.url);
+      try {
+        const [speciesData, pokeData] = await Promise.all([
+          fetch(`https://pokeapi.co/api/v2/pokemon-species/${speciesId}`).then(
+            (r) => (r.ok ? r.json() : null),
+          ),
+          fetch(`https://pokeapi.co/api/v2/pokemon/${s.name}`).then((r) =>
+            r.ok ? r.json() : null,
+          ),
+        ]);
 
-      if (!speciesData) throw new Error("species fetch failed");
+        if (!speciesData) throw new Error("species fetch failed");
 
-      const forms = mapVarieties(speciesData.varieties);
-      const types = pokeData ? pokeData.types.map((t: any) => t.type.name) : [];
-      const gen = getGeneration(speciesId);
-      const defaultForm = forms.find((f) => f.is_default) || forms[0];
-      const displayName = defaultForm?.name || s.name;
+        const forms = mapVarieties(speciesData.varieties);
+        const types = pokeData
+          ? pokeData.types.map((t: any) => t.type.name)
+          : [];
+        const defaultForm = forms.find((f) => f.is_default) || forms[0];
 
-      entries.push({
-        name: displayName,
-        id: speciesId,
-        image: artworkUrl(speciesId),
-        types,
-        form_count: forms.length,
-        forms,
-        gen,
-      });
-    } catch {
-      entries.push({
-        name: s.name,
-        id: speciesId,
-        image: artworkUrl(speciesId),
-        types: [],
-        form_count: 1,
-        forms: [
-          {
-            name: s.name,
-            id: speciesId,
-            is_default: true,
-            image: artworkUrl(speciesId),
-          },
-        ],
-        gen: getGeneration(speciesId),
-      });
-    }
-    done++;
-    onProgress?.(done, total);
-  });
-
-  await Promise.all(promises);
+        return {
+          name: defaultForm?.name || s.name,
+          id: speciesId,
+          image: artworkUrl(speciesId),
+          types,
+          form_count: forms.length,
+          forms,
+          gen: getGeneration(speciesId),
+        } as CachedPokemonSummary;
+      } catch {
+        return {
+          name: s.name,
+          id: speciesId,
+          image: artworkUrl(speciesId),
+          types: [],
+          form_count: 1,
+          forms: [
+            {
+              name: s.name,
+              id: speciesId,
+              is_default: true,
+              image: artworkUrl(speciesId),
+            },
+          ],
+          gen: getGeneration(speciesId),
+        } as CachedPokemonSummary;
+      } finally {
+        done++;
+        onProgress?.(done, total);
+      }
+    }),
+  );
 
   entries.sort((a, b) => a.id - b.id);
 
