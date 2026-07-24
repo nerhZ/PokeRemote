@@ -83,7 +83,7 @@
 
   async function randomPokemon() {
     try {
-      const r = await getRandomPokemon({});
+      const r = await getRandomPokemon();
       goto(resolve(`/pokemon/${r.name}`));
     } catch {
       goto(

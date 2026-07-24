@@ -299,7 +299,7 @@ export const getPokemonMoves = async (name: string): Promise<PokemonMoves> => {
     "the-indigo-disk",
   ];
 
-  let latestVg = "scarlet-violet";
+  let latestVg: string | null = null;
   let latestIdx = -1;
   const seenVg = new Set<string>();
   for (const m of data.moves) {
@@ -314,6 +314,7 @@ export const getPokemonMoves = async (name: string): Promise<PokemonMoves> => {
       }
     }
   }
+  if (!latestVg) latestVg = [...seenVg][0] ?? "scarlet-violet";
 
   for (const m of data.moves) {
     for (const det of m.version_group_details) {
@@ -458,9 +459,10 @@ export const getStatRankings = async ({
 };
 
 /** Full Pokémon resource index (all forms). Uses live API count (≈1351). Cached after first call. */
-export const getAutocompleteList = async (
-  _opts: {} = {},
-): Promise<{ total: number; results: { name: string; id: number }[] }> => {
+export const getAutocompleteList = async (): Promise<{
+  total: number;
+  results: { name: string; id: number }[];
+}> => {
   if (_autocompleteCache) return _autocompleteCache;
   const head = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=1`);
   const headData = await head.json();
@@ -484,9 +486,10 @@ export const getAutocompleteList = async (
 };
 
 /** Random entry from the full Pokémon resource list (includes forms). */
-export const getRandomPokemon = async (
-  _opts: {} = {},
-): Promise<{ name: string; id: number }> => {
+export const getRandomPokemon = async (): Promise<{
+  name: string;
+  id: number;
+}> => {
   const head = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=1`);
   const headData = await head.json();
   const total = headData.count || TOTAL_POKEMON;

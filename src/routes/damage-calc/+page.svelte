@@ -36,7 +36,7 @@
 
   onMount(async () => {
     try {
-      const catalog = await getAutocompleteList({});
+      const catalog = await getAutocompleteList();
       allNames = catalog.results;
     } catch {}
   });

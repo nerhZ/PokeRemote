@@ -314,14 +314,32 @@ export function formatName(name: string): string {
   return name.split("-").map(titleWord).join(" ");
 }
 
+const TITLE_OVERRIDES: Record<string, string> = {
+  gmax: "Gigantamax",
+  alola: "Alola",
+  galar: "Galar",
+  hisui: "Hisui",
+  paldea: "Paldea",
+  hooh: "Ho-Oh",
+  "type-null": "Type: Null",
+  "porygon-z": "Porygon-Z",
+  "jangmo-o": "Jangmo-o",
+  "hakamo-o": "Hakamo-o",
+  "kommo-o": "Kommo-o",
+  "wo-chien": "Wo-Chien",
+  "chien-pao": "Chien-Pao",
+  "ting-lu": "Ting-Lu",
+  "chi-yu": "Chi-Yu",
+  male: "♂",
+  female: "♀",
+  "mr-mime": "Mr. Mime",
+  "mime-jr": "Mime Jr.",
+  "mr-rime": "Mr. Rime",
+};
+
 function titleWord(w: string): string {
   if (!w) return w;
-  if (w === "gmax") return "Gigantamax";
-  if (w === "alola") return "Alola";
-  if (w === "galar") return "Galar";
-  if (w === "hisui") return "Hisui";
-  if (w === "paldea") return "Paldea";
-  return w.charAt(0).toUpperCase() + w.slice(1);
+  return TITLE_OVERRIDES[w] ?? w.charAt(0).toUpperCase() + w.slice(1);
 }
 
 /** Multi-token search match against name and ID. */

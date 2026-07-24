@@ -62,7 +62,7 @@
       }
       if (e.key === "r" || e.key === "R") {
         if (!e.metaKey && !e.ctrlKey && !e.altKey) {
-          getRandomPokemon({})
+          getRandomPokemon()
             .then((r) => {
               goto(resolve(`/pokemon/${r.name}`));
             })
