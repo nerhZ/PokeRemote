@@ -2,6 +2,7 @@
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { fromPath } from "$lib/navigation";
   import {
     getPokemonDetail,
     getAutocompleteList,
@@ -222,7 +223,9 @@
       {#if loadingAtt}<div class="mt-2"><LoadingSpinner size="sm" /></div>{/if}
       {#if attacker}
         <a
-          href={resolve(`/pokemon/${attacker.name}`)}
+          href={resolve(
+            `/pokemon/${attacker.name}?from=${fromPath(page.url.pathname, page.url.search)}`,
+          )}
           class="mt-4 flex items-center gap-3 rounded-xl bg-white/2 p-3 no-underline transition-colors hover:bg-white/5"
         >
           <img
@@ -286,7 +289,9 @@
       {#if loadingDef}<div class="mt-2"><LoadingSpinner size="sm" /></div>{/if}
       {#if defender}
         <a
-          href={resolve(`/pokemon/${defender.name}`)}
+          href={resolve(
+            `/pokemon/${defender.name}?from=${fromPath(page.url.pathname, page.url.search)}`,
+          )}
           class="mt-4 flex items-center gap-3 rounded-xl bg-white/2 p-3 no-underline transition-colors hover:bg-white/5"
         >
           <img

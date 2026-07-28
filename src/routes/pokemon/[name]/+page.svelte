@@ -12,6 +12,7 @@
     type PokemonMoves,
   } from "$lib/pokemon-types";
   import { pushRecent, toggleFavorite, isFavorite } from "$lib/storage";
+  import { backLabel } from "$lib/navigation";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import MoveTooltip from "$lib/components/MoveTooltip.svelte";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
@@ -171,6 +172,10 @@
     { id: "moves" as const, label: "Moves" },
     { id: "data" as const, label: "Data" },
   ];
+
+  let from = $derived(page.url.searchParams.get("from"));
+  let backUrl = $derived(from ? decodeURIComponent(from) : resolve("/"));
+  let backText = $derived(backLabel(from));
 </script>
 
 <div
@@ -180,22 +185,22 @@
   <div class="relative mx-auto max-w-6xl px-4 py-6 md:px-6">
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
       <a
-        href={resolve("/")}
+        href={backUrl}
         class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/60 no-underline transition-all hover:text-white"
-        >← Pokédex</a
+        >← {backText}</a
       >
       {#if pokemon}
         <div class="flex items-center gap-2">
           {#if prevId != null}
             <a
-              href={resolve(`/pokemon/${prevId}`)}
+              href={resolve(`/pokemon/${prevId}${from ? `?from=${from}` : ""}`)}
               class="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/50 no-underline hover:text-white"
               aria-label="Previous species">‹</a
             >
           {/if}
           {#if nextId != null}
             <a
-              href={resolve(`/pokemon/${nextId}`)}
+              href={resolve(`/pokemon/${nextId}${from ? `?from=${from}` : ""}`)}
               class="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/50 no-underline hover:text-white"
               aria-label="Next species">›</a
             >
@@ -370,7 +375,9 @@
               <div class="flex flex-wrap gap-2">
                 {#each pokemon.forms as form}
                   <a
-                    href={resolve(`/pokemon/${form.name}`)}
+                    href={resolve(
+                      `/pokemon/${form.name}${from ? `?from=${from}` : ""}`,
+                    )}
                     class="flex w-16 flex-col items-center gap-1 rounded-xl border p-1.5 no-underline transition-all {form.name ===
                     pokemon.name
                       ? 'border-accent bg-accent/10'
@@ -439,6 +446,7 @@
                     stage={pokemon.evolution}
                     currentName={pokemon.name}
                     color={primaryColor}
+                    from={from ?? ""}
                   />
                 </div>
               {/if}

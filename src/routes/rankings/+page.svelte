@@ -7,6 +7,8 @@
     type StatRankings,
   } from "$lib/pokemon-types";
   import { resolve } from "$app/paths";
+  import { fromPath } from "$lib/navigation";
+  import { page } from "$app/state";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import { onMount } from "svelte";
@@ -151,7 +153,9 @@
     <div class="space-y-2">
       {#each activeList as entry, i}
         <a
-          href={resolve(`/pokemon/${entry.name}`)}
+          href={resolve(
+            `/pokemon/${entry.name}?from=${fromPath(page.url.pathname, page.url.search)}`,
+          )}
           class="group flex items-center gap-3 rounded-2xl border border-white/6 bg-white/3 p-3.5 no-underline transition-all hover:border-white/20 hover:bg-white/5"
         >
           <span

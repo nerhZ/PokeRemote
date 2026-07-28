@@ -15,6 +15,7 @@
     formatName,
     type PokemonDetail,
   } from "$lib/pokemon-types";
+  import { fromPath } from "$lib/navigation";
   import { saveTeam, getSavedTeams, type EvSpread } from "$lib/storage";
   import PokemonPicker from "$lib/components/PokemonPicker.svelte";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
@@ -414,7 +415,9 @@
         >
           <div class="absolute top-1.5 left-1.5 z-10 flex gap-1">
             <a
-              href={resolve(`/pokemon/${p.name}`)}
+              href={resolve(
+                `/pokemon/${p.name}?from=${fromPath(page.url.pathname, page.url.search)}`,
+              )}
               onclick={(e) => e.stopPropagation()}
               class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-white/10 bg-black/20 text-xs text-white/50 no-underline hover:text-white"
               title="Open Pokédex">◉</a
