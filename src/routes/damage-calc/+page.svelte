@@ -17,6 +17,7 @@
   } from "$lib/pokemon-types";
   import PokemonPicker from "$lib/components/PokemonPicker.svelte";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
+  import MoveTooltip from "$lib/components/MoveTooltip.svelte";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import { onMount } from "svelte";
@@ -250,24 +251,23 @@
               class="w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs outline-none"
             />
           </div>
-          <div
-            class="grid max-h-56 grid-cols-1 gap-1.5 overflow-y-auto sm:grid-cols-2"
-          >
+          <div class="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
             {#each moveList.level_up as m}
-              <button
-                onclick={() => pickMove(m)}
-                class="flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-2 text-left text-xs {selectedMove?.name ===
-                m.name
-                  ? 'border-accent bg-accent/10 text-white'
-                  : 'border-white/4 bg-white/2 text-white/60'}"
-              >
-                <span
-                  style="color: {TYPE_COLORS[m.type] || '#777'}"
-                  class="font-bold">{m.type.slice(0, 3).toUpperCase()}</span
-                >
-                <span class="flex-1 truncate">{formatName(m.name)}</span>
-                <span class="text-white/30">{m.power ?? "—"}</span>
-              </button>
+              <MoveTooltip move={m}>
+                {#snippet children()}
+                  <button
+                    onclick={() => pickMove(m)}
+                    class="flex w-full cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-2 text-left text-xs {selectedMove?.name ===
+                    m.name
+                      ? 'border-accent bg-accent/10 text-white'
+                      : 'border-white/4 bg-white/2 text-white/60'}"
+                  >
+                    <TypeBadge type={m.type} size="xs" />
+                    <span class="flex-1 truncate">{formatName(m.name)}</span>
+                    <span class="text-white/30">{m.power ?? "—"}</span>
+                  </button>
+                {/snippet}
+              </MoveTooltip>
             {/each}
           </div>
         {/if}
