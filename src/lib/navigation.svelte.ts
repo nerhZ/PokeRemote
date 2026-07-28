@@ -1,6 +1,6 @@
-import { writable } from "svelte/store";
-
-export const previousUrl = writable<string | null>(null);
+export const nav = $state<{ previousUrl: string | null }>({
+  previousUrl: null,
+});
 
 const BACK_LABELS: Record<string, string> = {
   "/": "Pokédex",

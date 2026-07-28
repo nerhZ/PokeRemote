@@ -5,7 +5,7 @@
   import { onMount } from "svelte";
   import { applyTheme, getTheme, setTheme, type ThemeMode } from "$lib/storage";
   import { getRandomPokemon } from "$lib/api";
-  import { previousUrl } from "$lib/navigation";
+  import { nav } from "$lib/navigation.svelte";
   import { TOTAL_SPECIES } from "$lib/pokemon-types";
   import "../app.css";
 
@@ -83,7 +83,7 @@
 
   afterNavigate(({ from, to }) => {
     if (from?.url && !from.url.pathname.startsWith("/pokemon")) {
-      previousUrl.set(from.url.pathname + from.url.search);
+      nav.previousUrl = from.url.pathname + from.url.search;
     }
 
     if (to?.url && to.url.search) {

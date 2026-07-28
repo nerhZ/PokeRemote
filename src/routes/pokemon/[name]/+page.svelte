@@ -12,7 +12,7 @@
     type PokemonMoves,
   } from "$lib/pokemon-types";
   import { pushRecent, toggleFavorite, isFavorite } from "$lib/storage";
-  import { backLabel, previousUrl } from "$lib/navigation";
+  import { backLabel, nav } from "$lib/navigation.svelte";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import MoveTooltip from "$lib/components/MoveTooltip.svelte";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
@@ -173,14 +173,8 @@
     { id: "data" as const, label: "Data" },
   ];
 
-  let prevUrl = $state<string | null>(null);
-
-  $effect(() => {
-    return previousUrl.subscribe((v) => (prevUrl = v));
-  });
-
-  let backUrl = $derived(prevUrl ? prevUrl : resolve("/"));
-  let backText = $derived(backLabel(prevUrl));
+  let backUrl = $derived(nav.previousUrl ? nav.previousUrl : resolve("/"));
+  let backText = $derived(backLabel(nav.previousUrl));
 </script>
 
 <div
