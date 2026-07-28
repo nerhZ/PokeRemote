@@ -20,7 +20,7 @@
   import MoveTooltip from "$lib/components/MoveTooltip.svelte";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
 
   let allNames: { name: string; id: number }[] = $state([]);
   let attacker = $state<PokemonDetail | null>(null);
@@ -63,9 +63,9 @@
       return;
     }
     (async () => {
-      if (att && attacker?.name !== att)
+      if (att && untrack(() => attacker?.name) !== att)
         await selectAttacker(att, mv, gen, true);
-      if (def && defender?.name !== def) await selectDefender(def, gen, true);
+      if (def && untrack(() => defender?.name) !== def) await selectDefender(def, gen, true);
     })();
   });
 

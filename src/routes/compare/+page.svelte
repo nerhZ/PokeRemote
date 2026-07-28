@@ -14,7 +14,7 @@
   import RadarChart from "$lib/components/RadarChart.svelte";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
 
   let allNames: { name: string; id: number }[] = $state([]);
   let catalogTotal = $state(0);
@@ -46,8 +46,8 @@
       return;
     }
     (async () => {
-      if (a && pokemonA?.name !== a) await selectPokemonA(a, gen, true);
-      if (b && pokemonB?.name !== b) await selectPokemonB(b, gen, true);
+      if (a && untrack(() => pokemonA?.name) !== a) await selectPokemonA(a, gen, true);
+      if (b && untrack(() => pokemonB?.name) !== b) await selectPokemonB(b, gen, true);
     })();
   });
 
