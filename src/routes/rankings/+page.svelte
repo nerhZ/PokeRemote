@@ -11,15 +11,10 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import { onMount } from "svelte";
 
-  const CACHE_KEY = "pokeremote:rankings";
-  const CACHE_TTL = 24 * 60 * 60 * 1000;
-
   let rankings = $state<StatRankings | null>(null);
   let loading = $state(true);
-  let refreshing = $state(false);
   let error = $state<string | null>(null);
   let activeStat = $state("total");
-  let lastUpdated = $state<string | null>(null);
 
   const stats = [
     { key: "total", label: "Total", max: 720 },
@@ -31,46 +26,14 @@
     { key: "speed", label: "Speed", max: 255 },
   ];
 
-  function loadCached(): StatRankings | null {
+  async function loadRankings() {
     try {
-      const raw = localStorage.getItem(CACHE_KEY);
-      if (!raw) return null;
-      const { data, ts } = JSON.parse(raw);
-      if (Date.now() - ts > CACHE_TTL) return null;
-      lastUpdated = new Date(ts).toLocaleString();
-      return data as StatRankings;
-    } catch {
-      return null;
-    }
-  }
-
-  function saveCache(data: StatRankings) {
-    try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
-    } catch {}
-  }
-
-  async function loadRankings(force = false) {
-    if (!force) {
-      const cached = loadCached();
-      if (cached) {
-        rankings = cached;
-        loading = false;
-        return;
-      }
-    }
-    refreshing = true;
-    error = null;
-    try {
-      const data = await getStatRankings({ count: TOTAL_POKEMON });
+      const { data } = await getStatRankings({ count: TOTAL_POKEMON });
       rankings = data;
-      saveCache(data);
-      lastUpdated = new Date().toLocaleString();
     } catch (e: any) {
       if (!rankings) error = e.message;
     } finally {
       loading = false;
-      refreshing = false;
     }
   }
 
@@ -93,24 +56,10 @@
 
 <div class="tool-shell max-w-3xl">
   <div class="tool-hero">
-    <div class="mb-2 flex items-center justify-between gap-3">
-      <h1>Stat Rankings</h1>
-      <button
-        onclick={() => loadRankings(true)}
-        disabled={refreshing}
-        class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/60 hover:text-white disabled:opacity-40"
-      >
-        {refreshing ? "Loading..." : "Refresh"}
-      </button>
-    </div>
+    <h1>Stat Rankings</h1>
     <p>
       Top 10 across all {TOTAL_POKEMON} forms. Click a row to open the Pokédex entry.
     </p>
-    {#if lastUpdated}
-      <p class="mt-1 text-[10px]" style="color: var(--muted)">
-        Cached {lastUpdated}. Refreshes after 24h.
-      </p>
-    {/if}
   </div>
 
   <div class="mb-6 flex flex-wrap gap-2">
@@ -140,14 +89,6 @@
       subtitle="No rankings available for this stat."
     />
   {:else if rankings}
-    {#if refreshing}
-      <div class="mb-3 h-0.5 w-full overflow-hidden bg-white/5">
-        <div
-          class="bg-accent/70 h-full"
-          style="width: 33%; animation: nav-loading-bar 1.2s ease-in-out infinite"
-        ></div>
-      </div>
-    {/if}
     <div class="space-y-2">
       {#each activeList as entry, i}
         <a

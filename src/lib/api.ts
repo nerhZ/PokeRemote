@@ -410,9 +410,54 @@ export const getPokemonMoves = async (name: string): Promise<PokemonMoves> => {
   };
 };
 
+const RANKINGS_CACHE_KEY = "pokeremote:rankings";
+const RANKINGS_CACHE_VERSION = 1;
+
+function readRankingsCache(): {
+  data: StatRankings;
+  speciesCount: number;
+} | null {
+  try {
+    const raw = localStorage.getItem(RANKINGS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed.version !== RANKINGS_CACHE_VERSION) return null;
+    return { data: parsed.data, speciesCount: parsed.speciesCount };
+  } catch {
+    return null;
+  }
+}
+
+function writeRankingsCache(data: StatRankings, speciesCount: number) {
+  try {
+    localStorage.setItem(
+      RANKINGS_CACHE_KEY,
+      JSON.stringify({ version: RANKINGS_CACHE_VERSION, data, speciesCount }),
+    );
+  } catch {}
+}
+
 export const getStatRankings = async ({
-  count = 151,
-}: { count?: number } = {}): Promise<StatRankings> => {
+  count = TOTAL_POKEMON,
+}: { count?: number } = {}): Promise<{
+  data: StatRankings;
+  fromCache: boolean;
+}> => {
+  const cached = readRankingsCache();
+  if (cached) {
+    try {
+      const speciesRes = await fetch(
+        `https://pokeapi.co/api/v2/pokemon-species?limit=1`,
+      );
+      if (speciesRes.ok) {
+        const json = await speciesRes.json();
+        if (cached.speciesCount === json.count) {
+          return { data: cached.data, fromCache: true };
+        }
+      }
+    } catch {}
+  }
+
   const listRes = await fetch(
     `https://pokeapi.co/api/v2/pokemon?limit=${count}&offset=0`,
   );
@@ -476,7 +521,7 @@ export const getStatRankings = async ({
       }));
   }
 
-  return {
+  const result = {
     hp: top10("hp"),
     attack: top10("attack"),
     defense: top10("defense"),
@@ -485,6 +530,9 @@ export const getStatRankings = async ({
     speed: top10("speed"),
     total: top10("total"),
   } as StatRankings;
+
+  writeRankingsCache(result, listData.count);
+  return { data: result, fromCache: false };
 };
 
 /** Full Pokémon resource index (all forms). Uses live API count (≈1351). Cached after first call. */
@@ -532,6 +580,36 @@ export const getRandomPokemon = async (): Promise<{
   return { name: entry.name as string, id };
 };
 
+const ITEMS_CACHE_KEY = "pokeremote:items";
+const ITEMS_CACHE_VERSION = 1;
+
+interface ItemsCache {
+  version: number;
+  count: number;
+  results: any[];
+}
+
+function readItemsCache(): ItemsCache | null {
+  try {
+    const raw = localStorage.getItem(ITEMS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed.version !== ITEMS_CACHE_VERSION) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeItemsCache(count: number, results: any[]) {
+  try {
+    localStorage.setItem(
+      ITEMS_CACHE_KEY,
+      JSON.stringify({ version: ITEMS_CACHE_VERSION, count, results }),
+    );
+  } catch {}
+}
+
 export const getItemsList = async ({
   limit = 60,
   offset = 0,
@@ -540,6 +618,25 @@ export const getItemsList = async ({
   count: number;
   next_offset: number;
 }> => {
+  if (offset === 0) {
+    const cached = readItemsCache();
+    if (cached) {
+      try {
+        const checkRes = await fetch(`https://pokeapi.co/api/v2/item?limit=1`);
+        if (checkRes.ok) {
+          const check = await checkRes.json();
+          if (cached.count === check.count) {
+            return {
+              results: cached.results.slice(0, limit),
+              count: cached.count,
+              next_offset: limit,
+            };
+          }
+        }
+      } catch {}
+    }
+  }
+
   const response = await fetch(
     `https://pokeapi.co/api/v2/item?limit=${limit}&offset=${offset}`,
   );
@@ -566,8 +663,14 @@ export const getItemsList = async ({
       }
     }),
   );
+  const filtered = results.filter(Boolean);
+
+  if (offset === 0) {
+    writeItemsCache(data.count, filtered);
+  }
+
   return {
-    results: results.filter(Boolean),
+    results: filtered,
     count: data.count,
     next_offset: offset + limit,
   };
