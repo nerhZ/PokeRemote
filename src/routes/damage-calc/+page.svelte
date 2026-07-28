@@ -49,6 +49,10 @@
     const mv = page.url.searchParams.get("move");
     const al = page.url.searchParams.get("al");
     const dl = page.url.searchParams.get("dl");
+    if (al) attLevel = Math.min(100, Math.max(1, parseInt(al, 10) || 50));
+    else attLevel = 50;
+    if (dl) defLevel = Math.min(100, Math.max(1, parseInt(dl, 10) || 50));
+    else defLevel = 50;
     if (!att && !def) {
       attacker = null;
       defender = null;
@@ -56,12 +60,8 @@
       searchDef = "";
       selectedMove = null;
       moveList = null;
-      attLevel = 50;
-      defLevel = 50;
       return;
     }
-    if (al) attLevel = Math.min(100, Math.max(1, parseInt(al, 10) || 50));
-    if (dl) defLevel = Math.min(100, Math.max(1, parseInt(dl, 10) || 50));
     (async () => {
       if (att && attacker?.name !== att) await selectAttacker(att, mv, gen);
       if (def && defender?.name !== def) await selectDefender(def, gen);
