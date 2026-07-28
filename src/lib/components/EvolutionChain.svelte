@@ -8,12 +8,10 @@
     stage,
     currentName,
     color = "#777",
-    from = "",
   }: {
     stage: EvolutionStage | null;
     currentName: string;
     color?: string;
-    from?: string;
   } = $props();
 
   function formatKey(s: string) {
@@ -53,7 +51,7 @@
 {#if stage}
   <div class="flex flex-col items-center gap-2">
     <a
-      href={resolve(`/pokemon/${stage.name}${from ? `?from=${from}` : ""}`)}
+      href={resolve(`/pokemon/${stage.name}`)}
       class="group flex flex-col items-center gap-1.5 no-underline"
     >
       <div
@@ -86,7 +84,7 @@
                 >{describe(child)}</span
               >
             </div>
-            <EvolutionChain stage={child} {currentName} {color} {from} />
+            <EvolutionChain stage={child} {currentName} {color} />
           </div>
         {/each}
       </div>

@@ -1,3 +1,7 @@
+import { writable } from "svelte/store";
+
+export const previousUrl = writable<string | null>(null);
+
 const BACK_LABELS: Record<string, string> = {
   "/": "Pokédex",
   "/team-builder": "Team Builder",
@@ -6,12 +10,8 @@ const BACK_LABELS: Record<string, string> = {
   "/damage-calc": "Damage Calc",
 };
 
-export function backLabel(fromParam: string | null): string {
-  if (!fromParam) return "Pokédex";
-  const path = fromParam.split("?")[0];
+export function backLabel(url: string | null): string {
+  if (!url) return "Pokédex";
+  const path = url.split("?")[0];
   return BACK_LABELS[path] ?? "Back";
-}
-
-export function fromPath(pathname: string, search: string): string {
-  return encodeURIComponent(pathname + search);
 }

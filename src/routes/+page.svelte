@@ -4,7 +4,6 @@
   import { resolve } from "$app/paths";
   import { onMount, untrack } from "svelte";
   import { getRandomPokemon, getAllPokemonSummaries } from "$lib/api";
-  import { fromPath } from "$lib/navigation";
   import {
     TYPE_COLORS,
     GEN_RANGES,
@@ -85,16 +84,10 @@
   async function randomPokemon() {
     try {
       const r = await getRandomPokemon();
-      goto(
-        resolve(
-          `/pokemon/${r.name}?from=${fromPath(page.url.pathname, page.url.search)}`,
-        ),
-      );
+      goto(resolve(`/pokemon/${r.name}`));
     } catch {
       goto(
-        resolve(
-          `/pokemon/${Math.floor(Math.random() * TOTAL_SPECIES) + 1}?from=${fromPath(page.url.pathname, page.url.search)}`,
-        ),
+        resolve(`/pokemon/${Math.floor(Math.random() * TOTAL_SPECIES) + 1}`),
       );
     }
   }
@@ -225,9 +218,7 @@
         <div class="flex gap-2 overflow-x-auto pb-2">
           {#each recent as r}
             <a
-              href={resolve(
-                `/pokemon/${r.name}?from=${fromPath(page.url.pathname, page.url.search)}`,
-              )}
+              href={resolve(`/pokemon/${r.name}`)}
               class="flex shrink-0 items-center gap-2 rounded-xl border border-white/6 bg-white/3 px-3 py-2 no-underline transition-all hover:border-white/20"
             >
               <img src={r.image} alt={r.name} class="h-8 w-8 object-contain" />
@@ -419,9 +410,7 @@
           {@const hasForms = (p.form_count ?? forms.length) > 1}
           <div class="flex flex-col gap-1.5">
             <a
-              href={resolve(
-                `/pokemon/${p.name}?from=${fromPath(page.url.pathname, page.url.search)}`,
-              )}
+              href={resolve(`/pokemon/${p.name}`)}
               class="poke-card card-enter group"
               style="animation-delay: {Math.min(i, 15) * 35}ms"
             >
@@ -493,9 +482,7 @@
               >
                 {#each forms as form}
                   <a
-                    href={resolve(
-                      `/pokemon/${form.name}?from=${fromPath(page.url.pathname, page.url.search)}`,
-                    )}
+                    href={resolve(`/pokemon/${form.name}`)}
                     class="flex items-center gap-2 rounded-lg px-2 py-1.5 no-underline transition-colors hover:bg-white/5"
                     style="color: var(--text)"
                   >

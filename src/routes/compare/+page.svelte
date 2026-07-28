@@ -3,7 +3,6 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { getPokemonDetail, getAutocompleteList } from "$lib/api";
-  import { fromPath } from "$lib/navigation";
   import {
     TYPE_COLORS,
     STAT_LABELS,
@@ -142,9 +141,7 @@
           {@const color = TYPE_COLORS[p.types[0]] || "#777"}
           <div class="panel" style="box-shadow: inset 0 0 0 1px {color}33">
             <a
-              href={resolve(
-                `/pokemon/${p.name}?from=${fromPath(page.url.pathname, page.url.search)}`,
-              )}
+              href={resolve(`/pokemon/${p.name}`)}
               class="mb-5 flex items-center gap-4 rounded-xl p-2 no-underline transition-colors hover:bg-white/5"
             >
               <img

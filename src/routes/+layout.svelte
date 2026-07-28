@@ -1,10 +1,11 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { goto } from "$app/navigation";
+  import { goto, afterNavigate } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { onMount } from "svelte";
   import { applyTheme, getTheme, setTheme, type ThemeMode } from "$lib/storage";
   import { getRandomPokemon } from "$lib/api";
+  import { previousUrl } from "$lib/navigation";
   import { TOTAL_SPECIES } from "$lib/pokemon-types";
   import "../app.css";
 
@@ -78,6 +79,23 @@
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  });
+
+  afterNavigate(({ from, to }) => {
+    if (from?.url && !from.url.pathname.startsWith("/pokemon")) {
+      previousUrl.set(from.url.pathname + from.url.search);
+    }
+
+    if (to?.url && to.url.search) {
+      localStorage.setItem(`pageState:${to.url.pathname}`, to.url.search);
+    }
+
+    if (to?.url && !to.url.search) {
+      const saved = localStorage.getItem(`pageState:${to.url.pathname}`);
+      if (saved) {
+        goto(`${to.url.pathname}${saved}`, { replaceState: true });
+      }
+    }
   });
 </script>
 
