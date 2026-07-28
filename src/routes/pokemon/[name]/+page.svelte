@@ -13,6 +13,7 @@
   } from "$lib/pokemon-types";
   import { pushRecent, toggleFavorite, isFavorite } from "$lib/storage";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
+  import MoveTooltip from "$lib/components/MoveTooltip.svelte";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import RadarChart from "$lib/components/RadarChart.svelte";
@@ -523,39 +524,31 @@
                     {/if}
                   {/each}
                 </div>
-                {#if activeMoveTab === "level_up"}
-                  <div
-                    class="grid max-h-120 gap-2 overflow-y-auto sm:grid-cols-2"
-                  >
-                    {#each moves.level_up as m}
-                      <div
-                        class="flex items-center gap-2 rounded-xl border border-white/4 bg-white/2 px-3 py-2 text-sm"
-                      >
-                        <span
-                          class="w-8 text-right text-[11px] font-black text-white/50"
-                          >{m.level}</span
-                        >
-                        <TypeBadge type={m.type} size="xs" />
-                        <span
-                          class="flex-1 truncate font-semibold text-white/80"
-                          >{formatName(m.name)}</span
-                        >
-                        <span
-                          class="text-[10px] text-white/30"
-                          title="Power / Accuracy / PP"
-                          >{m.power ?? "—"}/{m.accuracy ?? "—"}/{m.pp ??
-                            "—"}</span
-                        >
-                      </div>
-                    {/each}
-                  </div>
-                {:else}
-                  <div class="flex flex-wrap gap-2">
-                    {#each (moves as any)[activeMoveTab] as m}
-                      <span
-                        class="rounded-xl border border-white/4 bg-white/2 px-3 py-1.5 text-xs text-white/70 capitalize"
-                        >{m.name.replace(/-/g, " ")}</span
-                      >
+                {#if activeMoveTab === "level_up" || activeMoveTab === "machine" || activeMoveTab === "egg" || activeMoveTab === "tutor"}
+                  <div class="grid gap-2 sm:grid-cols-2">
+                    {#each moves[activeMoveTab as keyof PokemonMoves] as m}
+                      <MoveTooltip move={m}>
+                        {#snippet children()}
+                          <div
+                            class="flex items-center gap-2 rounded-xl border border-white/4 bg-white/2 px-3 py-2 text-sm"
+                          >
+                            {#if activeMoveTab === "level_up"}
+                              <span
+                                class="w-8 text-right text-[11px] font-black text-white/50"
+                                >{m.level}</span
+                              >
+                            {/if}
+                            <TypeBadge type={m.type} size="xs" />
+                            <span
+                              class="flex-1 truncate font-semibold text-white/80"
+                              >{formatName(m.name)}</span
+                            >
+                            <span class="text-[10px] text-white/30">
+                              {m.power ?? "—"}/{m.accuracy ?? "—"}/{m.pp ?? "—"}
+                            </span>
+                          </div>
+                        {/snippet}
+                      </MoveTooltip>
                     {/each}
                   </div>
                 {/if}

@@ -165,6 +165,14 @@
     color: var(--text);
   }
 
+  .tooltip-content {
+    display: none;
+  }
+
+  .tooltip-host:hover .tooltip-content {
+    display: block;
+  }
+
   .nav-link {
     @apply rounded-lg px-3 py-1.5 text-xs font-semibold no-underline transition-all;
     color: var(--muted);

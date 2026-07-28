@@ -18,6 +18,8 @@
   import { saveTeam, getSavedTeams, type EvSpread } from "$lib/storage";
   import PokemonPicker from "$lib/components/PokemonPicker.svelte";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
+  import MoveTooltip from "$lib/components/MoveTooltip.svelte";
+  import Tooltip from "$lib/components/Tooltip.svelte";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import { onMount } from "svelte";
@@ -842,32 +844,7 @@
                         {@const move = metaCache[p.name]?.moves.find(
                           (o) => o.name === m,
                         )}
-                        <span
-                          class="tooltip-host relative flex cursor-default items-center gap-1 rounded-full border border-white/6 bg-white/3 px-2 py-0.5 text-[11px]"
-                        >
-                          <span
-                            class="tooltip-content pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 w-64 -translate-x-1/2 rounded-xl border p-3 text-left text-[11px] leading-relaxed shadow-2xl"
-                            style="background: var(--card); border-color: var(--border); color: var(--muted-strong);"
-                          >
-                            <span
-                              class="mb-1 block font-semibold"
-                              style="color: var(--text)">{formatName(m)}</span
-                            >
-                            {#if move}
-                              <span class="block"
-                                >Pow {move.power ?? "—"} / Acc {move.accuracy ??
-                                  "—"} / PP {move.pp ?? "—"}</span
-                              >
-                              {#if move.effect}
-                                <span class="mt-1 block">{move.effect}</span>
-                              {/if}
-                            {/if}
-                          </span>
-                          {#if move}
-                            <TypeBadge type={move.type} size="xs" />
-                          {/if}
-                          {formatName(m)}
-                        </span>
+                        <MoveTooltip move={move ?? { name: m }} />
                       {:else}
                         <span
                           class="cursor-default rounded-full border border-dashed border-white/10 px-2 py-0.5 text-[11px] text-white/20"
@@ -879,51 +856,54 @@
                   <div
                     class="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[11px]"
                   >
-                    <span class="tooltip-host relative cursor-default">
-                      {#if s.ability}
-                        <span
-                          class="tooltip-content pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 w-56 -translate-x-1/2 rounded-xl border p-3 text-left text-[11px] leading-relaxed shadow-2xl"
-                          style="background: var(--card); border-color: var(--border); color: var(--muted-strong);"
-                        >
-                          <span
+                    <Tooltip width="w-56">
+                      {#snippet popup()}
+                        {#if s.ability}
+                          <div
                             class="mb-1 block font-semibold"
                             style="color: var(--text)"
-                            >{formatName(s.ability)}</span
                           >
+                            {formatName(s.ability)}
+                          </div>
                           {abilityTooltip(p.name, s.ability)}
+                        {/if}
+                      {/snippet}
+                      {#snippet trigger()}
+                        <span class="text-white/40">Ability:</span>
+                        <span class="text-white/70">
+                          {s.ability ? formatName(s.ability) : "—"}
                         </span>
-                      {/if}
-                      <span class="text-white/40">Ability:</span>
-                      <span class="text-white/70">
-                        {s.ability ? formatName(s.ability) : "—"}</span
-                      >
-                    </span>
-                    <span class="tooltip-host relative cursor-default">
-                      {#if s.nature}
-                        <span
-                          class="tooltip-content pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 rounded-xl border px-3 py-1.5 text-[11px] whitespace-nowrap shadow-2xl"
-                          style="background: var(--card); border-color: var(--border); color: var(--text);"
+                      {/snippet}
+                    </Tooltip>
+                    <Tooltip width="" nowrap>
+                      {#snippet popup()}
+                        {#if s.nature}
+                          <div style="color: var(--text)">
+                            {s.nature}: {NATURES_MODIFIERS[s.nature] ??
+                              "neutral"}
+                          </div>
+                        {/if}
+                      {/snippet}
+                      {#snippet trigger()}
+                        <span class="text-white/40">Nature:</span>
+                        <span class="text-white/70"> {s.nature || "—"}</span>
+                      {/snippet}
+                    </Tooltip>
+                    <Tooltip width="" nowrap>
+                      {#snippet popup()}
+                        <div style="color: var(--text)">
+                          HP / Atk / Def / SpA / SpD / Spe
+                        </div>
+                      {/snippet}
+                      {#snippet trigger()}
+                        <span class="text-white/40">EVs:</span>
+                        <span class="text-white/70">
+                          {s.evs?.hp ?? 0}/{s.evs?.atk ?? 0}/{s.evs?.def ??
+                            0}/{s.evs?.spa ?? 0}/{s.evs?.spd ?? 0}/{s.evs
+                            ?.spe ?? 0}</span
                         >
-                          {s.nature}: {NATURES_MODIFIERS[s.nature] ?? "neutral"}
-                        </span>
-                      {/if}
-                      <span class="text-white/40">Nature:</span>
-                      <span class="text-white/70"> {s.nature || "—"}</span>
-                    </span>
-                    <span class="tooltip-host relative cursor-default">
-                      <span
-                        class="tooltip-content pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 rounded-xl border px-3 py-1.5 text-[11px] whitespace-nowrap shadow-2xl"
-                        style="background: var(--card); border-color: var(--border); color: var(--text);"
-                      >
-                        HP / Atk / Def / SpA / SpD / Spe
-                      </span>
-                      <span class="text-white/40">EVs:</span>
-                      <span class="text-white/70">
-                        {s.evs?.hp ?? 0}/{s.evs?.atk ?? 0}/{s.evs?.def ?? 0}/{s
-                          .evs?.spa ?? 0}/{s.evs?.spd ?? 0}/{s.evs?.spe ??
-                          0}</span
-                      >
-                    </span>
+                      {/snippet}
+                    </Tooltip>
                   </div>
                 {/if}
               </div>
@@ -934,12 +914,3 @@
     </div>
   {/if}
 </div>
-
-<style>
-  .tooltip-content {
-    display: none;
-  }
-  .tooltip-host:hover .tooltip-content {
-    display: block;
-  }
-</style>

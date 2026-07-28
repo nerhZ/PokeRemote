@@ -3,6 +3,7 @@ import {
   artworkUrl,
   computeTypeEffectiveness,
   getGeneration,
+  type MoveInfo,
   type PokemonDetail,
   type PokemonFormSummary,
   type PokemonMoves,
@@ -325,11 +326,11 @@ export const getPokemonMoves = async (name: string): Promise<PokemonMoves> => {
             level: det.level_learned_at,
           });
         } else if (method === "machine") {
-          moves.machine.push({ name: m.move.name });
+          moves.machine.push({ name: m.move.name, url: m.move.url });
         } else if (method === "egg") {
-          moves.egg.push({ name: m.move.name });
+          moves.egg.push({ name: m.move.name, url: m.move.url });
         } else if (method === "tutor") {
-          moves.tutor.push({ name: m.move.name });
+          moves.tutor.push({ name: m.move.name, url: m.move.url });
         }
       }
     }
@@ -337,51 +338,76 @@ export const getPokemonMoves = async (name: string): Promise<PokemonMoves> => {
 
   moves.level_up.sort((a, b) => a.level - b.level);
 
-  const detailedMoves = await Promise.all(
-    moves.level_up.map(async (m) => {
-      try {
-        const mr = await fetch(m.url);
-        if (!mr.ok)
+  const allMoves: {
+    name: string;
+    url: string;
+    level: number;
+    method: string;
+  }[] = [
+    ...moves.level_up.map((m) => ({ ...m, method: "level-up" })),
+    ...moves.machine.map((m) => ({ ...m, level: 0, method: "machine" })),
+    ...moves.egg.map((m) => ({ ...m, level: 0, method: "egg" })),
+    ...moves.tutor.map((m) => ({ ...m, level: 0, method: "tutor" })),
+  ];
+
+  const detailed: MoveInfo[] = [];
+  const batchSize = 20;
+  for (let i = 0; i < allMoves.length; i += batchSize) {
+    const batch = allMoves.slice(i, i + batchSize);
+    const results = await Promise.all(
+      batch.map(async (m): Promise<MoveInfo> => {
+        try {
+          const mr = await fetch(m.url);
+          if (!mr.ok) {
+            return {
+              name: m.name,
+              level: m.level,
+              type: "???",
+              power: null,
+              accuracy: null,
+              pp: null,
+              damage_class: "physical",
+              method: m.method,
+            };
+          }
+          const md = await mr.json();
+          const effect = md.effect_entries?.find(
+            (e: any) => e.language.name === "en",
+          );
           return {
-            ...m,
+            name: m.name,
+            level: m.level,
+            type: md.type?.name ?? "???",
+            power: md.power ?? null,
+            accuracy: md.accuracy ?? null,
+            pp: md.pp ?? null,
+            damage_class: md.damage_class?.name ?? "physical",
+            method: m.method,
+            effect: effect?.short_effect ?? effect?.effect ?? null,
+          };
+        } catch {
+          return {
+            name: m.name,
+            level: m.level,
             type: "???",
             power: null,
             accuracy: null,
             pp: null,
             damage_class: "physical",
+            method: m.method,
           };
-        const md = await mr.json();
-        return {
-          name: m.name,
-          level: m.level,
-          type: md.type?.name ?? "???",
-          power: md.power ?? null,
-          accuracy: md.accuracy ?? null,
-          pp: md.pp ?? null,
-          damage_class: md.damage_class?.name ?? "physical",
-          method: "level-up",
-        };
-      } catch {
-        return {
-          name: m.name,
-          level: m.level,
-          type: "???",
-          power: null,
-          accuracy: null,
-          pp: null,
-          damage_class: "physical",
-          method: "level-up",
-        };
-      }
-    }),
-  );
+        }
+      }),
+    );
+    detailed.push(...results);
+  }
 
   return {
-    level_up: detailedMoves,
-    machine: moves.machine,
-    egg: moves.egg,
-    tutor: moves.tutor,
-  } as PokemonMoves;
+    level_up: detailed.filter((m) => m.method === "level-up"),
+    machine: detailed.filter((m) => m.method === "machine"),
+    egg: detailed.filter((m) => m.method === "egg"),
+    tutor: detailed.filter((m) => m.method === "tutor"),
+  };
 };
 
 export const getStatRankings = async ({

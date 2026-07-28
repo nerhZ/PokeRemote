@@ -244,7 +244,7 @@ export interface PokemonDetail {
   forms: PokemonFormSummary[];
 }
 
-interface MoveInfo {
+export interface MoveInfo {
   name: string;
   level: number;
   type: string;
@@ -253,13 +253,14 @@ interface MoveInfo {
   pp: number | null;
   damage_class: string;
   method: string;
+  effect?: string | null;
 }
 
 export interface PokemonMoves {
   level_up: MoveInfo[];
-  machine: { name: string }[];
-  egg: { name: string }[];
-  tutor: { name: string }[];
+  machine: MoveInfo[];
+  egg: MoveInfo[];
+  tutor: MoveInfo[];
 }
 
 export interface RankingEntry {
