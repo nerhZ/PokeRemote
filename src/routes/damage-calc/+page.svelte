@@ -63,8 +63,9 @@
       return;
     }
     (async () => {
-      if (att && attacker?.name !== att) await selectAttacker(att, mv, gen);
-      if (def && defender?.name !== def) await selectDefender(def, gen);
+      if (att && attacker?.name !== att)
+        await selectAttacker(att, mv, gen, true);
+      if (def && defender?.name !== def) await selectDefender(def, gen, true);
     })();
   });
 
@@ -92,6 +93,7 @@
     name: string,
     preferMove?: string | null,
     gen?: number,
+    skipSync?: boolean,
   ) {
     searchAtt = name;
     loadingAtt = true;
@@ -106,21 +108,25 @@
         selectedMove =
           moveList.level_up.find((m) => m.name === preferMove) ?? null;
       }
-      syncUrl();
+      if (!skipSync) syncUrl();
     } catch {
     } finally {
       loadingAtt = false;
     }
   }
 
-  async function selectDefender(name: string, gen?: number) {
+  async function selectDefender(
+    name: string,
+    gen?: number,
+    skipSync?: boolean,
+  ) {
     searchDef = name;
     loadingDef = true;
     try {
       const p = await getPokemonDetail(name);
       if (gen !== undefined && gen !== effectGen) return;
       defender = p;
-      syncUrl();
+      if (!skipSync) syncUrl();
     } catch {
     } finally {
       loadingDef = false;

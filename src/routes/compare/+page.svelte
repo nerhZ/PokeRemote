@@ -46,8 +46,8 @@
       return;
     }
     (async () => {
-      if (a && pokemonA?.name !== a) await selectPokemonA(a, gen);
-      if (b && pokemonB?.name !== b) await selectPokemonB(b, gen);
+      if (a && pokemonA?.name !== a) await selectPokemonA(a, gen, true);
+      if (b && pokemonB?.name !== b) await selectPokemonB(b, gen, true);
     })();
   });
 
@@ -68,28 +68,36 @@
     goto(resolve("/compare"), { replaceState: true });
   }
 
-  async function selectPokemonA(name: string, gen?: number) {
+  async function selectPokemonA(
+    name: string,
+    gen?: number,
+    skipSync?: boolean,
+  ) {
     searchA = name;
     loadingA = true;
     try {
       const p = await getPokemonDetail(name);
       if (gen !== undefined && gen !== effectGen) return;
       pokemonA = p;
-      syncUrl();
+      if (!skipSync) syncUrl();
     } catch {
     } finally {
       loadingA = false;
     }
   }
 
-  async function selectPokemonB(name: string, gen?: number) {
+  async function selectPokemonB(
+    name: string,
+    gen?: number,
+    skipSync?: boolean,
+  ) {
     searchB = name;
     loadingB = true;
     try {
       const p = await getPokemonDetail(name);
       if (gen !== undefined && gen !== effectGen) return;
       pokemonB = p;
-      syncUrl();
+      if (!skipSync) syncUrl();
     } catch {
     } finally {
       loadingB = false;
