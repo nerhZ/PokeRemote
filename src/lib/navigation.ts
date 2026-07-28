@@ -1,7 +1,3 @@
-export const nav = $state<{ previousUrl: string | null }>({
-  previousUrl: null,
-});
-
 const BACK_LABELS: Record<string, string> = {
   "/": "Pokédex",
   "/team-builder": "Team Builder",
