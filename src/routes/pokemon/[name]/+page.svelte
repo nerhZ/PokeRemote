@@ -538,7 +538,11 @@
                                 >{m.level}</span
                               >
                             {/if}
-                            <TypeBadge type={m.type} size="xs" />
+                            <TypeBadge
+                              type={m.type}
+                              size="xs"
+                              tooltip={false}
+                            />
                             <span
                               class="flex-1 truncate font-semibold text-white/80"
                               >{formatName(m.name)}</span

@@ -169,8 +169,12 @@
     display: none;
   }
 
-  .tooltip-host:hover .tooltip-content {
+  .tooltip-host:hover > .tooltip-content {
     display: block;
+  }
+
+  .tooltip-host:has(.tooltip-host:hover) > .tooltip-content {
+    display: none;
   }
 
   .nav-link {
@@ -202,7 +206,7 @@
   }
 
   .poke-card {
-    @apply relative block overflow-hidden rounded-2xl border no-underline transition-all duration-300;
+    @apply relative block rounded-2xl border no-underline transition-all duration-300;
     background: var(--surface);
     border-color: var(--border);
     color: var(--text);

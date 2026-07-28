@@ -10,38 +10,38 @@
       [];
     if (effectiveness.four_x_weak.length)
       r.push({
-        label: "Takes 4× from",
+        label: "Strong",
         mult: "4×",
         types: effectiveness.four_x_weak,
-        color: "#ff3e3e",
+        color: "#4ade80",
       });
     if (effectiveness.two_x_weak.length)
       r.push({
-        label: "Takes 2× from",
+        label: "Strong",
         mult: "2×",
         types: effectiveness.two_x_weak,
-        color: "#ff6b3e",
+        color: "#4ade80",
       });
     if (effectiveness.half_resist.length)
       r.push({
-        label: "Resists ½× from",
+        label: "Weak",
         mult: "½×",
         types: effectiveness.half_resist,
-        color: "#3e7bff",
+        color: "#ff3e3e",
       });
     if (effectiveness.quarter_resist.length)
       r.push({
-        label: "Resists ¼× from",
+        label: "Weak",
         mult: "¼×",
         types: effectiveness.quarter_resist,
-        color: "#3884ff",
+        color: "#ff3e3e",
       });
     if (effectiveness.immune.length)
       r.push({
-        label: "Immune to",
+        label: "No effect",
         mult: "0×",
         types: effectiveness.immune,
-        color: "#4ade80",
+        color: "#f7d02c",
       });
     return r;
   });
@@ -54,7 +54,7 @@
     {#each rows as row}
       <div>
         <div class="mb-2 flex items-center gap-2">
-          <span class="text-xs font-black" style="color: {row.color}"
+          <span class="text-sm font-semibold" style="color: {row.color}"
             >{row.mult}</span
           >
           <span class="text-xs text-white/40">{row.label}</span>

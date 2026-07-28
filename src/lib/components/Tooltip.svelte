@@ -24,7 +24,7 @@
 
 <div class="tooltip-host relative inline-block cursor-default">
   <div
-    class="tooltip-content pointer-events-none absolute z-[100] rounded-xl border p-3 text-left text-[11px] leading-relaxed shadow-2xl {positionClass} {width} {nowrap
+    class="tooltip-content absolute z-[100] rounded-xl border p-3 text-left text-[11px] leading-relaxed shadow-2xl {positionClass} {width} {nowrap
       ? 'whitespace-nowrap'
       : ''}"
     style="background: var(--card); border-color: var(--border); color: var(--muted-strong);"

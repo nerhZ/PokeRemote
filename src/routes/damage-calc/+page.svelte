@@ -262,7 +262,7 @@
                       ? 'border-accent bg-accent/10 text-white'
                       : 'border-white/4 bg-white/2 text-white/60'}"
                   >
-                    <TypeBadge type={m.type} size="xs" />
+                    <TypeBadge type={m.type} size="xs" tooltip={false} />
                     <span class="flex-1 truncate">{formatName(m.name)}</span>
                     <span class="text-white/30">{m.power ?? "—"}</span>
                   </button>

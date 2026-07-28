@@ -518,7 +518,11 @@
                       )}
                       <span class="flex items-center gap-1.5">
                         {#if move}
-                          <TypeBadge type={move.type} size="xs" />
+                          <TypeBadge
+                            type={move.type}
+                            size="xs"
+                            tooltip={false}
+                          />
                           <span>{formatName(move.name)}</span>
                           <span class="ml-auto text-[10px] text-white/30"
                             >{move.power ?? "—"}/{move.accuracy ??
@@ -552,7 +556,7 @@
                             ? 'bg-white/10'
                             : ''}"
                         >
-                          <TypeBadge type={m.type} size="xs" />
+                          <TypeBadge type={m.type} size="xs" tooltip={false} />
                           <span class="truncate">{formatName(m.name)}</span>
                           <span
                             class="ml-auto shrink-0 text-[10px] text-white/30"

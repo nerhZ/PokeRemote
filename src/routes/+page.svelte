@@ -415,7 +415,7 @@
               style="animation-delay: {Math.min(i, 15) * 35}ms"
             >
               <div
-                class="relative flex aspect-square items-center justify-center p-5"
+                class="relative flex aspect-square items-center justify-center overflow-hidden p-5"
               >
                 <div
                   class="absolute inset-0 opacity-40"

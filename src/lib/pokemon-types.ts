@@ -149,6 +149,24 @@ export const TYPE_CHART: Record<string, Record<string, number>> = {
   },
 };
 
+export function getAttackingMatchups(attackingType: string): {
+  strong: string[];
+  weak: string[];
+  immune: string[];
+} {
+  const chart = TYPE_CHART[attackingType];
+  if (!chart) return { strong: [], weak: [], immune: [] };
+  const strong: string[] = [];
+  const weak: string[] = [];
+  const immune: string[] = [];
+  for (const [defendingType, multiplier] of Object.entries(chart)) {
+    if (multiplier >= 2) strong.push(defendingType);
+    else if (multiplier > 0 && multiplier <= 0.5) weak.push(defendingType);
+    else if (multiplier === 0) immune.push(defendingType);
+  }
+  return { strong, weak, immune };
+}
+
 // ── Dex constants ─────────────────────────────────────────────────────────────
 export const TOTAL_SPECIES = 1025;
 export const TOTAL_POKEMON = 1351;
