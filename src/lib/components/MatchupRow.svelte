@@ -12,7 +12,7 @@
   <span class="shrink-0 text-[10px] font-bold" style="color: {color}"
     >{label}</span
   >
-  <div class="flex gap-1">
+  <div class="flex flex-wrap gap-1">
     {#each types as t}
       <TypeBadgeInner type={t} size="xs" />
     {/each}

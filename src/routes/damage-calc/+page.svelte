@@ -65,7 +65,8 @@
     (async () => {
       if (att && untrack(() => attacker?.name) !== att)
         await selectAttacker(att, mv, gen, true);
-      if (def && untrack(() => defender?.name) !== def) await selectDefender(def, gen, true);
+      if (def && untrack(() => defender?.name) !== def)
+        await selectDefender(def, gen, true);
     })();
   });
 

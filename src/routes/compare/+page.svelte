@@ -46,8 +46,10 @@
       return;
     }
     (async () => {
-      if (a && untrack(() => pokemonA?.name) !== a) await selectPokemonA(a, gen, true);
-      if (b && untrack(() => pokemonB?.name) !== b) await selectPokemonB(b, gen, true);
+      if (a && untrack(() => pokemonA?.name) !== a)
+        await selectPokemonA(a, gen, true);
+      if (b && untrack(() => pokemonB?.name) !== b)
+        await selectPokemonB(b, gen, true);
     })();
   });
 
