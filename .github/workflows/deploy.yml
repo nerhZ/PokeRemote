@@ -16,7 +16,7 @@ jobs:
       - run: bun install
       - run: bun run build
         env:
-          BASE_PATH: '/PokeRemote'
+          BASE_PATH: '/${{ github.event.repository.name }}'
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/
