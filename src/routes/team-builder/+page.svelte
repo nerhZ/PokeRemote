@@ -86,6 +86,20 @@
     return { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
   }
 
+  function clearState() {
+    localStorage.removeItem(`pageState:${page.url.pathname}`);
+    team = [];
+    sets = [];
+    search = "";
+    editingIndex = null;
+    teamName = "My Team";
+    moveDropdowns = {};
+    abilityDropdowns = {};
+    natureDropdowns = {};
+    evWarning = "";
+    goto(resolve("/team-builder"), { replaceState: true });
+  }
+
   function setEv(stat: keyof EvSpread, val: number) {
     if (editingIndex == null) return;
     const i = editingIndex;
@@ -375,8 +389,20 @@
 
 <div class="tool-shell">
   <div class="tool-hero">
-    <h1>Team Builder</h1>
-    <p>Six slots, movesets, share with competitive setups.</p>
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h1>Team Builder</h1>
+        <p>Six slots, movesets, share with competitive setups.</p>
+      </div>
+      {#if page.url.search}
+        <button
+          onclick={clearState}
+          class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/60 hover:text-white"
+        >
+          Clear
+        </button>
+      {/if}
+    </div>
   </div>
 
   <div class="panel mb-6 max-w-xl p-4!">

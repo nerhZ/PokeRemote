@@ -38,6 +38,13 @@
     const gen = ++effectGen;
     const a = page.url.searchParams.get("a");
     const b = page.url.searchParams.get("b");
+    if (!a && !b) {
+      pokemonA = null;
+      pokemonB = null;
+      searchA = "";
+      searchB = "";
+      return;
+    }
     (async () => {
       if (a && pokemonA?.name !== a) await selectPokemonA(a, gen);
       if (b && pokemonB?.name !== b) await selectPokemonB(b, gen);
@@ -54,6 +61,11 @@
       keepFocus: true,
       noScroll: true,
     });
+  }
+
+  function clearState() {
+    localStorage.removeItem(`pageState:${page.url.pathname}`);
+    goto(resolve("/compare"), { replaceState: true });
   }
 
   async function selectPokemonA(name: string, gen?: number) {
@@ -87,12 +99,24 @@
 
 <div class="tool-shell">
   <div class="tool-hero">
-    <h1>Compare Pokémon</h1>
-    <p>
-      Side-by-side stats with a shared radar. Search includes all {catalogTotal ||
-        "…"} forms. Share via <code class="text-accent">?a=</code> /
-      <code class="text-accent">?b=</code>.
-    </p>
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h1>Compare Pokémon</h1>
+        <p>
+          Side-by-side stats with a shared radar. Search includes all {catalogTotal ||
+            "…"} forms. Share via <code class="text-accent">?a=</code> /
+          <code class="text-accent">?b=</code>.
+        </p>
+      </div>
+      {#if page.url.search}
+        <button
+          onclick={clearState}
+          class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/60 hover:text-white"
+        >
+          Clear
+        </button>
+      {/if}
+    </div>
   </div>
 
   <div class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">

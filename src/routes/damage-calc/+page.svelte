@@ -49,6 +49,17 @@
     const mv = page.url.searchParams.get("move");
     const al = page.url.searchParams.get("al");
     const dl = page.url.searchParams.get("dl");
+    if (!att && !def) {
+      attacker = null;
+      defender = null;
+      searchAtt = "";
+      searchDef = "";
+      selectedMove = null;
+      moveList = null;
+      attLevel = 50;
+      defLevel = 50;
+      return;
+    }
     if (al) attLevel = Math.min(100, Math.max(1, parseInt(al, 10) || 50));
     if (dl) defLevel = Math.min(100, Math.max(1, parseInt(dl, 10) || 50));
     (async () => {
@@ -70,6 +81,11 @@
       keepFocus: true,
       noScroll: true,
     });
+  }
+
+  function clearState() {
+    localStorage.removeItem(`pageState:${page.url.pathname}`);
+    goto(resolve("/damage-calc"), { replaceState: true });
   }
 
   async function selectAttacker(
@@ -202,11 +218,23 @@
 
 <div class="tool-shell max-w-5xl">
   <div class="tool-hero">
-    <h1>Damage Calculator</h1>
-    <p>
-      Attacker + move + defender with STAB, type effectiveness, % HP, and KO
-      estimate. Shareable via query params.
-    </p>
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h1>Damage Calculator</h1>
+        <p>
+          Attacker + move + defender with STAB, type effectiveness, % HP, and KO
+          estimate. Shareable via query params.
+        </p>
+      </div>
+      {#if page.url.search}
+        <button
+          onclick={clearState}
+          class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/60 hover:text-white"
+        >
+          Clear
+        </button>
+      {/if}
+    </div>
   </div>
 
   <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -219,7 +247,9 @@
         options={allNames}
         onselect={(n) => selectAttacker(n)}
       />
-      {#if loadingAtt}<div class="mt-2"><LoadingSpinner size="sm" /></div>{/if}
+      {#if loadingAtt}<div class="mt-2">
+          <LoadingSpinner size="sm" />
+        </div>{/if}
       {#if attacker}
         <a
           href={resolve(`/pokemon/${attacker.name}`)}
@@ -283,7 +313,9 @@
         options={allNames}
         onselect={selectDefender}
       />
-      {#if loadingDef}<div class="mt-2"><LoadingSpinner size="sm" /></div>{/if}
+      {#if loadingDef}<div class="mt-2">
+          <LoadingSpinner size="sm" />
+        </div>{/if}
       {#if defender}
         <a
           href={resolve(`/pokemon/${defender.name}`)}
