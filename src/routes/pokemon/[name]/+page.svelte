@@ -177,7 +177,7 @@
   let backUrl = $derived.by(() => {
     if (!raw) return resolve("/");
     if (base === "/") return raw;
-    return base.slice(0, -1) + raw;
+    return base + raw;
   });
   let backText = $derived(backLabel(raw));
 </script>
