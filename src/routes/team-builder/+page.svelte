@@ -415,7 +415,11 @@
           <div class="absolute top-1.5 left-1.5 z-10 flex gap-1">
             <a
               href={resolve(`/pokemon/${p.name}`)}
-              onclick={(e) => e.stopPropagation()}
+              onclick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                goto(resolve(`/pokemon/${p.name}`));
+              }}
               class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-white/10 bg-black/20 text-xs text-white/50 no-underline hover:text-white"
               title="Open Pokédex">◉</a
             >
