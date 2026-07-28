@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
-  import { resolve } from "$app/paths";
+  import { resolve, base } from "$app/paths";
   import { getPokemonDetail, getPokemonMoves, getSpeciesIds } from "$lib/api";
   import {
     TYPE_COLORS,
@@ -173,8 +173,13 @@
     { id: "data" as const, label: "Data" },
   ];
 
-  let backUrl = $derived(localStorage.getItem("previousUrl") ?? resolve("/"));
-  let backText = $derived(backLabel(localStorage.getItem("previousUrl")));
+  let raw = $derived(localStorage.getItem("previousUrl"));
+  let backUrl = $derived.by(() => {
+    if (!raw) return resolve("/");
+    if (base === "/") return raw;
+    return base.slice(0, -1) + raw;
+  });
+  let backText = $derived(backLabel(raw));
 </script>
 
 <div

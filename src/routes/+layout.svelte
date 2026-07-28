@@ -82,11 +82,14 @@
 
   beforeNavigate(({ from, to }) => {
     if (
-      from?.url &&
-      !from.url.pathname.startsWith("/pokemon") &&
-      to?.url?.pathname.startsWith("/pokemon")
+      from?.route?.id &&
+      !from.route.id.startsWith("/pokemon") &&
+      to?.route?.id?.startsWith("/pokemon")
     ) {
-      localStorage.setItem("previousUrl", from.url.pathname + from.url.search);
+      localStorage.setItem(
+        "previousUrl",
+        from.route.id + (from.url?.search ?? ""),
+      );
     }
   });
 
