@@ -20,6 +20,7 @@
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import MoveTooltip from "$lib/components/MoveTooltip.svelte";
   import Tooltip from "$lib/components/Tooltip.svelte";
+  import AttackingMatchups from "$lib/components/AttackingMatchups.svelte";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import { onMount } from "svelte";
@@ -728,25 +729,36 @@
         <div class="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {#each ALL_TYPES as t}
             {@const c = coverage[t]}
-            <div
-              class="rounded-lg px-2 py-2 text-center text-[10px] font-bold uppercase"
-              style="background-color: {c >= 2
-                ? 'rgba(255,62,62,0.2)'
-                : c <= -1
-                  ? 'rgba(74,222,128,0.2)'
-                  : 'var(--surface-2)'}; border: 1px solid {c >= 2
-                ? 'rgba(255,62,62,0.3)'
-                : c <= -1
-                  ? 'rgba(74,222,128,0.3)'
-                  : 'var(--border)'}"
-            >
-              <span class="block" style="color: {TYPE_COLORS[t]}"
-                >{t.slice(0, 4)}</span
-              >
-              <span class="opacity-60"
-                >{c >= 2 ? "Weak" : c <= -1 ? "Safe" : "OK"}</span
-              >
-            </div>
+            <Tooltip width="w-max">
+              {#snippet popup()}
+                <div
+                  class="mb-1 block font-semibold capitalize"
+                  style="color: var(--text)"
+                >
+                  {t}
+                </div>
+                <AttackingMatchups type={t} />
+              {/snippet}
+              {#snippet trigger()}
+                <div
+                  class="cursor-pointer rounded-lg px-2 py-2 text-center text-[10px] font-bold uppercase"
+                  style="background-color: {c >= 2
+                    ? 'rgba(255,62,62,0.2)'
+                    : c <= -1
+                      ? 'rgba(74,222,128,0.2)'
+                      : 'var(--surface-2)'}; border: 1px solid {c >= 2
+                    ? 'rgba(255,62,62,0.3)'
+                    : c <= -1
+                      ? 'rgba(74,222,128,0.3)'
+                      : 'var(--border)'}"
+                >
+                  <span class="block" style="color: {TYPE_COLORS[t]}">{t}</span>
+                  <span class="opacity-60"
+                    >{c >= 2 ? "Weak" : c <= -1 ? "Safe" : "OK"}</span
+                  >
+                </div>
+              {/snippet}
+            </Tooltip>
           {/each}
         </div>
       </div>
