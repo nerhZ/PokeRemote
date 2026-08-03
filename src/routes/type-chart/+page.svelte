@@ -6,12 +6,8 @@
     TYPE_COLORS,
     formatName,
   } from "$lib/pokemon-types";
+  import Tooltip from "$lib/components/Tooltip.svelte";
   import TypePopup from "$lib/components/TypePopup.svelte";
-
-  let popupVisible = $state(false);
-  let popupType = $state("");
-  let popupDir = $state<"top" | "bottom">("top");
-  let popupPos = $state({ left: 0, top: 0 });
 
   let heroRef = $state<HTMLElement | undefined>();
   let legendRef = $state<HTMLElement | undefined>();
@@ -49,29 +45,6 @@
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   });
-
-  function showPopup(e: MouseEvent, type: string, dir: "top" | "bottom") {
-    popupType = type;
-    popupDir = dir;
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    popupPos =
-      dir === "bottom"
-        ? { left: rect.left + rect.width / 2, top: rect.bottom + 10 }
-        : { left: rect.left + rect.width / 2, top: rect.top - 10 };
-    popupVisible = true;
-  }
-
-  function togglePopup(e: MouseEvent, type: string, dir: "top" | "bottom") {
-    if (popupVisible && popupType === type) {
-      hidePopup();
-      return;
-    }
-    showPopup(e, type, dir);
-  }
-
-  function hidePopup() {
-    popupVisible = false;
-  }
 
   function multOf(att: string, def: string): number {
     return TYPE_CHART[att]?.[def] ?? 1;
@@ -116,35 +89,59 @@
         style="background: var(--card); height: {headerHeight}px"
       ></div>
       {#each ALL_TYPES as def}
-        <button
-          type="button"
-          class="flex cursor-default items-end justify-center pb-1.5"
-          style="height: {headerHeight}px; font-size: {labelFont}px"
-          title={formatName(def)}
-          onpointerenter={(e) => showPopup(e, def, "bottom")}
-          onpointerleave={hidePopup}
-          onclick={(e) => togglePopup(e, def, "bottom")}
+        <Tooltip
+          fixed
+          interactive
+          position="bottom"
+          width="w-max max-w-[min(24rem,calc(100vw-2rem))]"
+          hostClass="flex items-end justify-center pb-1.5"
+          hostStyle="height: {headerHeight}px"
         >
-          <span class="font-bold tracking-wide uppercase"
-            >{formatName(def)}</span
-          >
-        </button>
+          {#snippet popup()}
+            <TypePopup type={def} />
+          {/snippet}
+          {#snippet trigger(handlers)}
+            <button
+              type="button"
+              {...handlers}
+              class="cursor-default"
+              style="font-size: {labelFont}px"
+              title={formatName(def)}
+            >
+              <span
+                class="font-bold tracking-wide uppercase"
+                style="color: {TYPE_COLORS[def]}">{formatName(def)}</span
+              >
+            </button>
+          {/snippet}
+        </Tooltip>
       {/each}
       {#each ALL_TYPES as att}
-        <button
-          type="button"
-          class="sticky left-0 z-10 flex cursor-default items-center gap-1.5 border-y border-white/4 px-2"
-          style="background: var(--card); height: {rowHeight}px; font-size: {labelFont}px"
-          onpointerenter={(e) => showPopup(e, att, "top")}
-          onpointerleave={hidePopup}
-          onclick={(e) => togglePopup(e, att, "top")}
+        <Tooltip
+          fixed
+          interactive
+          position="top"
+          width="w-max max-w-[min(24rem,calc(100vw-2rem))]"
+          hostClass="sticky left-0 z-10 border-y border-white/4 bg-(--card)"
+          hostStyle="height: {rowHeight}px"
         >
-          <span
-            class="h-2.5 w-2.5 shrink-0 rounded-full"
-            style="background: {TYPE_COLORS[att]}"
-          ></span>
-          <span class="truncate font-bold uppercase">{formatName(att)}</span>
-        </button>
+          {#snippet popup()}
+            <TypePopup type={att} />
+          {/snippet}
+          {#snippet trigger(handlers)}
+            <button
+              type="button"
+              {...handlers}
+              class="flex h-full w-full cursor-default items-center px-2"
+              style="font-size: {labelFont}px"
+            >
+              <span
+                class="truncate font-bold uppercase"
+                style="color: {TYPE_COLORS[att]}">{formatName(att)}</span
+              >
+            </button>
+          {/snippet}
+        </Tooltip>
         {#each ALL_TYPES as def}
           {@const m = multOf(att, def)}
           <div
@@ -158,18 +155,6 @@
       {/each}
     </div>
   </div>
-
-  {#if popupVisible}
-    <div
-      class="pointer-events-none fixed z-100 w-max max-w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 rounded-xl border p-3 text-left text-[11px] leading-relaxed shadow-2xl {popupDir ===
-      'top'
-        ? '-translate-y-full'
-        : ''}"
-      style="left: {popupPos.left}px; top: {popupPos.top}px; background: var(--card); border-color: var(--border); color: var(--muted-strong);"
-    >
-      <TypePopup type={popupType} />
-    </div>
-  {/if}
 
   <div
     bind:this={legendRef}
