@@ -8,20 +8,38 @@
   import { randomFallbackPath } from "$lib/navigation";
   import PokemonSearch from "$lib/components/PokemonSearch.svelte";
   import LoadingBar from "$lib/components/LoadingBar.svelte";
+  import NavMenu from "$lib/components/NavMenu.svelte";
   import "../app.css";
 
   let { children } = $props();
   let mobileOpen = $state(false);
   let theme = $state<ThemeMode>("dark");
 
-  const links = [
-    { href: "/", label: "Pokédex", icon: "◎" },
-    { href: "/compare", label: "Compare", icon: "⇄" },
-    { href: "/team-builder", label: "Team", icon: "⬡" },
-    { href: "/damage-calc", label: "Damage", icon: "⚔" },
-    { href: "/rankings", label: "Rankings", icon: "★" },
-    { href: "/items", label: "Items", icon: "◆" },
+  const groups = [
+    {
+      label: "Tools",
+      icon: "⚒",
+      items: [
+        { href: "/compare", label: "Compare", icon: "⇄" },
+        { href: "/team-builder", label: "Team", icon: "⬡" },
+        { href: "/damage-calc", label: "Damage", icon: "⚔" },
+        { href: "/rankings", label: "Rankings", icon: "★" },
+      ],
+    },
+    {
+      label: "Dexes",
+      icon: "◆",
+      items: [
+        { href: "/items", label: "Items", icon: "◆" },
+        { href: "/abilities", label: "Abilities", icon: "✧" },
+        { href: "/moves", label: "Moves", icon: "✦" },
+        { href: "/type-chart", label: "Type Chart", icon: "▤" },
+      ],
+    },
   ] as const;
+
+  const primary = [{ href: "/", label: "Pokédex", icon: "◎" }] as const;
+  const quiz = { href: "/quiz", label: "Quiz", icon: "❓" } as const;
 
   function isActive(href: string) {
     if (href === "/") return page.url.pathname === "/";
@@ -140,16 +158,32 @@
       </div>
 
       <div class="hidden flex-wrap items-center gap-1 lg:flex">
-        {#each links as link}
+        {#each primary as link}
           <a
             href={resolve(link.href)}
             class="nav-link {isActive(link.href) ? 'nav-link-active' : ''}"
             >{link.icon} {link.label}</a
           >
         {/each}
+        {#each groups as group}
+          <NavMenu
+            label={group.label}
+            icon={group.icon}
+            items={group.items.map((i) => ({
+              href: resolve(i.href),
+              label: i.label,
+              icon: i.icon,
+            }))}
+          />
+        {/each}
+        <a
+          href={resolve(quiz.href)}
+          class="nav-link {isActive(quiz.href) ? 'nav-link-active' : ''}"
+          >{quiz.icon} {quiz.label}</a
+        >
         <button
           onclick={toggleTheme}
-          class="nav-link cursor-pointer border-0 bg-transparent"
+          class="nav-link cursor-pointer border-0"
           aria-label="Toggle theme"
           title="Toggle theme"
         >
@@ -159,7 +193,7 @@
           href="https://github.com/nerhZ/PokeRemote"
           target="_blank"
           rel="noopener noreferrer"
-          class="nav-link border-0 bg-transparent focus:outline-none"
+          class="nav-link border-0 focus:outline-none"
           aria-label="GitHub"
           title="GitHub"
         >
@@ -174,14 +208,14 @@
       <div class="flex items-center gap-2 lg:hidden">
         <button
           onclick={toggleTheme}
-          class="nav-link cursor-pointer border-0 bg-transparent"
+          class="nav-link cursor-pointer border-0"
           aria-label="Toggle theme">{theme === "dark" ? "☀" : "☾"}</button
         >
         <a
           href="https://github.com/nerhZ/PokeRemote"
           target="_blank"
           rel="noopener noreferrer"
-          class="nav-link border-0 bg-transparent focus:outline-none"
+          class="nav-link border-0 focus:outline-none"
           aria-label="GitHub"
         >
           <svg viewBox="0 0 24 24" class="size-5 fill-current">
@@ -192,7 +226,7 @@
         </a>
         <button
           onclick={() => (mobileOpen = !mobileOpen)}
-          class="nav-link cursor-pointer border-0 bg-transparent"
+          class="nav-link cursor-pointer border-0"
           aria-label="Menu">☰</button
         >
       </div>
@@ -211,7 +245,7 @@
         class="flex flex-col gap-1 border-t px-4 py-3 lg:hidden"
         style="border-color: var(--border); background: var(--bg)"
       >
-        {#each links as link}
+        {#each primary as link}
           <a
             href={resolve(link.href)}
             onclick={() => (mobileOpen = false)}
@@ -220,6 +254,31 @@
               : ''} block">{link.icon} {link.label}</a
           >
         {/each}
+        {#each groups as group}
+          <p
+            class="px-3 pt-2 text-[10px] font-bold tracking-wider uppercase"
+            style="color: var(--muted)"
+          >
+            {group.icon}
+            {group.label}
+          </p>
+          {#each group.items as item}
+            <a
+              href={resolve(item.href)}
+              onclick={() => (mobileOpen = false)}
+              class="nav-link {isActive(item.href)
+                ? 'nav-link-active'
+                : ''} block pl-6">{item.icon} {item.label}</a
+            >
+          {/each}
+        {/each}
+        <a
+          href={resolve(quiz.href)}
+          onclick={() => (mobileOpen = false)}
+          class="nav-link {isActive(quiz.href)
+            ? 'nav-link-active'
+            : ''} mt-2 block">{quiz.icon} {quiz.label}</a
+        >
         <p class="px-3 pt-2 text-[10px]" style="color: var(--muted)">
           Shortcuts: <kbd>/</kbd> search · <kbd>R</kbd> random
         </p>

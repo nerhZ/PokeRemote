@@ -6,6 +6,11 @@ const BACK_LABELS: Record<string, string> = {
   "/compare": "Compare",
   "/rankings": "Rankings",
   "/damage-calc": "Damage Calc",
+  "/items": "Items",
+  "/abilities": "Abilities",
+  "/moves": "Moves",
+  "/type-chart": "Type Chart",
+  "/quiz": "Quiz",
 };
 
 export function backLabel(url: string | null): string {
