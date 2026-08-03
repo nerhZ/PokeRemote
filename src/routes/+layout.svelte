@@ -4,8 +4,8 @@
   import { resolve } from "$app/paths";
   import { onMount } from "svelte";
   import { applyTheme, getTheme, setTheme, type ThemeMode } from "$lib/storage";
-  import { getRandomPokemon } from "$lib/api";
-  import { randomFallbackPath } from "$lib/navigation";
+  import { isActive, gotoRandomPokemon } from "$lib/navigation";
+  import { dismissAppLoader } from "$lib/loader";
   import PokemonSearch from "$lib/components/PokemonSearch.svelte";
   import LoadingBar from "$lib/components/LoadingBar.svelte";
   import NavMenu from "$lib/components/NavMenu.svelte";
@@ -41,11 +41,6 @@
   const primary = [{ href: "/", label: "Pokédex", icon: "◎" }] as const;
   const quiz = { href: "/quiz", label: "Quiz", icon: "❓" } as const;
 
-  function isActive(href: string) {
-    if (href === "/") return page.url.pathname === "/";
-    return page.url.pathname.startsWith(href);
-  }
-
   function toggleTheme() {
     const next = theme === "dark" ? "light" : "dark";
     theme = next;
@@ -53,13 +48,7 @@
   }
 
   onMount(() => {
-    setTimeout(() => {
-      const loader = document.getElementById("app-loader");
-      if (loader) {
-        loader.style.opacity = "0";
-        setTimeout(() => loader.remove(), 350);
-      }
-    }, 300);
+    setTimeout(dismissAppLoader, 300);
 
     theme = getTheme();
     applyTheme();
@@ -83,13 +72,7 @@
       }
       if (e.key === "r" || e.key === "R") {
         if (!e.metaKey && !e.ctrlKey && !e.altKey) {
-          getRandomPokemon()
-            .then((r) => {
-              goto(resolve(`/pokemon/${r.name}`));
-            })
-            .catch(() => {
-              goto(resolve(randomFallbackPath()));
-            });
+          gotoRandomPokemon();
         }
       }
     }

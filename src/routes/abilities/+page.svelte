@@ -3,6 +3,8 @@
   import { formatName, generationLabel, GEN_COLORS } from "$lib/pokemon-types";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
+  import SearchInput from "$lib/components/SearchInput.svelte";
+  import FilterChip from "$lib/components/FilterChip.svelte";
   import { onMount } from "svelte";
 
   let abilities = $state<AbilityEntry[]>([]);
@@ -32,6 +34,12 @@
       return true;
     });
   });
+
+  let genAvailable = $derived.by(() => {
+    const q = search.trim().toLowerCase();
+    const pool = q ? abilities.filter((a) => a.name.includes(q)) : abilities;
+    return new Set(pool.map((a) => generationLabel(a.generation)));
+  });
 </script>
 
 <div class="tool-shell">
@@ -45,29 +53,25 @@
   </div>
 
   <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
-    <input
-      type="search"
+    <SearchInput
       bind:value={search}
       placeholder="Search abilities..."
-      class="focus:border-accent/50 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm placeholder-white/30 outline-none md:max-w-xs"
+      class="md:max-w-xs"
     />
     <div class="flex flex-wrap items-center gap-1.5">
-      <button
+      <FilterChip
+        label="All gens"
+        active={genFilter === ""}
         onclick={() => (genFilter = "")}
-        class="cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-wide uppercase {genFilter ===
-        ''
-          ? 'bg-accent border-accent text-white'
-          : 'border-white/10 bg-white/5 text-white/55'}">All gens</button
-      >
+      />
       {#each GENS as g}
         {@const label = `Gen ${g}`}
-        <button
+        <FilterChip
+          {label}
+          active={genFilter === label}
+          disabled={!loading && genFilter !== label && !genAvailable.has(label)}
           onclick={() => (genFilter = genFilter === label ? "" : label)}
-          class="cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-wide uppercase {genFilter ===
-          label
-            ? 'bg-accent border-accent text-white'
-            : 'border-white/10 bg-white/5 text-white/55'}">{label}</button
-        >
+        />
       {/each}
     </div>
   </div>

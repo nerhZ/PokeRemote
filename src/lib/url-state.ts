@@ -1,13 +1,18 @@
 import { goto } from "$app/navigation";
+import { page } from "$app/state";
 import { resolve } from "$app/paths";
 import { getAutocompleteList, getPokemonDetail } from "$lib/api";
 import type { PokemonDetail } from "$lib/pokemon-types";
 
 /** Shared query-param sync + clear behavior for tool pages. */
 export function pageUrlSync(
-  path: "/compare" | "/damage-calc" | "/team-builder",
+  path: "/" | "/compare" | "/damage-calc" | "/team-builder",
 ) {
   const base = resolve(path);
+  /** Matches the key the layout writes under `pageState:${pathname}` (base-aware). */
+  const clearPageState = () => {
+    localStorage.removeItem(`pageState:${page.url.pathname}`);
+  };
   return {
     push(params: URLSearchParams) {
       const q = params.toString();
@@ -17,10 +22,21 @@ export function pageUrlSync(
         noScroll: true,
       });
     },
+    /**
+     * Push the given params, preserving any other current query params.
+     * Keys in `deleteKeys` are removed from the merged result.
+     */
+    pushMerged(params: URLSearchParams, deleteKeys: string[] = []) {
+      const merged = new URLSearchParams(window.location.search);
+      for (const key of deleteKeys) merged.delete(key);
+      for (const [key, value] of params) merged.set(key, value);
+      this.push(merged);
+    },
     clear() {
-      localStorage.removeItem(`pageState:${base}`);
+      clearPageState();
       goto(base, { replaceState: true });
     },
+    clearPageState,
   };
 }
 

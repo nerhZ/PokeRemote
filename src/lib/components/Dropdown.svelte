@@ -12,8 +12,7 @@
   };
 
   let {
-    open,
-    onopen,
+    open = $bindable(false),
     options,
     selected,
     onselect,
@@ -22,8 +21,7 @@
     buttonClass = "",
     button,
   }: {
-    open: boolean;
-    onopen: (open: boolean) => void;
+    open?: boolean;
     options: DropdownOption[];
     selected: string;
     onselect: (value: string) => void;
@@ -32,12 +30,44 @@
     buttonClass?: string;
     button?: Snippet<[string]>;
   } = $props();
+
+  let host: HTMLElement | undefined = $state();
+
+  function toggle() {
+    open = !open;
+  }
+
+  function pick(value: string) {
+    onselect(value);
+    open = false;
+  }
+
+  function clear() {
+    onclear?.();
+    open = false;
+  }
+
+  $effect(() => {
+    if (!open) return;
+    function onKeydown(e: KeyboardEvent) {
+      if (e.key === "Escape") open = false;
+    }
+    function onPointerDown(e: PointerEvent) {
+      if (host && !host.contains(e.target as Node)) open = false;
+    }
+    document.addEventListener("keydown", onKeydown);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKeydown);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  });
 </script>
 
-<div class="relative">
+<div bind:this={host} class="relative">
   <button
     type="button"
-    onclick={() => onopen(!open)}
+    onclick={toggle}
     class="w-full cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left text-xs text-white/70 outline-none hover:border-white/20 {buttonClass}"
   >
     {#if button}
@@ -55,7 +85,7 @@
       {#if onclear}
         <button
           type="button"
-          onclick={onclear}
+          onclick={clear}
           class="w-full cursor-pointer rounded-lg border-0 bg-transparent px-3 py-2 text-left text-xs text-white/40 hover:bg-white/5"
           >None</button
         >
@@ -63,7 +93,7 @@
       {#each options as o}
         <button
           type="button"
-          onclick={() => onselect(o.value)}
+          onclick={() => pick(o.value)}
           class="flex w-full flex-col gap-0.5 rounded-lg border-0 bg-transparent px-3 py-2 text-left text-xs text-white/70 hover:bg-white/5 {selected ===
           o.value
             ? 'bg-white/10'

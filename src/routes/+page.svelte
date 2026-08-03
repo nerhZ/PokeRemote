@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
   import { onMount, untrack } from "svelte";
-  import { getRandomPokemon, getAllPokemonSummaries } from "$lib/api";
-  import { randomFallbackPath } from "$lib/navigation";
+  import { getAllPokemonSummaries } from "$lib/api";
+  import { gotoRandomPokemon } from "$lib/navigation";
+  import { dismissAppLoader } from "$lib/loader";
+  import { pageUrlSync } from "$lib/url-state";
   import {
     TYPE_COLORS,
     GEN_RANGES,
@@ -17,6 +18,7 @@
     getGeneration,
     generationShortLabel,
     tokenMatch,
+    typeColor,
   } from "$lib/pokemon-types";
   import {
     getFavorites,
@@ -28,6 +30,7 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Pokeball from "$lib/components/Pokeball.svelte";
   import PokemonImage from "$lib/components/PokemonImage.svelte";
+  import FilterChip from "$lib/components/FilterChip.svelte";
 
   let allPokemon = $state<any[]>([]);
   let loadProgress = $state({ done: 0, total: 0 });
@@ -43,13 +46,7 @@
   let showFavoritesOnly = $state(false);
   let expandedId = $state<number | null>(null);
 
-  function dismissLoader() {
-    const loader = document.getElementById("app-loader");
-    if (loader) {
-      loader.style.opacity = "0";
-      setTimeout(() => loader.remove(), 350);
-    }
-  }
+  const sync = pageUrlSync("/");
 
   onMount(() => {
     favorites = getFavorites();
@@ -62,12 +59,12 @@
       .then(({ data }) => {
         allPokemon = data;
         loadPhase = "ready";
-        dismissLoader();
+        dismissAppLoader();
       })
       .catch((e: any) => {
         error = e.message || "Failed to load Pokémon";
         loadPhase = "error";
-        dismissLoader();
+        dismissAppLoader();
       });
   });
 
@@ -97,29 +94,15 @@
   function setTypes(next: string[]) {
     activeTypes = next;
     lastTypeParam = next.join(",");
-    const params = new URLSearchParams(page.url.search);
+    const params = new URLSearchParams();
     if (next.length) params.set("type", next.join(","));
-    else params.delete("type");
-    const q = params.toString();
-    goto(q ? resolve("/") + `?${q}` : resolve("/"), {
-      replaceState: true,
-      keepFocus: true,
-      noScroll: true,
-    });
+    else sync.clearPageState();
+    sync.pushMerged(params, next.length ? [] : ["type"]);
   }
 
   function toggleType(t: string) {
     const sel = activeTypes.includes(t);
     setTypes(sel ? activeTypes.filter((x) => x !== t) : [...activeTypes, t]);
-  }
-
-  async function randomPokemon() {
-    try {
-      const r = await getRandomPokemon();
-      goto(resolve(`/pokemon/${r.name}`));
-    } catch {
-      goto(resolve(randomFallbackPath()));
-    }
   }
 
   function toggleForms(e: MouseEvent, id: number) {
@@ -139,35 +122,75 @@
     });
   }
 
-  let filtered = $derived.by(() => {
-    let result = allPokemon;
-
-    if (showFavoritesOnly) {
+  function applyFilters(
+    list: any[],
+    opts: {
+      types?: string[];
+      gens?: string[];
+      search?: string;
+      favs?: boolean;
+    },
+  ): any[] {
+    let result = list;
+    if (opts.favs) {
       const favIds = new Set(favorites.map((f) => f.id));
       result = result.filter((p) => favIds.has(p.id));
     }
-
-    if (activeTypes.length > 0) {
+    if (opts.types && opts.types.length > 0) {
       result = result.filter((p) =>
-        activeTypes.every((t) => p.types.includes(t)),
+        opts.types!.every((t) => p.types.includes(t)),
       );
     }
-
-    if (activeGens.length > 0) {
-      result = result.filter((p) => activeGens.includes(p.gen));
+    if (opts.gens && opts.gens.length > 0) {
+      result = result.filter((p) => opts.gens!.includes(p.gen));
     }
-
-    if (searchQuery) {
+    if (opts.search) {
       result = result.filter((p) =>
         tokenMatch(
-          searchQuery,
+          opts.search!,
           p.name,
           p.id,
           (p.forms || []).map((f: any) => f.name),
         ),
       );
     }
+    return result;
+  }
 
+  /** Types that can still produce results alongside the current filter combination. */
+  let possibleTypes = $derived.by(() => {
+    const avail = new Set<string>();
+    for (const p of applyFilters(allPokemon, {
+      types: activeTypes,
+      gens: activeGens,
+      search: searchQuery,
+      favs: showFavoritesOnly,
+    })) {
+      for (const t of p.types ?? []) avail.add(t);
+    }
+    return avail;
+  });
+
+  /** Generations that can still produce results alongside the current filter combination. */
+  let possibleGens = $derived.by(() => {
+    const avail = new Set<string>();
+    for (const p of applyFilters(allPokemon, {
+      types: activeTypes,
+      search: searchQuery,
+      favs: showFavoritesOnly,
+    })) {
+      avail.add(p.gen);
+    }
+    return avail;
+  });
+
+  let filtered = $derived.by(() => {
+    const result = applyFilters(allPokemon, {
+      types: activeTypes,
+      gens: activeGens,
+      search: searchQuery,
+      favs: showFavoritesOnly,
+    });
     const sorted = [...result];
     if (sortBy === "id-asc") sorted.sort((a, b) => a.id - b.id);
     else if (sortBy === "id-desc") sorted.sort((a, b) => b.id - a.id);
@@ -222,7 +245,7 @@
       </p>
       <div class="flex flex-wrap justify-center gap-2">
         <button
-          onclick={randomPokemon}
+          onclick={gotoRandomPokemon}
           class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/70 transition-all hover:bg-white/10 hover:text-white"
         >
           Random Pokémon
@@ -323,61 +346,51 @@
       </div>
       <div class="mt-3 space-y-2 {filtersOpen ? 'block' : 'hidden md:block'}">
         <div class="flex flex-wrap gap-1.5">
-          <button
+          <FilterChip
+            label="All types"
+            active={activeTypes.length === 0}
+            variant="inverted"
+            count={activeTypes.length > 0 ? activeTypes.length : undefined}
             onclick={() => setTypes([])}
-            class="cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-wide uppercase {activeTypes.length ===
-            0
-              ? 'text-bg-navy border-white bg-white'
-              : 'border-white/10 bg-white/5 text-white/55'}"
-          >
-            All types{#if activeTypes.length > 0}<span
-                class="bg-accent ml-1 rounded-full px-1.5 py-0.5 text-[8px] text-white"
-                >{activeTypes.length}</span
-              >{/if}
-          </button>
+          />
           {#each ALL_TYPES as t}
-            {@const sel = activeTypes.includes(t)}
-            <button
+            <FilterChip
+              label={t}
+              active={activeTypes.includes(t)}
+              variant="color"
+              color={TYPE_COLORS[t]}
+              disabled={loadPhase === "ready" &&
+                !activeTypes.includes(t) &&
+                !possibleTypes.has(t)}
               onclick={() => toggleType(t)}
-              class="cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-wide uppercase {sel
-                ? 'border-transparent text-white'
-                : 'border-white/10 bg-white/5 text-white/55'}"
-              style={sel ? `background-color: ${TYPE_COLORS[t]}` : ""}
-              >{t}</button
-            >
+            />
           {/each}
         </div>
         <div class="flex flex-wrap gap-1.5">
-          <button
+          <FilterChip
+            label="All gens"
+            active={activeGens.length === 0}
+            count={activeGens.length > 0 ? activeGens.length : undefined}
             onclick={() => {
               activeGens = [];
             }}
-            class="cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-wide uppercase {activeGens.length ===
-            0
-              ? 'bg-accent border-accent text-white'
-              : 'border-white/10 bg-white/5 text-white/55'}"
-          >
-            All gens{#if activeGens.length > 0}<span
-                class="ml-1 rounded-full bg-white/20 px-1.5 py-0.5 text-[8px] text-white"
-                >{activeGens.length}</span
-              >{/if}
-          </button>
+          />
           {#each GEN_RANGES as gen}
             {@const label = gen.label}
-            {@const sel = activeGens.includes(label)}
-            <button
+            <FilterChip
+              label={generationShortLabel(label)}
+              active={activeGens.includes(label)}
+              disabled={loadPhase === "ready" &&
+                !activeGens.includes(label) &&
+                !possibleGens.has(label)}
               onclick={() => {
-                if (sel) {
+                if (activeGens.includes(label)) {
                   activeGens = activeGens.filter((x) => x !== label);
                 } else {
                   activeGens = [...activeGens, label];
                 }
               }}
-              class="cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-wide uppercase {sel
-                ? 'bg-accent border-accent text-white'
-                : 'border-white/10 bg-white/5 text-white/55'}"
-              >{generationShortLabel(label)}</button
-            >
+            />
           {/each}
         </div>
       </div>
@@ -425,7 +438,7 @@
         class="grid grid-cols-2 gap-3 pb-8 sm:grid-cols-3 md:grid-cols-4 md:gap-4 lg:grid-cols-5"
       >
         {#each filtered as p, i (p.id)}
-          {@const primaryColor = TYPE_COLORS[p.types?.[0]] || "#777"}
+          {@const primaryColor = typeColor(p.types)}
           {@const fav = favorites.some((f) => f.id === p.id)}
           {@const forms = p.forms || []}
           {@const hasForms = (p.form_count ?? forms.length) > 1}

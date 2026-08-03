@@ -7,6 +7,8 @@
     STAT_LABELS,
     formatName,
     formatId,
+    typeColor,
+    statTotal,
     type PokemonDetail,
   } from "$lib/pokemon-types";
   import PokemonSearch from "$lib/components/PokemonSearch.svelte";
@@ -15,6 +17,7 @@
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import StatBar from "$lib/components/StatBar.svelte";
+  import ClearButton from "$lib/components/ClearButton.svelte";
   import { onMount, untrack } from "svelte";
 
   let allNames: { name: string; id: number }[] = $state([]);
@@ -111,14 +114,7 @@
           <code class="text-accent">?b=</code>.
         </p>
       </div>
-      {#if page.url.search}
-        <button
-          onclick={clearState}
-          class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/60 hover:text-white"
-        >
-          Clear
-        </button>
-      {/if}
+      <ClearButton onclick={clearState} />
     </div>
   </div>
 
@@ -165,7 +161,7 @@
       </div>
       {#each [pokemonA, pokemonB] as p, idx}
         {#if p}
-          {@const color = TYPE_COLORS[p.types[0]] || "#777"}
+          {@const color = typeColor(p.types)}
           <div class="panel" style="box-shadow: inset 0 0 0 1px {color}33">
             <a
               href={resolve(`/pokemon/${p.name}`)}
@@ -200,7 +196,7 @@
               <div
                 class="border-t border-white/6 pt-2 text-xs font-bold text-white/60"
               >
-                Total {p.stats.reduce((s, v) => s + v.base_stat, 0)}
+                Total {statTotal(p.stats)}
               </div>
             </div>
           </div>
@@ -215,7 +211,7 @@
     </div>
 
     {#if pokemonA && pokemonB}
-      {@const colorA = TYPE_COLORS[pokemonA.types[0]] || "#3e7bff"}
+      {@const colorA = typeColor(pokemonA.types, "#3e7bff")}
       {@const colorB = (() => {
         const a = pokemonA.types[0];
         const alt = pokemonB.types.find((t) => t !== a);

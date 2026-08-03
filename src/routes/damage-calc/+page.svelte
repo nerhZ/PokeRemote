@@ -14,13 +14,22 @@
     type PokemonDetail,
     type PokemonMoves,
   } from "$lib/pokemon-types";
-  import { EV_STATS, zeroEvs, evTotal, type EvSpread } from "$lib/storage";
+  import {
+    EV_STATS,
+    zeroEvs,
+    evTotal,
+    evsEncode,
+    evsDecode,
+    setEvValue,
+    type EvSpread,
+  } from "$lib/storage";
   import PokemonSearch from "$lib/components/PokemonSearch.svelte";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import MoveTooltip from "$lib/components/MoveTooltip.svelte";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Dropdown from "$lib/components/Dropdown.svelte";
+  import ClearButton from "$lib/components/ClearButton.svelte";
   import { onMount, untrack } from "svelte";
 
   let allNames: { name: string; id: number }[] = $state([]);
@@ -43,9 +52,6 @@
   let defIv = $state(31);
   let attEvs = $state<EvSpread>(zeroEvs());
   let defEvs = $state<EvSpread>(zeroEvs());
-  let attNatureOpen = $state(false);
-  let attItemOpen = $state(false);
-  let defItemOpen = $state(false);
 
   type CalcItem = {
     label: string;
@@ -91,21 +97,6 @@
     const v = parseInt(raw, 10);
     if (Number.isNaN(v)) return fallback;
     return Math.min(max, Math.max(min, v));
-  }
-
-  function evsEncode(evs: EvSpread): string {
-    const v = EV_STATS.map((s) => evs[s.key]);
-    return v.every((x) => x === 0) ? "0" : v.join(".");
-  }
-
-  function evsDecode(raw: string): EvSpread {
-    const v = raw.split(".").map(Number);
-    const evs = zeroEvs();
-    EV_STATS.forEach((s, i) => {
-      evs[s.key] = clampInt(String(v[i] || 0), 0, 252, 0);
-    });
-    if (evTotal(evs) > 510) return zeroEvs();
-    return evs;
   }
 
   const sync = pageUrlSync("/damage-calc");
@@ -253,18 +244,12 @@
   }
 
   function setAttEv(key: keyof EvSpread, val: number) {
-    const clamped = Math.min(252, Math.max(0, val));
-    const otherTotal = evTotal(attEvs) - attEvs[key];
-    const finalValue = Math.min(clamped, 510 - otherTotal);
-    attEvs = { ...attEvs, [key]: Math.max(0, finalValue) };
+    attEvs = setEvValue(attEvs, key, val);
     syncUrl();
   }
 
   function setDefEv(key: keyof EvSpread, val: number) {
-    const clamped = Math.min(252, Math.max(0, val));
-    const otherTotal = evTotal(defEvs) - defEvs[key];
-    const finalValue = Math.min(clamped, 510 - otherTotal);
-    defEvs = { ...defEvs, [key]: Math.max(0, finalValue) };
+    defEvs = setEvValue(defEvs, key, val);
     syncUrl();
   }
 
@@ -396,14 +381,7 @@
           effectiveness, and KO estimates. Shareable via query params.
         </p>
       </div>
-      {#if page.url.search}
-        <button
-          onclick={clearState}
-          class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/60 hover:text-white"
-        >
-          Clear
-        </button>
-      {/if}
+      <ClearButton onclick={clearState} />
     </div>
   </div>
 
@@ -453,17 +431,13 @@
           </div>
           <div class="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Dropdown
-              open={attNatureOpen}
-              onopen={(v) => (attNatureOpen = v)}
               selected={attNature}
               onselect={(n) => {
                 attNature = n;
-                attNatureOpen = false;
                 syncUrl();
               }}
               onclear={() => {
                 attNature = "";
-                attNatureOpen = false;
                 syncUrl();
               }}
               placeholder="Neutral nature"
@@ -473,17 +447,13 @@
               }))}
             />
             <Dropdown
-              open={attItemOpen}
-              onopen={(v) => (attItemOpen = v)}
               selected={attItem}
               onselect={(label) => {
                 attItem = label;
-                attItemOpen = false;
                 syncUrl();
               }}
               onclear={() => {
                 attItem = "";
-                attItemOpen = false;
                 syncUrl();
               }}
               placeholder="No item"
@@ -603,17 +573,13 @@
         </div>
         <div class="mt-3 mb-3 max-w-xs">
           <Dropdown
-            open={defItemOpen}
-            onopen={(v) => (defItemOpen = v)}
             selected={defItem}
             onselect={(label) => {
               defItem = label;
-              defItemOpen = false;
               syncUrl();
             }}
             onclear={() => {
               defItem = "";
-              defItemOpen = false;
               syncUrl();
             }}
             placeholder="No item"

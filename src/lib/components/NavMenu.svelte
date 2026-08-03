@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { page } from "$app/state";
+  import { isActive } from "$lib/navigation";
+  import { popupAlign } from "$lib/popup";
 
   let {
     label,
@@ -12,14 +13,18 @@
   } = $props();
 
   let open = $state(false);
+  let alignRight = $state(false);
   let host: HTMLElement | undefined = $state();
 
-  function isActive(href: string) {
-    if (href === "/") return page.url.pathname === "/";
-    return page.url.pathname.startsWith(href);
-  }
-
   let groupActive = $derived(items.some((i) => isActive(i.href)));
+
+  $effect(() => {
+    if (!open || !host) return;
+    const rect = host.getBoundingClientRect();
+    const panel = host.querySelector('[role="menu"]');
+    const width = panel ? panel.getBoundingClientRect().width : 176;
+    alignRight = popupAlign(rect.left + rect.width / 2, width) === "right";
+  });
 
   $effect(() => {
     if (!open) return;
@@ -54,7 +59,9 @@
   {#if open}
     <div
       role="menu"
-      class="absolute top-full left-0 z-50 mt-1 min-w-44 rounded-xl border p-1 shadow-2xl"
+      class="absolute top-full z-50 mt-1 min-w-44 rounded-xl border p-1 shadow-2xl {alignRight
+        ? 'right-0'
+        : 'left-0'}"
       style="background: var(--card); border-color: var(--border)"
     >
       {#each items as item}

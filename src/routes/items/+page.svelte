@@ -1,18 +1,21 @@
 <script lang="ts">
   import { getItemsList, searchItems } from "$lib/api";
+  import { formatName, type ItemSummary } from "$lib/pokemon-types";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
+  import SearchInput from "$lib/components/SearchInput.svelte";
+  import Skeleton from "$lib/components/Skeleton.svelte";
+  import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import { onMount } from "svelte";
 
-  let items = $state<any[]>([]);
+  let items = $state<ItemSummary[]>([]);
   let loading = $state(true);
   let loadingMore = $state(false);
   let error = $state<string | null>(null);
   let nextOffset = $state(0);
   let total = $state(0);
-  let scrollFired = false;
   let search = $state("");
-  let searchResults = $state<any[]>([]);
+  let searchResults = $state<ItemSummary[]>([]);
   let searchLoading = $state(false);
   let searchGen = 0;
 
@@ -38,31 +41,14 @@
     }
   }
 
-  onMount(() => {
-    (async () => {
-      try {
-        await load(false);
-      } catch (e: any) {
-        error = e.message;
-      } finally {
-        loading = false;
-      }
-    })();
-
-    function onScroll() {
-      if (loading || loadingMore || !!search || nextOffset >= total) return;
-      const bottom = window.innerHeight + window.scrollY;
-      const docH = document.documentElement.scrollHeight;
-      if (docH - bottom < 600) {
-        if (scrollFired) return;
-        scrollFired = true;
-        loadMore().finally(() => {
-          scrollFired = false;
-        });
-      }
+  onMount(async () => {
+    try {
+      await load(false);
+    } catch (e: any) {
+      error = e.message;
+    } finally {
+      loading = false;
     }
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
   });
 
   $effect(() => {
@@ -96,20 +82,11 @@
   </div>
 
   <div class="mb-6 max-w-md">
-    <input
-      type="search"
-      bind:value={search}
-      placeholder="Search all items..."
-      class="focus:border-accent/50 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm placeholder-white/30 outline-none"
-    />
+    <SearchInput bind:value={search} placeholder="Search all items..." />
   </div>
 
   {#if loading}
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {#each Array(12) as _}<div
-          class="h-24 animate-pulse rounded-2xl bg-white/3"
-        ></div>{/each}
-    </div>
+    <Skeleton rows={12} />
   {:else if error}
     <EmptyState title="Failed to load items" subtitle={error} />
   {:else if search && searchLoading}
@@ -133,11 +110,11 @@
             <div class="h-10 w-10 shrink-0 rounded-lg bg-white/5"></div>
           {/if}
           <div class="min-w-0">
-            <div class="truncate text-sm font-bold capitalize">
-              {item.name.replace(/-/g, " ")}
+            <div class="truncate text-sm font-bold">
+              {formatName(item.name)}
             </div>
             <div class="mt-0.5 text-[10px] text-white/40 capitalize">
-              {item.category?.replace(/-/g, " ") ?? "item"} · ₽{item.cost}
+              {item.category ? formatName(item.category) : "item"} · ₽{item.cost}
             </div>
             {#if item.effect}<p
                 class="mt-1.5 line-clamp-3 text-xs leading-relaxed text-white/50"
@@ -150,19 +127,11 @@
     </div>
     {#if !search}
       {#if loadingMore}
-        <div class="grid grid-cols-1 gap-3 pb-4 sm:grid-cols-2 lg:grid-cols-3">
-          {#each Array(6) as _}<div
-              class="h-24 animate-pulse rounded-2xl bg-white/3"
-            ></div>{/each}
+        <div class="pb-4">
+          <Skeleton rows={6} />
         </div>
       {/if}
-      {#if nextOffset < total}
-        <div class="flex justify-center pb-12">
-          {#if loadingMore}
-            <LoadingSpinner size="md" />
-          {/if}
-        </div>
-      {/if}
+      <InfiniteScroll {loadMore} hasMore={nextOffset < total} />
     {/if}
   {/if}
 </div>

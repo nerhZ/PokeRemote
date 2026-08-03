@@ -10,6 +10,7 @@
   import { resolve } from "$app/paths";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
+  import Skeleton from "$lib/components/Skeleton.svelte";
   import { onMount } from "svelte";
 
   let rankings = $state<StatRankings | null>(null);
@@ -81,11 +82,7 @@
   </div>
 
   {#if loading}
-    <div class="space-y-2">
-      {#each Array(10) as _}<div
-          class="h-16 animate-pulse rounded-2xl bg-white/3"
-        ></div>{/each}
-    </div>
+    <Skeleton rows={10} class="h-16" grid={false} />
   {:else if error && !rankings}
     <EmptyState title="Could not load rankings" subtitle={error} />
   {:else if rankings && activeList.length === 0}

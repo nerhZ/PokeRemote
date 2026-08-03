@@ -9,6 +9,9 @@
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
+  import SearchInput from "$lib/components/SearchInput.svelte";
+  import FilterChip from "$lib/components/FilterChip.svelte";
+  import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import { onMount } from "svelte";
 
   let moves = $state<MoveDetail[]>([]);
@@ -18,9 +21,6 @@
   let total = $state(0);
   let offset = $state(0);
   const PAGE = 300;
-
-  let sentinel = $state<HTMLElement | undefined>();
-  let observer: IntersectionObserver | undefined;
 
   let search = $state("");
   let typeFilter = $state("");
@@ -43,16 +43,6 @@
     }
   }
 
-  onMount(() => {
-    observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) loadMore();
-      },
-      { rootMargin: "600px" },
-    );
-    return () => observer?.disconnect();
-  });
-
   onMount(async () => {
     try {
       total = await getMovesTotal();
@@ -60,14 +50,6 @@
     } catch (e: any) {
       error = e.message;
       loading = false;
-    }
-  });
-
-  $effect(() => {
-    const el = sentinel;
-    if (el) {
-      observer?.observe(el);
-      return () => observer?.unobserve(el);
     }
   });
 
@@ -79,6 +61,30 @@
       if (classFilter && m.damage_class !== classFilter) return false;
       return true;
     });
+  });
+
+  /** Types still present in the loaded set given the current search + class filter. */
+  let possibleTypes = $derived.by(() => {
+    const q = search.trim().toLowerCase();
+    const avail = new Set<string>();
+    for (const m of moves) {
+      if (q && !m.name.includes(q)) continue;
+      if (classFilter && m.damage_class !== classFilter) continue;
+      avail.add(m.type);
+    }
+    return avail;
+  });
+
+  /** Damage classes still present in the loaded set given the current search + type filter. */
+  let possibleClasses = $derived.by(() => {
+    const q = search.trim().toLowerCase();
+    const avail = new Set<string>();
+    for (const m of moves) {
+      if (q && !m.name.includes(q)) continue;
+      if (typeFilter && m.type !== typeFilter) continue;
+      avail.add(m.damage_class);
+    }
+    return avail;
   });
 </script>
 
@@ -94,43 +100,37 @@
 
   <div class="mb-4 space-y-3">
     <div class="flex flex-col gap-3 md:flex-row md:items-center">
-      <input
-        type="search"
+      <SearchInput
         bind:value={search}
         placeholder="Search moves..."
-        class="focus:border-accent/50 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm placeholder-white/30 outline-none md:max-w-xs"
+        class="md:max-w-xs"
       />
       <div class="flex flex-wrap items-center gap-1.5">
-        <button
+        <FilterChip
+          label="All types"
+          active={typeFilter === ""}
           onclick={() => (typeFilter = "")}
-          class="cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-wide uppercase {typeFilter ===
-          ''
-            ? 'bg-accent border-accent text-white'
-            : 'border-white/10 bg-white/5 text-white/55'}">All types</button
-        >
+        />
         {#each ALL_TYPES as t}
-          <button
+          <FilterChip
+            label={t}
+            active={typeFilter === t}
+            variant="color"
+            color={TYPE_COLORS[t]}
+            disabled={!loading && typeFilter !== t && !possibleTypes.has(t)}
             onclick={() => (typeFilter = typeFilter === t ? "" : t)}
-            class="cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-wide uppercase {typeFilter ===
-            t
-              ? 'border-transparent text-white'
-              : 'border-white/10 bg-white/5 text-white/55'}"
-            style={typeFilter === t
-              ? `background-color: ${TYPE_COLORS[t]}`
-              : ""}>{t}</button
-          >
+          />
         {/each}
       </div>
     </div>
     <div class="flex flex-wrap items-center gap-1.5">
       {#each DAMAGE_CLASSES as c}
-        <button
+        <FilterChip
+          label={c}
+          active={classFilter === c}
+          disabled={!loading && classFilter !== c && !possibleClasses.has(c)}
           onclick={() => (classFilter = classFilter === c ? "" : c)}
-          class="cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-wide uppercase {classFilter ===
-          c
-            ? 'bg-accent border-accent text-white'
-            : 'border-white/10 bg-white/5 text-white/55'}">{c}</button
-        >
+        />
       {/each}
     </div>
   </div>
@@ -171,14 +171,11 @@
         </div>
       {/each}
     </div>
-    {#if offset < total}
+    {#if loadingMore}
       <div class="flex justify-center pb-12">
-        {#if loadingMore}
-          <LoadingSpinner size="md" />
-        {:else}
-          <div bind:this={sentinel} class="h-px"></div>
-        {/if}
+        <LoadingSpinner size="md" />
       </div>
     {/if}
+    <InfiniteScroll {loadMore} hasMore={offset < total} />
   {/if}
 </div>

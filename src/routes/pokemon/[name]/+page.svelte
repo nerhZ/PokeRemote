@@ -9,6 +9,7 @@
     formatName,
     formatId,
     STAT_LABELS,
+    statTotal,
     type PokemonDetail,
     type PokemonMoves,
   } from "$lib/pokemon-types";
@@ -132,9 +133,7 @@
   );
   let primaryType = $derived(pokemon?.types[0] ?? "normal");
   let primaryColor = $derived(TYPE_COLORS[primaryType] || "#777");
-  let statTotal = $derived(
-    pokemon ? pokemon.stats.reduce((sum, s) => sum + s.base_stat, 0) : 0,
-  );
+  let totalStats = $derived(pokemon ? statTotal(pokemon.stats) : 0);
 
   let spriteUrl = $derived(
     pokemon?.sprites.other["official-artwork"][
@@ -519,7 +518,7 @@
                   class="flex h-11 w-11 items-center justify-center rounded-full text-sm font-black"
                   style="background-color: {primaryColor}22; color: {primaryColor}"
                 >
-                  {statTotal}
+                  {totalStats}
                 </div>
               </div>
               <div class="flex flex-col items-center gap-6">

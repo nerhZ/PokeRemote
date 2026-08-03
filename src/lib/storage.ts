@@ -106,6 +106,35 @@ export function evTotal(evs: EvSpread): number {
   return evs.hp + evs.atk + evs.def + evs.spa + evs.spd + evs.spe;
 }
 
+/** "hp.atk.def.spa.spd.spe" URL encoding ("0" when all zero). */
+export function evsEncode(evs: EvSpread): string {
+  const v = EV_STATS.map((s) => evs[s.key]);
+  return v.every((x) => x === 0) ? "0" : v.join(".");
+}
+
+/** Inverse of `evsEncode`; clamps each stat to 0-252 and rejects totals over 510. */
+export function evsDecode(raw: string): EvSpread {
+  const v = raw.split(".").map(Number);
+  const evs = zeroEvs();
+  EV_STATS.forEach((s, i) => {
+    evs[s.key] = Math.min(252, Math.max(0, v[i] || 0));
+  });
+  if (evTotal(evs) > 510) return zeroEvs();
+  return evs;
+}
+
+/** Sets one EV stat, clamped to 252 with a 510 total cap. */
+export function setEvValue(
+  evs: EvSpread,
+  key: keyof EvSpread,
+  val: number,
+): EvSpread {
+  const clamped = Math.min(252, Math.max(0, val));
+  const otherTotal = evTotal(evs) - evs[key];
+  const finalValue = Math.min(clamped, 510 - otherTotal);
+  return { ...evs, [key]: Math.max(0, finalValue) };
+}
+
 export function getSavedTeams(): {
   name: string;
   ids: number[];

@@ -351,6 +351,19 @@ export function formatName(name: string): string {
   return name.split("-").map(titleWord).join(" ");
 }
 
+/** Primary type color for a pokemon/types array, with fallback. */
+export function typeColor(
+  types: string[] | undefined,
+  fallback = "#777",
+): string {
+  return (types && TYPE_COLORS[types[0]]) || fallback;
+}
+
+/** Sum of base stats. */
+export function statTotal(stats: { base_stat: number }[]): number {
+  return stats.reduce((sum, s) => sum + s.base_stat, 0);
+}
+
 /** Formats a species/form id as a zero-padded dex number, e.g. `#025`. */
 export function formatId(id: number): string {
   return `#${String(id).padStart(3, "0")}`;

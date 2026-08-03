@@ -2,7 +2,11 @@
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { getPokemonDetail, getPokemonMetadata } from "$lib/api";
+  import {
+    getPokemonDetail,
+    getPokemonMetadata,
+    type AbilitySummary,
+  } from "$lib/api";
   import { getCatalog, pageUrlSync, selectPokemonSlot } from "$lib/url-state";
   import {
     TYPE_COLORS,
@@ -11,6 +15,8 @@
     NATURES,
     NATURES_MODIFIERS,
     formatName,
+    typeColor,
+    type MoveDetail,
     type PokemonDetail,
   } from "$lib/pokemon-types";
   import {
@@ -19,6 +25,9 @@
     EV_STATS,
     zeroEvs,
     evTotal,
+    evsEncode,
+    evsDecode,
+    setEvValue,
     type EvSpread,
   } from "$lib/storage";
   import PokemonSearch from "$lib/components/PokemonSearch.svelte";
@@ -29,6 +38,7 @@
   import TypePopup from "$lib/components/TypePopup.svelte";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
+  import ClearButton from "$lib/components/ClearButton.svelte";
   import { onMount } from "svelte";
 
   let allNames: { name: string; id: number }[] = $state([]);
@@ -42,24 +52,12 @@
   let editingIndex = $state<number | null>(null);
   let editLoading = $state(false);
   let loadingTeam = $state(false);
-  type MoveOption = {
-    name: string;
-    type: string;
-    power: number | null;
-    accuracy: number | null;
-    pp: number | null;
-    effect: string | null;
-  };
-  type AbilityOption = { name: string; description: string | null };
 
-  let moveOptions = $state<MoveOption[]>([]);
-  let abilityOptions = $state<AbilityOption[]>([]);
+  let moveOptions = $state<MoveDetail[]>([]);
+  let abilityOptions = $state<AbilitySummary[]>([]);
   let metaCache = $state<
-    Record<string, { moves: MoveOption[]; abilities: AbilityOption[] }>
+    Record<string, { moves: MoveDetail[]; abilities: AbilitySummary[] }>
   >({});
-  let moveDropdowns = $state<Record<string, boolean>>({});
-  let abilityDropdowns = $state<Record<string, boolean>>({});
-  let natureDropdowns = $state<Record<string, boolean>>({});
   let sets = $state<
     { moves: string[]; ability: string; nature: string; evs: EvSpread }[]
   >([]);
@@ -90,9 +88,6 @@
     search = "";
     editingIndex = null;
     teamName = "My Team";
-    moveDropdowns = {};
-    abilityDropdowns = {};
-    natureDropdowns = {};
     evWarning = "";
   }
 
@@ -100,16 +95,9 @@
     if (editingIndex == null) return;
     const i = editingIndex;
     const s = sets[i] ?? initSet();
-    const clamped = Math.max(0, Math.min(252, val));
-    const otherTotal = evTotal(s.evs) - s.evs[stat];
-    const maxForStat = Math.min(252, 510 - otherTotal);
-    const finalValue = Math.min(clamped, maxForStat);
-    const evs = { ...s.evs, [stat]: finalValue };
-    if (finalValue !== clamped) {
-      evWarning = `Total EVs cannot exceed 510`;
-    } else {
-      evWarning = "";
-    }
+    const clamped = Math.min(252, Math.max(0, val));
+    const evs = setEvValue(s.evs, stat, val);
+    evWarning = evs[stat] !== clamped ? "Total EVs cannot exceed 510" : "";
     sets = sets.map((set, idx) => (idx === i ? { ...set, evs } : set));
   }
 
@@ -147,8 +135,6 @@
         ? { ...set, moves: set.moves.map((m, j) => (j === slot ? name : m)) }
         : set,
     );
-    const key = `${i}-${slot}`;
-    moveDropdowns = { ...moveDropdowns, [key]: false };
   }
 
   function pickAbility(name: string) {
@@ -156,7 +142,6 @@
     sets = sets.map((set, idx) =>
       idx === editingIndex ? { ...set, ability: name } : set,
     );
-    abilityDropdowns = {};
   }
 
   function pickNature(name: string) {
@@ -164,7 +149,6 @@
     sets = sets.map((set, idx) =>
       idx === editingIndex ? { ...set, nature: name } : set,
     );
-    natureDropdowns = {};
   }
 
   function saveSet() {
@@ -218,20 +202,6 @@
     if (loadingTeam) return;
     loadTeamFromUrl();
   });
-
-  function evsEncode(evs: EvSpread) {
-    const v = EV_STATS.map((s) => evs[s.key]);
-    return v.every((x) => x === 0) ? "0" : v.join(".");
-  }
-
-  function evsDecode(raw: string): EvSpread {
-    const v = raw.split(".").map(Number);
-    const evs = zeroEvs();
-    EV_STATS.forEach((s, i) => {
-      evs[s.key] = v[i] || 0;
-    });
-    return evs;
-  }
 
   function encodeSets() {
     return sets
@@ -409,14 +379,7 @@
         <h1>Team Builder</h1>
         <p>Six slots, movesets, share with competitive setups.</p>
       </div>
-      {#if page.url.search}
-        <button
-          onclick={clearState}
-          class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/60 hover:text-white"
-        >
-          Clear
-        </button>
-      {/if}
+      <ClearButton onclick={clearState} />
     </div>
   </div>
 
@@ -435,7 +398,7 @@
     {#each Array(6) as _, i}
       {#if team[i]}
         {@const p = team[i]}
-        {@const color = TYPE_COLORS[p.types[0]] || "#777"}
+        {@const color = typeColor(p.types)}
         {@const hasSet =
           sets[i] &&
           (sets[i].moves.some((m) => m) ||
@@ -453,7 +416,7 @@
           }}
           title={hoverTitle(i)}
         >
-          <div class="absolute top-1.5 left-1.5 z-10 flex gap-1">
+          <div class="absolute top-2 left-2 z-10 flex gap-1">
             <a
               href={resolve(`/pokemon/${p.name}`)}
               onclick={(e) => {
@@ -470,7 +433,7 @@
               e.stopPropagation();
               removeFromTeam(p.id);
             }}
-            class="bg-pokemon-red/20 text-pokemon-red hover:bg-pokemon-red/40 absolute top-1.5 right-1.5 z-10 h-6 w-6 cursor-pointer rounded-md border-0 text-xs font-bold transition-colors"
+            class="bg-pokemon-red/20 text-pokemon-red hover:bg-pokemon-red/40 absolute top-2 right-2 z-10 h-6 w-6 cursor-pointer rounded-md border-0 text-xs font-bold transition-colors"
             >×</button
           >
           <img
@@ -509,7 +472,7 @@
     {@const i = editingIndex}
     {@const p = team[i]}
     {@const s = sets[i] ?? initSet()}
-    {@const color = TYPE_COLORS[p.types[0]] || "#777"}
+    {@const color = typeColor(p.types)}
     <div class="panel mb-8 max-w-2xl">
       <div class="mb-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
@@ -548,12 +511,7 @@
             </div>
             <div class="mt-2 space-y-2">
               {#each Array(4) as _, mi}
-                {@const dkey = `${i}-${mi}`}
-                {@const open = moveDropdowns[dkey] ?? false}
                 <Dropdown
-                  {open}
-                  onopen={(v) =>
-                    (moveDropdowns = { ...moveDropdowns, [dkey]: v })}
                   selected={s.moves[mi]}
                   onselect={(name) => pickMove(mi, name)}
                   onclear={() => pickMove(mi, "")}
@@ -607,12 +565,6 @@
               </div>
               <div class="relative">
                 <Dropdown
-                  open={abilityDropdowns[`ability-${i}`] ?? false}
-                  onopen={(v) =>
-                    (abilityDropdowns = {
-                      ...abilityDropdowns,
-                      [`ability-${i}`]: v,
-                    })}
                   selected={s.ability}
                   onselect={pickAbility}
                   onclear={() => pickAbility("")}
@@ -633,12 +585,6 @@
               </div>
               <div class="relative">
                 <Dropdown
-                  open={natureDropdowns[`nature-${i}`] ?? false}
-                  onopen={(v) =>
-                    (natureDropdowns = {
-                      ...natureDropdowns,
-                      [`nature-${i}`]: v,
-                    })}
                   selected={s.nature}
                   onselect={pickNature}
                   onclear={() => pickNature("")}
