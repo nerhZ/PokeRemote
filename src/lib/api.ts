@@ -26,8 +26,7 @@ async function fetchJson(url: string): Promise<any> {
 
 async function fetchResourceCount(endpoint: string): Promise<number | null> {
   try {
-    const { count } = await fetchJson(`${endpoint}?limit=1`);
-    return count;
+    return await fetchListCount(endpoint);
   } catch {
     return null;
   }
@@ -54,6 +53,12 @@ async function fetchNameIdList(
 
 function parseIdFromUrl(url: string): number {
   return parseInt(url.split("/").filter(Boolean).pop() || "0", 10);
+}
+
+async function fetchPokemonResource(name: string): Promise<any> {
+  const response = await fetch(`${API_BASE}/pokemon/${name}`);
+  if (!response.ok) throw new Error("Pokemon not found");
+  return response.json();
 }
 
 function extractFlavorText(species: any): string | null {
@@ -106,6 +111,58 @@ function buildEvolutionTree(chain: any): EvolutionStage | null {
     }
   }
   return stage;
+}
+
+const REGIONAL_SUFFIXES = ["alola", "galar", "hisui", "paldea"];
+
+/** Regional forms whose names don't carry the region suffix. */
+const REGIONAL_ALIASES: Record<string, Record<string, string>> = {
+  hisui: { basculin: "basculin-white-striped" },
+};
+
+function findAliasRegion(name: string): string | null {
+  for (const [region, aliases] of Object.entries(REGIONAL_ALIASES)) {
+    if (Object.values(aliases).includes(name)) return region;
+  }
+  return null;
+}
+
+/** Regional variant entries keyed by base name, from the cached form catalog. */
+async function getRegionalVariantMap(
+  region: string,
+): Promise<Map<string, { name: string; id: number }>> {
+  const map = new Map<string, { name: string; id: number }>();
+  try {
+    const { results } = await getAutocompleteList();
+    for (const r of results) {
+      if (r.name.endsWith(`-${region}`)) {
+        map.set(r.name.slice(0, -(region.length + 1)), r);
+      }
+    }
+    for (const [base, name] of Object.entries(REGIONAL_ALIASES[region] ?? {})) {
+      const entry = results.find((r) => r.name === name);
+      if (entry) map.set(base, entry);
+    }
+  } catch {}
+  return map;
+}
+
+/** Swap chain nodes to their regional variants where they exist. */
+function applyRegionalForms(
+  stage: EvolutionStage,
+  map: Map<string, { name: string; id: number }>,
+): EvolutionStage {
+  const regional = map.get(stage.name);
+  const next: EvolutionStage = {
+    ...stage,
+    children: stage.children.map((c) => applyRegionalForms(c, map)),
+  };
+  if (regional) {
+    next.name = regional.name;
+    next.id = regional.id;
+    next.image = artworkUrl(regional.id);
+  }
+  return next;
 }
 
 function extractEnglishAbilityEffect(data: any): string | null {
@@ -203,6 +260,16 @@ async function fetchItemDetail(url: string): Promise<ItemSummary | null> {
   }
 }
 
+/** PokeAPI ships these moves with no text in any language; documented game effects. */
+const MOVE_EFFECT_FALLBACKS: Record<string, string> = {
+  "blazing-torque": "Deals damage and has a 20% chance to burn the target.",
+  "wicked-torque":
+    "Deals damage and has a 20% chance to make the target fall asleep.",
+  "noxious-torque": "Deals damage and has a 30% chance to poison the target.",
+  "combat-torque": "Deals damage and has a 30% chance to paralyze the target.",
+  "magical-torque": "Deals damage and has a 30% chance to confuse the target.",
+};
+
 async function fetchMoveDetail(name: string): Promise<MoveDetail | null> {
   const cached = moveCache()[name];
   if (cached) return cached;
@@ -222,6 +289,7 @@ async function fetchMoveDetail(name: string): Promise<MoveDetail | null> {
       pp: md.pp ?? null,
       damage_class: md.damage_class?.name ?? "physical",
       effect:
+        MOVE_EFFECT_FALLBACKS[name] ??
         effect?.short_effect ??
         effect?.effect ??
         flavor?.flavor_text?.replace(/[\n\f\r]/g, " ") ??
@@ -250,7 +318,7 @@ async function fetchMoveDetails(
 // ── Move & ability detail caches (immutable data, validated by version only) ──
 
 const MOVE_CACHE_KEY = "pokeremote:move-cache";
-const MOVE_CACHE_VERSION = 2;
+const MOVE_CACHE_VERSION = 3;
 const ABILITY_CACHE_KEY = "pokeremote:ability-cache";
 const ABILITY_CACHE_VERSION = 2;
 
@@ -331,9 +399,7 @@ export async function getSpeciesIds(): Promise<number[]> {
 export const getPokemonDetail = async (
   name: string,
 ): Promise<PokemonDetail> => {
-  const pokeRes = await fetch(`${API_BASE}/pokemon/${name}`);
-  if (!pokeRes.ok) throw new Error("Pokemon not found");
-  const data = await pokeRes.json();
+  const data = await fetchPokemonResource(name);
 
   let species: any = null;
   if (data.species?.url) {
@@ -364,6 +430,20 @@ export const getPokemonDetail = async (
   const speciesId =
     species?.id ?? (parseIdFromUrl(data.species?.url || "") || data.id);
   const speciesName = species?.name ?? data.species?.name ?? data.name;
+
+  // Mirror the evolution chain to the viewed form's region (e.g. alolan rattata
+  // shows rattata-alola → raticate-alola) where those variants exist. The region
+  // is detected from the pokemon resource name — regional forms point at the
+  // base species, so speciesName alone never carries the suffix.
+  const regionMatch = data.name.match(/-([a-z]+)$/);
+  const region =
+    regionMatch && REGIONAL_SUFFIXES.includes(regionMatch[1])
+      ? regionMatch[1]
+      : findAliasRegion(data.name);
+  if (evolution && region) {
+    const regional = await getRegionalVariantMap(region);
+    if (regional.size > 0) evolution = applyRegionalForms(evolution, regional);
+  }
 
   return {
     name: data.name,
@@ -441,9 +521,7 @@ const VG_ORDER = [
 ];
 
 export const getPokemonMoves = async (name: string): Promise<PokemonMoves> => {
-  const response = await fetch(`${API_BASE}/pokemon/${name}`);
-  if (!response.ok) throw new Error("Pokemon not found");
-  const data = await response.json();
+  const data = await fetchPokemonResource(name);
 
   let latestVg: string | null = null;
   let latestIdx = -1;
@@ -643,18 +721,48 @@ export const getStatRankings = async ({
   return { data: result, fromCache: false };
 };
 
-/** Full Pokémon resource index (all forms). Uses live API count (≈1351). Cached after first call. */
+const AUTOCOMPLETE_CACHE_KEY = "pokeremote:autocomplete";
+const AUTOCOMPLETE_CACHE_VERSION = 1;
+
+let _autocompletePromise: Promise<{
+  total: number;
+  results: { name: string; id: number }[];
+}> | null = null;
+
+async function loadAutocompleteList() {
+  const cached = readCache<{
+    data: { total: number; results: { name: string; id: number }[] };
+  }>(AUTOCOMPLETE_CACHE_KEY, AUTOCOMPLETE_CACHE_VERSION);
+  if (cached) {
+    const count = await fetchResourceCount(`${API_BASE}/pokemon`);
+    if (count !== null && cached.data.total === count) {
+      return cached.data;
+    }
+  }
+  try {
+    const data = await fetchNameIdList(`${API_BASE}/pokemon`);
+    writeCache(AUTOCOMPLETE_CACHE_KEY, AUTOCOMPLETE_CACHE_VERSION, { data });
+    return data;
+  } catch {
+    return { total: 0, results: [] };
+  }
+}
+
+/** Full Pokémon resource index (all forms). Uses live API count (≈1351). Cached in memory + localStorage. */
 export const getAutocompleteList = async (): Promise<{
   total: number;
   results: { name: string; id: number }[];
 }> => {
   if (_autocompleteCache) return _autocompleteCache;
-  try {
-    _autocompleteCache = await fetchNameIdList(`${API_BASE}/pokemon`);
-    return _autocompleteCache;
-  } catch {
-    return { total: 0, results: [] };
+  _autocompletePromise ??= loadAutocompleteList();
+  const data = await _autocompletePromise;
+  if (data.results.length > 0) {
+    _autocompleteCache = data;
+  } else {
+    // transient failure — don't cache the empty result; allow a retry next call
+    _autocompletePromise = null;
   }
+  return data;
 };
 
 /** Random entry from the full Pokémon resource list (includes forms). */
@@ -763,59 +871,82 @@ export async function getAllPokemonSummaries(
   const total = results.length;
   let done = 0;
 
-  const entries: CachedPokemonSummary[] = await Promise.all(
-    results.map(async (s: any) => {
-      const speciesId = parseIdFromUrl(s.url);
-      try {
-        const [speciesData, pokeData] = await Promise.all([
-          fetch(`${API_BASE}/pokemon-species/${speciesId}`).then((r) =>
-            r.ok ? r.json() : null,
-          ),
-          fetch(`${API_BASE}/pokemon/${s.name}`).then((r) =>
-            r.ok ? r.json() : null,
-          ),
-        ]);
+  async function fetchEntry(s: any): Promise<CachedPokemonSummary> {
+    const speciesId = parseIdFromUrl(s.url);
+    try {
+      const [speciesData, pokeData] = await Promise.all([
+        fetch(`${API_BASE}/pokemon-species/${speciesId}`).then((r) =>
+          r.ok ? r.json() : null,
+        ),
+        fetch(`${API_BASE}/pokemon/${s.name}`).then((r) =>
+          r.ok ? r.json() : null,
+        ),
+      ]);
 
-        if (!speciesData) throw new Error("species fetch failed");
+      if (!speciesData) throw new Error("species fetch failed");
 
-        const forms = mapVarieties(speciesData.varieties);
-        const types = pokeData
-          ? pokeData.types.map((t: any) => t.type.name)
-          : [];
-        const defaultForm = forms.find((f) => f.is_default) || forms[0];
+      const forms = mapVarieties(speciesData.varieties);
+      const types = pokeData ? pokeData.types.map((t: any) => t.type.name) : [];
+      const defaultForm = forms.find((f) => f.is_default) || forms[0];
 
-        return {
-          name: defaultForm?.name || s.name,
-          id: speciesId,
-          image: artworkUrl(speciesId),
-          types,
-          form_count: forms.length,
-          forms,
-          gen: getGeneration(speciesId),
-        } as CachedPokemonSummary;
-      } catch {
-        return {
-          name: s.name,
-          id: speciesId,
-          image: artworkUrl(speciesId),
-          types: [],
-          form_count: 1,
-          forms: [
-            {
-              name: s.name,
-              id: speciesId,
-              is_default: true,
-              image: artworkUrl(speciesId),
-            },
-          ],
-          gen: getGeneration(speciesId),
-        } as CachedPokemonSummary;
-      } finally {
-        done++;
-        onProgress?.(done, total);
-      }
-    }),
-  );
+      return {
+        name: defaultForm?.name || s.name,
+        id: speciesId,
+        image: artworkUrl(speciesId),
+        types,
+        form_count: forms.length,
+        forms,
+        gen: getGeneration(speciesId),
+      } as CachedPokemonSummary;
+    } catch {
+      return {
+        name: s.name,
+        id: speciesId,
+        image: artworkUrl(speciesId),
+        types: [],
+        form_count: 1,
+        forms: [
+          {
+            name: s.name,
+            id: speciesId,
+            is_default: true,
+            image: artworkUrl(speciesId),
+          },
+        ],
+        gen: getGeneration(speciesId),
+      } as CachedPokemonSummary;
+    } finally {
+      done++;
+      onProgress?.(done, total);
+    }
+  }
+
+  const entries: CachedPokemonSummary[] = [];
+  // Batch so the browser's connection pool isn't exhausted (a full-parallel
+  // burst fails hundreds of fetches, leaving entries with empty types).
+  for (let i = 0; i < results.length; i += 30) {
+    const batch = results.slice(i, i + 30);
+    const batchEntries = await Promise.all(batch.map(fetchEntry));
+    entries.push(...batchEntries);
+  }
+
+  // Retry entries whose fetches failed (e.g. rate-limited) once.
+  const failed = entries.filter((e) => e.types.length === 0);
+  if (failed.length > 0) {
+    await new Promise((r) => setTimeout(r, 1500));
+    await Promise.all(
+      failed.map(async (e) => {
+        try {
+          const s = results.find((x: any) => parseIdFromUrl(x.url) === e.id);
+          if (!s) return;
+          const fixed = await fetchEntry(s);
+          if (fixed.types.length > 0) {
+            Object.assign(e, fixed);
+          }
+        } catch {}
+      }),
+    );
+  }
 
   entries.sort((a, b) => a.id - b.id);
 
@@ -850,6 +981,7 @@ export async function searchItems(query: string): Promise<ItemSummary[]> {
 }
 
 type AbilitySummary = { name: string; description: string | null };
+export type { AbilitySummary };
 
 export async function getPokemonMetadata(name: string): Promise<{
   moves: MoveDetail[];
@@ -857,7 +989,7 @@ export async function getPokemonMetadata(name: string): Promise<{
 }> {
   let data: any;
   try {
-    data = await fetchJson(`${API_BASE}/pokemon/${name}`);
+    data = await fetchPokemonResource(name);
   } catch {
     return { moves: [], abilities: [] };
   }
@@ -938,6 +1070,7 @@ export async function getAllAbilities(): Promise<AbilityEntry[]> {
 // ── Moves dex ────────────────────────────────────────────────────────────────
 
 let _moveNamesCache: { name: string; id: number }[] | null = null;
+let _sortedMoveNames: string[] | null = null;
 
 async function getAllMoveNames(): Promise<{ name: string; id: number }[]> {
   if (_moveNamesCache) return _moveNamesCache;
@@ -954,11 +1087,8 @@ export async function getMovesSlice(
   offset: number,
   limit: number,
 ): Promise<MoveDetail[]> {
-  const names = (await getAllMoveNames())
-    .map((r) => r.name)
-    .sort()
-    .slice(offset, offset + limit);
-  return (await fetchMoveDetails(names)).filter(
-    (m): m is MoveDetail => m !== null,
-  );
+  _sortedMoveNames ??= (await getAllMoveNames()).map((r) => r.name).sort();
+  return (
+    await fetchMoveDetails(_sortedMoveNames.slice(offset, offset + limit))
+  ).filter((m): m is MoveDetail => m !== null);
 }
