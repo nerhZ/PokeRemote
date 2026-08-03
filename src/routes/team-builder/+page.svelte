@@ -36,7 +36,7 @@
   import Tooltip from "$lib/components/Tooltip.svelte";
   import Dropdown from "$lib/components/Dropdown.svelte";
   import TypePopup from "$lib/components/TypePopup.svelte";
-  import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
+  import Pokeball from "$lib/components/Pokeball.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import ClearButton from "$lib/components/ClearButton.svelte";
   import { onMount } from "svelte";
@@ -391,7 +391,9 @@
       placeholder={team.length >= 6 ? "Team is full" : "Add a Pokémon..."}
       onselect={addToTeam}
     />
-    {#if loading}<div class="mt-2"><LoadingSpinner size="sm" /></div>{/if}
+    {#if loading}<div class="mt-2 flex justify-center">
+        <Pokeball spinning class="h-6 w-6" />
+      </div>{/if}
   </div>
 
   <div class="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
@@ -499,7 +501,7 @@
 
       {#if editLoading}
         <div class="flex justify-center py-8">
-          <LoadingSpinner size="md" />
+          <Pokeball spinning class="h-8 w-8" />
         </div>
       {:else}
         <div class="grid gap-4 md:grid-cols-2">

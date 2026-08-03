@@ -125,7 +125,7 @@
     {#if visible}
       <div
         bind:clientWidth={tooltipWidth}
-        class="pointer-events-none fixed z-[100] rounded-xl border p-3 text-left text-[11px] leading-relaxed shadow-2xl {width} {nowrap
+        class="pointer-events-none fixed z-100 rounded-xl border p-3 text-left text-[11px] leading-relaxed shadow-2xl {width} {nowrap
           ? 'whitespace-nowrap'
           : 'whitespace-normal'}"
         style="left: {popupPos.left}px; top: {popupPos.top}px; transform: translate({popupTranslate}, {position ===
@@ -139,7 +139,7 @@
   {:else}
     <div
       bind:clientWidth={tooltipWidth}
-      class="tooltip-content absolute z-[100] rounded-xl border p-3 text-left text-[11px] leading-relaxed shadow-2xl {positionClass} {width} {nowrap
+      class="tooltip-content absolute z-100 rounded-xl border p-3 text-left text-[11px] leading-relaxed shadow-2xl {positionClass} {width} {nowrap
         ? 'whitespace-nowrap'
         : 'whitespace-normal'}"
       style="background: var(--card); border-color: var(--border); color: var(--muted-strong);"

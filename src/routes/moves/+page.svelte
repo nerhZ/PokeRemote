@@ -7,7 +7,7 @@
     type MoveDetail,
   } from "$lib/pokemon-types";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
-  import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
+  import Pokeball from "$lib/components/Pokeball.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import SearchInput from "$lib/components/SearchInput.svelte";
   import FilterChip from "$lib/components/FilterChip.svelte";
@@ -137,7 +137,7 @@
 
   {#if loading}
     <div class="flex justify-center py-24">
-      <LoadingSpinner size="lg" />
+      <Pokeball spinning class="h-16 w-16" />
     </div>
   {:else if error}
     <EmptyState
@@ -173,7 +173,7 @@
     </div>
     {#if loadingMore}
       <div class="flex justify-center pb-12">
-        <LoadingSpinner size="md" />
+        <Pokeball spinning class="h-8 w-8" />
       </div>
     {/if}
     <InfiniteScroll {loadMore} hasMore={offset < total} />

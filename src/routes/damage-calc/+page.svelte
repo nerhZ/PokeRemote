@@ -26,7 +26,7 @@
   import PokemonSearch from "$lib/components/PokemonSearch.svelte";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import MoveTooltip from "$lib/components/MoveTooltip.svelte";
-  import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
+  import Pokeball from "$lib/components/Pokeball.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Dropdown from "$lib/components/Dropdown.svelte";
   import ClearButton from "$lib/components/ClearButton.svelte";
@@ -395,8 +395,8 @@
         options={allNames}
         onselect={(n) => selectAttacker(n)}
       />
-      {#if loadingAtt}<div class="mt-2">
-          <LoadingSpinner size="sm" />
+      {#if loadingAtt}<div class="mt-2 flex justify-center">
+          <Pokeball spinning class="h-6 w-6" />
         </div>{/if}
       {#if attacker}
         <a
@@ -538,8 +538,8 @@
         options={allNames}
         onselect={selectDefender}
       />
-      {#if loadingDef}<div class="mt-2">
-          <LoadingSpinner size="sm" />
+      {#if loadingDef}<div class="mt-2 flex justify-center">
+          <Pokeball spinning class="h-6 w-6" />
         </div>{/if}
       {#if defender}
         <a

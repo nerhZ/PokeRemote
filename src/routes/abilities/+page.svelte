@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getAllAbilities, type AbilityEntry } from "$lib/api";
   import { formatName, generationLabel, GEN_COLORS } from "$lib/pokemon-types";
-  import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
+  import Pokeball from "$lib/components/Pokeball.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import SearchInput from "$lib/components/SearchInput.svelte";
   import FilterChip from "$lib/components/FilterChip.svelte";
@@ -78,7 +78,7 @@
 
   {#if loading}
     <div class="flex justify-center py-24">
-      <LoadingSpinner size="lg" />
+      <Pokeball spinning class="h-16 w-16" />
     </div>
   {:else if error}
     <EmptyState title="Failed to load abilities" subtitle={error} />

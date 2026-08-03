@@ -24,7 +24,7 @@
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import PokemonImage from "$lib/components/PokemonImage.svelte";
   import MoveTooltip from "$lib/components/MoveTooltip.svelte";
-  import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
+  import Pokeball from "$lib/components/Pokeball.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import RadarChart from "$lib/components/RadarChart.svelte";
   import StatBars from "$lib/components/StatBars.svelte";
@@ -540,7 +540,7 @@
               <h2 class="mb-4 text-lg font-bold">Moves</h2>
               {#if movesLoading}
                 <div class="flex justify-center py-10">
-                  <LoadingSpinner size="md" />
+                  <Pokeball spinning class="h-8 w-8" />
                 </div>
               {:else if moves}
                 <div class="mb-4 flex flex-wrap gap-2">

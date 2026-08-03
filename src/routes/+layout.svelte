@@ -9,6 +9,7 @@
   import PokemonSearch from "$lib/components/PokemonSearch.svelte";
   import LoadingBar from "$lib/components/LoadingBar.svelte";
   import NavMenu from "$lib/components/NavMenu.svelte";
+  import Pokeball from "$lib/components/Pokeball.svelte";
   import "../app.css";
 
   let { children } = $props();
@@ -124,9 +125,7 @@
         class="flex items-center gap-2.5 text-xl font-extrabold tracking-tighter no-underline md:text-2xl"
         style="color: var(--text)"
       >
-        <div
-          class="from-pokemon-red relative size-7 rounded-full border-2 border-slate-800 bg-linear-to-b from-50% to-white to-50% after:absolute after:top-1/2 after:left-1/2 after:h-2.5 after:w-2.5 after:-translate-x-1/2 after:-translate-y-1/2 after:rounded-full after:border-2 after:border-slate-800 after:bg-white after:content-['']"
-        ></div>
+        <Pokeball class="size-7" />
         PokéRemote
       </a>
 

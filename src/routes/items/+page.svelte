@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getItemsList, searchItems } from "$lib/api";
   import { formatName, type ItemSummary } from "$lib/pokemon-types";
-  import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
+  import Pokeball from "$lib/components/Pokeball.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import SearchInput from "$lib/components/SearchInput.svelte";
   import Skeleton from "$lib/components/Skeleton.svelte";
@@ -91,7 +91,7 @@
     <EmptyState title="Failed to load items" subtitle={error} />
   {:else if search && searchLoading}
     <div class="flex justify-center py-16">
-      <LoadingSpinner size="lg" />
+      <Pokeball spinning class="h-16 w-16" />
     </div>
   {:else if filtered.length === 0}
     <EmptyState title="No items match" subtitle="No items match." />

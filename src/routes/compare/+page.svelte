@@ -14,7 +14,7 @@
   import PokemonSearch from "$lib/components/PokemonSearch.svelte";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import RadarChart from "$lib/components/RadarChart.svelte";
-  import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
+  import Pokeball from "$lib/components/Pokeball.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import StatBar from "$lib/components/StatBar.svelte";
   import ClearButton from "$lib/components/ClearButton.svelte";
@@ -130,7 +130,9 @@
         options={allNames}
         onselect={selectPokemonA}
       />
-      {#if loadingA}<div class="mt-3"><LoadingSpinner size="sm" /></div>{/if}
+      {#if loadingA}<div class="mt-3 flex justify-center">
+          <Pokeball spinning class="h-6 w-6" />
+        </div>{/if}
     </div>
     <div class="panel p-4!">
       <div
@@ -143,7 +145,9 @@
         options={allNames}
         onselect={selectPokemonB}
       />
-      {#if loadingB}<div class="mt-3"><LoadingSpinner size="sm" /></div>{/if}
+      {#if loadingB}<div class="mt-3 flex justify-center">
+          <Pokeball spinning class="h-6 w-6" />
+        </div>{/if}
     </div>
   </div>
 
