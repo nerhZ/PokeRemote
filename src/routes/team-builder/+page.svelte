@@ -7,6 +7,7 @@
   import {
     TYPE_COLORS,
     ALL_TYPES,
+    TYPE_CHART,
     NATURES,
     NATURES_MODIFIERS,
     formatName,
@@ -17,6 +18,7 @@
     getSavedTeams,
     EV_STATS,
     zeroEvs,
+    evTotal,
     type EvSpread,
   } from "$lib/storage";
   import PokemonSearch from "$lib/components/PokemonSearch.svelte";
@@ -79,10 +81,6 @@
       (o) => o.name === abilityName,
     );
     return a?.description ?? "";
-  }
-
-  function evTotal(evs: EvSpread) {
-    return evs.hp + evs.atk + evs.def + evs.spa + evs.spd + evs.spe;
   }
 
   function clearState() {
@@ -351,6 +349,35 @@
 
   let teamWeak = $derived(ALL_TYPES.filter((t) => coverage[t] >= 2));
   let teamSafe = $derived(ALL_TYPES.filter((t) => coverage[t] <= -1));
+
+  let teamHasMoves = $derived(
+    team.some((_p, i) => (sets[i]?.moves ?? []).some(Boolean)),
+  );
+
+  /** Best type-effectiveness multiplier of the team's chosen moves per defending type. */
+  let offense = $derived.by(() => {
+    const best: Record<string, number> = {};
+    for (const t of ALL_TYPES) best[t] = 0;
+    for (let i = 0; i < team.length; i++) {
+      const meta = metaCache[team[i].name];
+      const set = sets[i];
+      if (!meta || !set) continue;
+      for (const moveName of set.moves.filter(Boolean)) {
+        const m = meta.moves.find((o) => o.name === moveName);
+        if (!m) continue;
+        const chart = TYPE_CHART[m.type];
+        if (!chart) continue;
+        for (const [defType, mult] of Object.entries(chart)) {
+          if (mult > best[defType]) best[defType] = mult;
+        }
+      }
+    }
+    return best;
+  });
+  let teamStrong = $derived(ALL_TYPES.filter((t) => offense[t] >= 2));
+  let teamBlind = $derived(
+    teamHasMoves ? ALL_TYPES.filter((t) => offense[t] < 1) : [],
+  );
 
   function hoverTitle(i: number) {
     const s = sets[i];
@@ -733,6 +760,44 @@
                 >None</span
               >
             {:else}{#each teamSafe as t}<TypeBadge
+                  type={t}
+                  size="sm"
+                />{/each}{/if}
+          </div>
+        </div>
+        <div>
+          <h3
+            class="text-pokemon-red mb-2 text-xs font-bold tracking-wider uppercase"
+          >
+            Strong coverage
+          </h3>
+          <div class="flex flex-wrap gap-1.5">
+            {#if teamStrong.length === 0}
+              <span class="text-xs text-white/40"
+                >{teamHasMoves
+                  ? "Nothing hits super effectively"
+                  : "Pick moves to see coverage"}</span
+              >
+            {:else}{#each teamStrong as t}<TypeBadge
+                  type={t}
+                  size="sm"
+                />{/each}{/if}
+          </div>
+        </div>
+        <div>
+          <h3
+            class="text-pokemon-green mb-2 text-xs font-bold tracking-wider uppercase"
+          >
+            Blind spots
+          </h3>
+          <div class="flex flex-wrap gap-1.5">
+            {#if teamBlind.length === 0}
+              <span class="text-xs text-white/40"
+                >{teamHasMoves
+                  ? "None — great coverage!"
+                  : "Pick moves to see coverage"}</span
+              >
+            {:else}{#each teamBlind as t}<TypeBadge
                   type={t}
                   size="sm"
                 />{/each}{/if}

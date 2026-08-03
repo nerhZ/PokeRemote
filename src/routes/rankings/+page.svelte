@@ -25,6 +25,10 @@
     { key: "special_attack", label: "Sp. Atk", max: 255 },
     { key: "special_defense", label: "Sp. Def", max: 255 },
     { key: "speed", label: "Speed", max: 255 },
+    { key: "base_experience", label: "Base Exp", max: 700 },
+    { key: "height", label: "Height", max: 25 },
+    { key: "weight", label: "Weight", max: 1500 },
+    { key: "moves_count", label: "Moves", max: 200 },
   ];
 
   async function loadRankings() {

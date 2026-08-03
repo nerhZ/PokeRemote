@@ -6,16 +6,21 @@
   import {
     TYPE_COLORS,
     TYPE_CHART,
+    NATURES,
+    NATURES_MODIFIERS,
+    NATURE_STAT_MODS,
     calculateDamage,
     formatName,
     type PokemonDetail,
     type PokemonMoves,
   } from "$lib/pokemon-types";
+  import { EV_STATS, zeroEvs, evTotal, type EvSpread } from "$lib/storage";
   import PokemonSearch from "$lib/components/PokemonSearch.svelte";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import MoveTooltip from "$lib/components/MoveTooltip.svelte";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
+  import Dropdown from "$lib/components/Dropdown.svelte";
   import { onMount, untrack } from "svelte";
 
   let allNames: { name: string; id: number }[] = $state([]);
@@ -31,6 +36,78 @@
   let loadingDef = $state(false);
   let effectGen = 0;
 
+  let attNature = $state("");
+  let attItem = $state("");
+  let defItem = $state("");
+  let attIv = $state(31);
+  let defIv = $state(31);
+  let attEvs = $state<EvSpread>(zeroEvs());
+  let defEvs = $state<EvSpread>(zeroEvs());
+  let attNatureOpen = $state(false);
+  let attItemOpen = $state(false);
+  let defItemOpen = $state(false);
+
+  type CalcItem = {
+    label: string;
+    mult: number;
+    stat?: "physical" | "special";
+    type?: string;
+    eff2x?: boolean;
+  };
+
+  const ATTACK_ITEMS: CalcItem[] = [
+    { label: "Life Orb", mult: 1.3 },
+    { label: "Choice Band", mult: 1.5, stat: "physical" },
+    { label: "Choice Specs", mult: 1.5, stat: "special" },
+    { label: "Expert Belt", mult: 1.2, eff2x: true },
+    { label: "Muscle Band", mult: 1.1, stat: "physical" },
+    { label: "Wise Glasses", mult: 1.1, stat: "special" },
+    { label: "Silk Scarf", mult: 1.2, type: "normal" },
+    { label: "Charcoal", mult: 1.2, type: "fire" },
+    { label: "Mystic Water", mult: 1.2, type: "water" },
+    { label: "Miracle Seed", mult: 1.2, type: "grass" },
+    { label: "Magnet", mult: 1.2, type: "electric" },
+    { label: "Never-Melt Ice", mult: 1.2, type: "ice" },
+    { label: "Black Belt", mult: 1.2, type: "fighting" },
+    { label: "Poison Barb", mult: 1.2, type: "poison" },
+    { label: "Soft Sand", mult: 1.2, type: "ground" },
+    { label: "Sharp Beak", mult: 1.2, type: "flying" },
+    { label: "Twisted Spoon", mult: 1.2, type: "psychic" },
+    { label: "Silver Powder", mult: 1.2, type: "bug" },
+    { label: "Hard Stone", mult: 1.2, type: "rock" },
+    { label: "Spell Tag", mult: 1.2, type: "ghost" },
+    { label: "Dragon Fang", mult: 1.2, type: "dragon" },
+    { label: "Metal Coat", mult: 1.2, type: "steel" },
+    { label: "Black Glasses", mult: 1.2, type: "dark" },
+    { label: "Pixie Plate", mult: 1.2, type: "fairy" },
+  ];
+
+  const DEFENSE_ITEMS: CalcItem[] = [
+    { label: "Assault Vest", mult: 1.5, stat: "special" },
+    { label: "Eviolite", mult: 1.5 },
+  ];
+
+  function clampInt(raw: string, min: number, max: number, fallback: number) {
+    const v = parseInt(raw, 10);
+    if (Number.isNaN(v)) return fallback;
+    return Math.min(max, Math.max(min, v));
+  }
+
+  function evsEncode(evs: EvSpread): string {
+    const v = EV_STATS.map((s) => evs[s.key]);
+    return v.every((x) => x === 0) ? "0" : v.join(".");
+  }
+
+  function evsDecode(raw: string): EvSpread {
+    const v = raw.split(".").map(Number);
+    const evs = zeroEvs();
+    EV_STATS.forEach((s, i) => {
+      evs[s.key] = clampInt(String(v[i] || 0), 0, 252, 0);
+    });
+    if (evTotal(evs) > 510) return zeroEvs();
+    return evs;
+  }
+
   const sync = pageUrlSync("/damage-calc");
 
   onMount(async () => {
@@ -44,10 +121,29 @@
     const mv = page.url.searchParams.get("move");
     const al = page.url.searchParams.get("al");
     const dl = page.url.searchParams.get("dl");
-    if (al) attLevel = Math.min(100, Math.max(1, parseInt(al, 10) || 50));
+    const n = page.url.searchParams.get("n");
+    const ai = page.url.searchParams.get("ai");
+    const di = page.url.searchParams.get("di");
+    const ae = page.url.searchParams.get("ae");
+    const de = page.url.searchParams.get("de");
+    const it = page.url.searchParams.get("it");
+    const dt = page.url.searchParams.get("dt");
+    if (al) attLevel = clampInt(al, 1, 100, 50);
     else attLevel = 50;
-    if (dl) defLevel = Math.min(100, Math.max(1, parseInt(dl, 10) || 50));
+    if (dl) defLevel = clampInt(dl, 1, 100, 50);
     else defLevel = 50;
+    if (n && n in NATURE_STAT_MODS) attNature = n;
+    else attNature = "";
+    if (ai) attIv = clampInt(ai, 0, 31, 31);
+    else attIv = 31;
+    if (di) defIv = clampInt(di, 0, 31, 31);
+    else defIv = 31;
+    if (ae) attEvs = evsDecode(ae);
+    else attEvs = zeroEvs();
+    if (de) defEvs = evsDecode(de);
+    else defEvs = zeroEvs();
+    attItem = it ?? "";
+    defItem = dt ?? "";
     if (!att && !def) {
       attacker = null;
       defender = null;
@@ -72,6 +168,13 @@
     if (selectedMove) params.set("move", selectedMove.name);
     if (attLevel !== 50) params.set("al", String(attLevel));
     if (defLevel !== 50) params.set("dl", String(defLevel));
+    if (attNature) params.set("n", attNature);
+    if (attIv !== 31) params.set("ai", String(attIv));
+    if (defIv !== 31) params.set("di", String(defIv));
+    if (evTotal(attEvs) > 0) params.set("ae", evsEncode(attEvs));
+    if (evTotal(defEvs) > 0) params.set("de", evsEncode(defEvs));
+    if (attItem) params.set("it", attItem);
+    if (defItem) params.set("dt", defItem);
     sync.push(params);
   }
 
@@ -126,10 +229,43 @@
     syncUrl();
   }
 
-  function statValue(base: number, level: number, hp = false) {
-    return hp
-      ? Math.floor(((2 * base + 31) * level) / 100) + level + 10
-      : Math.floor(((2 * base + 31) * level) / 100 + 5);
+  function statValue(
+    base: number,
+    level: number,
+    opts: {
+      iv?: number;
+      ev?: number;
+      hp?: boolean;
+      nature?: { up: string | null; down: string | null } | null;
+      statKey?: string;
+    } = {},
+  ) {
+    const { iv = 31, ev = 0, hp = false, nature = null, statKey = "" } = opts;
+    const evQuotient = Math.floor(ev / 4);
+    let value = hp
+      ? Math.floor(((2 * base + iv + evQuotient) * level) / 100) + level + 10
+      : Math.floor(((2 * base + iv + evQuotient) * level) / 100 + 5);
+    if (nature && statKey) {
+      if (nature.up === statKey) value = Math.floor(value * 1.1);
+      else if (nature.down === statKey) value = Math.floor(value * 0.9);
+    }
+    return value;
+  }
+
+  function setAttEv(key: keyof EvSpread, val: number) {
+    const clamped = Math.min(252, Math.max(0, val));
+    const otherTotal = evTotal(attEvs) - attEvs[key];
+    const finalValue = Math.min(clamped, 510 - otherTotal);
+    attEvs = { ...attEvs, [key]: Math.max(0, finalValue) };
+    syncUrl();
+  }
+
+  function setDefEv(key: keyof EvSpread, val: number) {
+    const clamped = Math.min(252, Math.max(0, val));
+    const otherTotal = evTotal(defEvs) - defEvs[key];
+    const finalValue = Math.min(clamped, 510 - otherTotal);
+    defEvs = { ...defEvs, [key]: Math.max(0, finalValue) };
+    syncUrl();
   }
 
   function estimateKO(min: number, max: number, hp: number): string {
@@ -150,6 +286,26 @@
     return "Normal (1×)";
   }
 
+  function attackItemMult(
+    effectiveness: number,
+    isSpecial: boolean,
+    moveType: string,
+  ): number {
+    const item = ATTACK_ITEMS.find((i) => i.label === attItem);
+    if (!item) return 1;
+    if (item.type && moveType !== item.type) return 1;
+    if (item.stat && (item.stat === "special") !== isSpecial) return 1;
+    if (item.eff2x && effectiveness < 2) return 1;
+    return item.mult;
+  }
+
+  function defenseItemMult(isSpecial: boolean): number {
+    const item = DEFENSE_ITEMS.find((i) => i.label === defItem);
+    if (!item) return 1;
+    if (item.stat && (item.stat === "special") !== isSpecial) return 1;
+    return item.mult;
+  }
+
   let damageResult = $derived.by(() => {
     if (!attacker || !defender || !selectedMove) return null;
     const move = selectedMove;
@@ -160,19 +316,36 @@
       };
 
     const isSpecial = move.damage_class === "special";
-    const baseAtk = isSpecial
-      ? (attacker.stats.find((s) => s.name === "special-attack")?.base_stat ??
-        0)
-      : (attacker.stats.find((s) => s.name === "attack")?.base_stat ?? 0);
-    const baseDef = isSpecial
-      ? (defender.stats.find((s) => s.name === "special-defense")?.base_stat ??
-        0)
-      : (defender.stats.find((s) => s.name === "defense")?.base_stat ?? 0);
+    const atkKey = isSpecial ? "special-attack" : "attack";
+    const defKey = isSpecial ? "special-defense" : "defense";
+    const baseAtk =
+      attacker.stats.find((s) => s.name === atkKey)?.base_stat ?? 0;
+    const baseDef =
+      defender.stats.find((s) => s.name === defKey)?.base_stat ?? 0;
     const baseHp = defender.stats.find((s) => s.name === "hp")?.base_stat ?? 0;
 
-    const atk = statValue(baseAtk, attLevel);
-    const def = statValue(baseDef, defLevel);
-    const hp = statValue(baseHp, defLevel, true);
+    const nature = attNature ? NATURE_STAT_MODS[attNature] : null;
+    const atkEv = attEvs[isSpecial ? "spa" : "atk"];
+    const defEv = defEvs[isSpecial ? "spd" : "def"];
+    const hpEv = defEvs.hp;
+
+    const atk = statValue(baseAtk, attLevel, {
+      iv: attIv,
+      ev: atkEv,
+      nature,
+      statKey: atkKey,
+    });
+    const def = statValue(baseDef, defLevel, {
+      iv: defIv,
+      ev: defEv,
+      nature: null,
+    });
+    const hp = statValue(baseHp, defLevel, {
+      iv: defIv,
+      ev: hpEv,
+      hp: true,
+      nature: null,
+    });
 
     let effectiveness = 1;
     for (const dt of defender.types) {
@@ -182,15 +355,18 @@
 
     const stab = attacker.types.includes(move.type);
 
-    const { min, max } = calculateDamage({
+    let { min, max } = calculateDamage({
       level: attLevel,
       power: move.power,
       attack: atk,
-      defense: def,
+      defense: Math.floor(def * defenseItemMult(isSpecial)),
       stab,
       typeEffectiveness: effectiveness,
       isCritical: false,
     });
+    const itemMult = attackItemMult(effectiveness, isSpecial, move.type);
+    min = Math.floor(min * itemMult);
+    max = Math.floor(max * itemMult);
 
     return {
       min,
@@ -202,7 +378,7 @@
       stab,
       isSpecial,
       atk,
-      def,
+      def: Math.floor(def * defenseItemMult(isSpecial)),
       hp,
       ko: estimateKO(min, max, hp),
       noDamage: false as const,
@@ -216,8 +392,8 @@
       <div>
         <h1>Damage Calculator</h1>
         <p>
-          Attacker + move + defender with STAB, type effectiveness, % HP, and KO
-          estimate. Shareable via query params.
+          Attacker + move + defender with natures, EVs, IVs, items, STAB, type
+          effectiveness, and KO estimates. Shareable via query params.
         </p>
       </div>
       {#if page.url.search}
@@ -274,6 +450,91 @@
               max={100}
               class="w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs outline-none"
             />
+          </div>
+          <div class="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <Dropdown
+              open={attNatureOpen}
+              onopen={(v) => (attNatureOpen = v)}
+              selected={attNature}
+              onselect={(n) => {
+                attNature = n;
+                attNatureOpen = false;
+                syncUrl();
+              }}
+              onclear={() => {
+                attNature = "";
+                attNatureOpen = false;
+                syncUrl();
+              }}
+              placeholder="Neutral nature"
+              options={NATURES.map((n) => ({
+                value: n,
+                meta: NATURES_MODIFIERS[n],
+              }))}
+            />
+            <Dropdown
+              open={attItemOpen}
+              onopen={(v) => (attItemOpen = v)}
+              selected={attItem}
+              onselect={(label) => {
+                attItem = label;
+                attItemOpen = false;
+                syncUrl();
+              }}
+              onclear={() => {
+                attItem = "";
+                attItemOpen = false;
+                syncUrl();
+              }}
+              placeholder="No item"
+              options={ATTACK_ITEMS.map((i) => ({ value: i.label }))}
+            />
+          </div>
+          <div class="mb-3 rounded-xl border border-white/6 bg-white/2 p-2.5">
+            <div class="mb-1.5 flex items-center justify-between">
+              <span
+                class="text-[10px] font-bold tracking-wider text-white/40 uppercase"
+                >EVs {evTotal(attEvs)}/510</span
+              >
+              <span class="flex items-center gap-1 text-[10px] text-white/40">
+                IV
+                <input
+                  type="number"
+                  min="0"
+                  max="31"
+                  value={attIv}
+                  oninput={(e) =>
+                    (attIv = clampInt(
+                      (e.target as HTMLInputElement).value,
+                      0,
+                      31,
+                      31,
+                    ))}
+                  onchange={syncUrl}
+                  class="w-12 rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-right text-[10px] outline-none"
+                />
+              </span>
+            </div>
+            <div class="grid grid-cols-6 gap-1.5">
+              {#each EV_STATS as { key, label }}
+                <label class="flex flex-col items-center gap-0.5">
+                  <span class="text-[9px] font-bold text-white/40">{label}</span
+                  >
+                  <input
+                    type="number"
+                    min="0"
+                    max="252"
+                    value={attEvs[key]}
+                    oninput={(e) =>
+                      setAttEv(
+                        key,
+                        parseInt((e.target as HTMLInputElement).value) || 0,
+                      )}
+                    class="w-full rounded-md border border-white/10 bg-white/5 px-1 py-1 text-center text-[10px] outline-none"
+                  />
+                </label>
+              {/each}
+            </div>
           </div>
           <div class="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
             {#each moveList.level_up as m}
@@ -340,19 +601,85 @@
             class="w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs outline-none"
           />
         </div>
+        <div class="mt-3 mb-3 max-w-xs">
+          <Dropdown
+            open={defItemOpen}
+            onopen={(v) => (defItemOpen = v)}
+            selected={defItem}
+            onselect={(label) => {
+              defItem = label;
+              defItemOpen = false;
+              syncUrl();
+            }}
+            onclear={() => {
+              defItem = "";
+              defItemOpen = false;
+              syncUrl();
+            }}
+            placeholder="No item"
+            options={DEFENSE_ITEMS.map((i) => ({ value: i.label }))}
+          />
+        </div>
+        <div class="mb-3 rounded-xl border border-white/6 bg-white/2 p-2.5">
+          <div class="mb-1.5 flex items-center justify-between">
+            <span
+              class="text-[10px] font-bold tracking-wider text-white/40 uppercase"
+              >Defender EVs {evTotal(defEvs)}/510</span
+            >
+            <span class="flex items-center gap-1 text-[10px] text-white/40">
+              IV
+              <input
+                type="number"
+                min="0"
+                max="31"
+                value={defIv}
+                oninput={(e) =>
+                  (defIv = clampInt(
+                    (e.target as HTMLInputElement).value,
+                    0,
+                    31,
+                    31,
+                  ))}
+                onchange={syncUrl}
+                class="w-12 rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-right text-[10px] outline-none"
+              />
+            </span>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5">
+            {#each EV_STATS.filter((s) => s.key === "hp" || s.key === "def" || s.key === "spd") as { key, label }}
+              <label class="flex flex-col items-center gap-0.5">
+                <span class="text-[9px] font-bold text-white/40">{label}</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="252"
+                  value={defEvs[key]}
+                  oninput={(e) =>
+                    setDefEv(
+                      key,
+                      parseInt((e.target as HTMLInputElement).value) || 0,
+                    )}
+                  class="w-full rounded-md border border-white/10 bg-white/5 px-1 py-1 text-center text-[10px] outline-none"
+                />
+              </label>
+            {/each}
+          </div>
+        </div>
         {@const defHp = statValue(
           defender.stats.find((s) => s.name === "hp")?.base_stat ?? 0,
           defLevel,
-          true,
+          { iv: defIv, ev: defEvs.hp, hp: true },
         )}
         {@const defDef = statValue(
           defender.stats.find((s) => s.name === "defense")?.base_stat ?? 0,
           defLevel,
+          { iv: defIv, ev: defEvs.def },
         )}
         {@const defSpd = statValue(
           defender.stats.find((s) => s.name === "special-defense")?.base_stat ??
             0,
           defLevel,
+          { iv: defIv, ev: defEvs.spd },
         )}
         <div class="mt-3 grid grid-cols-3 gap-1.5 text-center">
           <div class="rounded-lg bg-white/3 px-2 py-1.5">
