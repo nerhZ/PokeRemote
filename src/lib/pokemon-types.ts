@@ -311,6 +311,10 @@ export function artworkUrl(id: number): string {
   return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
 }
 
+export function spriteUrl(id: number): string {
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+}
+
 export function formLabel(pokemonName: string, speciesName: string): string {
   if (pokemonName === speciesName) return "Default";
   const prefix = speciesName + "-";

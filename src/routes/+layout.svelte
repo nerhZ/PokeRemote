@@ -6,6 +6,7 @@
   import { applyTheme, getTheme, setTheme, type ThemeMode } from "$lib/storage";
   import { getRandomPokemon } from "$lib/api";
   import { TOTAL_SPECIES } from "$lib/pokemon-types";
+  import GlobalSearch from "$lib/components/GlobalSearch.svelte";
   import "../app.css";
 
   let { children } = $props();
@@ -55,8 +56,9 @@
         return;
       if (e.key === "/" || (e.key === "k" && (e.metaKey || e.ctrlKey))) {
         e.preventDefault();
+        const onHome = page.url.pathname === "/";
         const el = document.querySelector<HTMLInputElement>(
-          "[data-global-search], input[type='search'], input[placeholder*='Search']",
+          onHome ? "main [data-global-search]" : "[data-global-search]",
         );
         el?.focus();
       }
@@ -130,6 +132,12 @@
         PokéRemote
       </a>
 
+      <div class="hidden min-w-0 flex-1 justify-center px-2 lg:flex">
+        <div class="w-full max-w-md">
+          <GlobalSearch />
+        </div>
+      </div>
+
       <div class="hidden flex-wrap items-center gap-1 lg:flex">
         {#each links as link}
           <a
@@ -188,6 +196,10 @@
         >
       </div>
     </nav>
+
+    <div class="px-4 pt-2 md:px-6 lg:hidden">
+      <GlobalSearch />
+    </div>
 
     {#if mobileOpen}
       <div
