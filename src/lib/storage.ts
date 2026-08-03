@@ -102,6 +102,10 @@ export function zeroEvs(): EvSpread {
   return { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
 }
 
+export function evTotal(evs: EvSpread): number {
+  return evs.hp + evs.atk + evs.def + evs.spa + evs.spd + evs.spe;
+}
+
 export function getSavedTeams(): {
   name: string;
   ids: number[];

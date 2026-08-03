@@ -300,6 +300,10 @@ export interface StatRankings {
   special_defense: RankingEntry[];
   speed: RankingEntry[];
   total: RankingEntry[];
+  base_experience: RankingEntry[];
+  height: RankingEntry[];
+  weight: RankingEntry[];
+  moves_count: RankingEntry[];
 }
 
 export interface ItemSummary {
@@ -356,6 +360,29 @@ export function formatId(id: number): string {
 export function generationShortLabel(gen: string): string {
   return gen.split(" ")[1]?.replace(/[()]/g, "") ?? "?";
 }
+
+/** Pretty-print a PokeAPI generation id, e.g. "generation-iii" → "Gen III". */
+export function generationLabel(generation: string | null): string | null {
+  if (!generation) return null;
+  const m = generation.match(/^generation-([ivxl]+)$/);
+  if (!m)
+    return generation
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  return `Gen ${m[1].toUpperCase()}`;
+}
+
+export const GEN_COLORS: Record<string, string> = {
+  I: "#ef4444",
+  II: "#f59e0b",
+  III: "#10b981",
+  IV: "#6366f1",
+  V: "#8b5cf6",
+  VI: "#ec4899",
+  VII: "#f97316",
+  VIII: "#3b82f6",
+  IX: "#22c55e",
+};
 
 const TITLE_OVERRIDES: Record<string, string> = {
   gmax: "Gigantamax",
@@ -506,6 +533,38 @@ export const NATURES_MODIFIERS: Record<string, string> = {
   Sassy: "+SpD  /  \u2212Spe",
   Serious: "neutral",
   Timid: "+Spe  /  \u2212Atk",
+};
+
+/** Raised/lowered stat per nature (stat names match PokemonDetail stats). */
+export const NATURE_STAT_MODS: Record<
+  string,
+  { up: string | null; down: string | null }
+> = {
+  Adamant: { up: "attack", down: "special-attack" },
+  Bashful: { up: null, down: null },
+  Bold: { up: "defense", down: "attack" },
+  Brave: { up: "attack", down: "speed" },
+  Calm: { up: "special-defense", down: "attack" },
+  Careful: { up: "special-defense", down: "special-attack" },
+  Docile: { up: null, down: null },
+  Gentle: { up: "special-defense", down: "defense" },
+  Hardy: { up: null, down: null },
+  Hasty: { up: "speed", down: "defense" },
+  Impish: { up: "defense", down: "special-attack" },
+  Jolly: { up: "speed", down: "special-attack" },
+  Lax: { up: "defense", down: "special-defense" },
+  Lonely: { up: "attack", down: "defense" },
+  Mild: { up: "special-attack", down: "defense" },
+  Modest: { up: "special-attack", down: "attack" },
+  Naive: { up: "speed", down: "special-defense" },
+  Naughty: { up: "attack", down: "special-defense" },
+  Quiet: { up: "special-attack", down: "speed" },
+  Quirky: { up: null, down: null },
+  Rash: { up: "special-attack", down: "special-defense" },
+  Relaxed: { up: "defense", down: "speed" },
+  Sassy: { up: "special-defense", down: "speed" },
+  Serious: { up: null, down: null },
+  Timid: { up: "speed", down: "attack" },
 };
 
 export const STAT_LABELS: Record<string, string> = {

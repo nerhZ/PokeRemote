@@ -1,0 +1,184 @@
+<script lang="ts">
+  import { getMovesSlice, getMovesTotal } from "$lib/api";
+  import {
+    ALL_TYPES,
+    TYPE_COLORS,
+    formatName,
+    type MoveDetail,
+  } from "$lib/pokemon-types";
+  import TypeBadge from "$lib/components/TypeBadge.svelte";
+  import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
+  import EmptyState from "$lib/components/EmptyState.svelte";
+  import { onMount } from "svelte";
+
+  let moves = $state<MoveDetail[]>([]);
+  let loading = $state(true);
+  let loadingMore = $state(false);
+  let error = $state<string | null>(null);
+  let total = $state(0);
+  let offset = $state(0);
+  const PAGE = 300;
+
+  let sentinel = $state<HTMLElement | undefined>();
+  let observer: IntersectionObserver | undefined;
+
+  let search = $state("");
+  let typeFilter = $state("");
+  let classFilter = $state("");
+
+  const DAMAGE_CLASSES = ["physical", "special", "status"];
+
+  async function loadMore() {
+    if (loadingMore) return;
+    loadingMore = true;
+    try {
+      const slice = await getMovesSlice(offset, PAGE);
+      moves = [...moves, ...slice];
+      offset += slice.length;
+    } catch (e: any) {
+      if (moves.length === 0) error = e.message;
+    } finally {
+      loadingMore = false;
+      loading = false;
+    }
+  }
+
+  onMount(() => {
+    observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore();
+      },
+      { rootMargin: "600px" },
+    );
+    return () => observer?.disconnect();
+  });
+
+  onMount(async () => {
+    try {
+      total = await getMovesTotal();
+      await loadMore();
+    } catch (e: any) {
+      error = e.message;
+      loading = false;
+    }
+  });
+
+  $effect(() => {
+    const el = sentinel;
+    if (el) {
+      observer?.observe(el);
+      return () => observer?.unobserve(el);
+    }
+  });
+
+  let filtered = $derived.by(() => {
+    const q = search.trim().toLowerCase();
+    return moves.filter((m) => {
+      if (q && !m.name.includes(q)) return false;
+      if (typeFilter && m.type !== typeFilter) return false;
+      if (classFilter && m.damage_class !== classFilter) return false;
+      return true;
+    });
+  });
+</script>
+
+<div class="tool-shell">
+  <div class="tool-hero">
+    <h1>Move Dex</h1>
+    <p>
+      Browse all moves with power, accuracy, PP, and effects. {total
+        ? `${offset} / ${total} loaded`
+        : ""}
+    </p>
+  </div>
+
+  <div class="mb-4 space-y-3">
+    <div class="flex flex-col gap-3 md:flex-row md:items-center">
+      <input
+        type="search"
+        bind:value={search}
+        placeholder="Search moves..."
+        class="focus:border-accent/50 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm placeholder-white/30 outline-none md:max-w-xs"
+      />
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button
+          onclick={() => (typeFilter = "")}
+          class="cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-wide uppercase {typeFilter ===
+          ''
+            ? 'bg-accent border-accent text-white'
+            : 'border-white/10 bg-white/5 text-white/55'}">All types</button
+        >
+        {#each ALL_TYPES as t}
+          <button
+            onclick={() => (typeFilter = typeFilter === t ? "" : t)}
+            class="cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-wide uppercase {typeFilter ===
+            t
+              ? 'border-transparent text-white'
+              : 'border-white/10 bg-white/5 text-white/55'}"
+            style={typeFilter === t
+              ? `background-color: ${TYPE_COLORS[t]}`
+              : ""}>{t}</button
+          >
+        {/each}
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-1.5">
+      {#each DAMAGE_CLASSES as c}
+        <button
+          onclick={() => (classFilter = classFilter === c ? "" : c)}
+          class="cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-wide uppercase {classFilter ===
+          c
+            ? 'bg-accent border-accent text-white'
+            : 'border-white/10 bg-white/5 text-white/55'}">{c}</button
+        >
+      {/each}
+    </div>
+  </div>
+
+  {#if loading}
+    <div class="flex justify-center py-24">
+      <LoadingSpinner size="lg" />
+    </div>
+  {:else if error}
+    <EmptyState
+      title="Failed to load moves"
+      subtitle={error}
+      actionLabel="Try again"
+      onaction={() => window.location.reload()}
+    />
+  {:else if filtered.length === 0}
+    <EmptyState title="No moves match" subtitle="Try different filters." />
+  {:else}
+    <div class="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {#each filtered as m}
+        <div class="panel flex flex-col gap-2 p-4!">
+          <div class="flex items-center gap-2">
+            <TypeBadge type={m.type} size="xs" />
+            <span class="truncate text-sm font-bold">{formatName(m.name)}</span>
+            <span
+              class="ml-auto shrink-0 text-[10px] font-bold text-white/40 capitalize"
+              >{m.damage_class}</span
+            >
+          </div>
+          <div class="text-[10px] font-bold tracking-wide text-white/50">
+            Pow {m.power ?? "—"} / Acc {m.accuracy ?? "—"} / PP {m.pp ?? "—"}
+          </div>
+          {#if m.effect}<p
+              class="line-clamp-2 text-xs leading-relaxed text-white/50"
+            >
+              {m.effect}
+            </p>{/if}
+        </div>
+      {/each}
+    </div>
+    {#if offset < total}
+      <div class="flex justify-center pb-12">
+        {#if loadingMore}
+          <LoadingSpinner size="md" />
+        {:else}
+          <div bind:this={sentinel} class="h-px"></div>
+        {/if}
+      </div>
+    {/if}
+  {/if}
+</div>

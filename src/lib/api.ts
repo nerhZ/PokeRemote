@@ -127,11 +127,12 @@ function extractEnglishAbilityEffect(data: any): string | null {
 async function fetchAbilityDetail(
   a: any,
 ): Promise<{ name: string; is_hidden: boolean; description: string | null }> {
-  let description: string | null = null;
-  try {
-    description = extractEnglishAbilityEffect(await fetchJson(a.ability.url));
-  } catch {}
-  return { name: a.ability.name, is_hidden: !!a.is_hidden, description };
+  const data = await fetchAbilityData(a.ability.name, a.ability.url);
+  return {
+    name: a.ability.name,
+    is_hidden: !!a.is_hidden,
+    description: data.description,
+  };
 }
 
 async function fetchLocations(
@@ -203,20 +204,31 @@ async function fetchItemDetail(url: string): Promise<ItemSummary | null> {
 }
 
 async function fetchMoveDetail(name: string): Promise<MoveDetail | null> {
+  const cached = moveCache()[name];
+  if (cached) return cached;
   try {
     const md = await fetchJson(`${API_BASE}/move/${name}`);
     const effect = md.effect_entries?.find(
       (e: any) => e.language.name === "en",
     );
-    return {
+    const flavor = md.flavor_text_entries?.find(
+      (e: any) => e.language.name === "en",
+    );
+    const detail: MoveDetail = {
       name: md.name,
       type: md.type?.name ?? "???",
       power: md.power ?? null,
       accuracy: md.accuracy ?? null,
       pp: md.pp ?? null,
       damage_class: md.damage_class?.name ?? "physical",
-      effect: effect?.short_effect ?? effect?.effect ?? null,
+      effect:
+        effect?.short_effect ??
+        effect?.effect ??
+        flavor?.flavor_text?.replace(/[\n\f\r]/g, " ") ??
+        null,
     };
+    moveCache()[name] = detail;
+    return detail;
   } catch {
     return null;
   }
@@ -231,7 +243,73 @@ async function fetchMoveDetails(
     const fetched = await Promise.all(batch.map(fetchMoveDetail));
     results.push(...fetched);
   }
+  persistMoveCache();
   return results;
+}
+
+// ── Move & ability detail caches (immutable data, validated by version only) ──
+
+const MOVE_CACHE_KEY = "pokeremote:move-cache";
+const MOVE_CACHE_VERSION = 2;
+const ABILITY_CACHE_KEY = "pokeremote:ability-cache";
+const ABILITY_CACHE_VERSION = 2;
+
+let _moveCache: Record<string, MoveDetail> | null = null;
+let _abilityCache: Record<string, CachedAbility> | null = null;
+
+interface CachedAbility {
+  description: string | null;
+  generation: string | null;
+  pokemon_count: number;
+}
+
+function moveCache(): Record<string, MoveDetail> {
+  _moveCache ??=
+    readCache<{ data: Record<string, MoveDetail> }>(
+      MOVE_CACHE_KEY,
+      MOVE_CACHE_VERSION,
+    )?.data ?? {};
+  return _moveCache;
+}
+
+function abilityCache(): Record<string, CachedAbility> {
+  _abilityCache ??=
+    readCache<{ data: Record<string, CachedAbility> }>(
+      ABILITY_CACHE_KEY,
+      ABILITY_CACHE_VERSION,
+    )?.data ?? {};
+  return _abilityCache;
+}
+
+function persistMoveCache() {
+  writeCache(MOVE_CACHE_KEY, MOVE_CACHE_VERSION, { data: moveCache() });
+}
+
+function persistAbilityCache() {
+  writeCache(ABILITY_CACHE_KEY, ABILITY_CACHE_VERSION, {
+    data: abilityCache(),
+  });
+}
+
+/** Cached ability resource fields; single fetch per ability shared by all consumers. */
+async function fetchAbilityData(
+  name: string,
+  url: string,
+): Promise<CachedAbility> {
+  const cache = abilityCache();
+  if (name in cache) return cache[name];
+  try {
+    const ad = await fetchJson(url);
+    const entry: CachedAbility = {
+      description: extractEnglishAbilityEffect(ad),
+      generation: ad.generation?.name ?? null,
+      pokemon_count: ad.pokemon?.length ?? 0,
+    };
+    cache[name] = entry;
+    return entry;
+  } catch {
+    return { description: null, generation: null, pokemon_count: 0 };
+  }
 }
 
 let _autocompleteCache: {
@@ -281,6 +359,7 @@ export const getPokemonDetail = async (
     fetchLocations(data.id),
     resolveMovesCount(data, forms),
   ]);
+  persistAbilityCache();
 
   const speciesId =
     species?.id ?? (parseIdFromUrl(data.species?.url || "") || data.id);
@@ -430,7 +509,7 @@ export const getPokemonMoves = async (name: string): Promise<PokemonMoves> => {
 };
 
 const RANKINGS_CACHE_KEY = "pokeremote:rankings";
-const RANKINGS_CACHE_VERSION = 1;
+const RANKINGS_CACHE_VERSION = 2;
 
 interface RankingsCache {
   version: number;
@@ -506,6 +585,10 @@ export const getStatRankings = async ({
             total += s.base_stat;
           }
           stats.total = total;
+          stats.base_experience = d.base_experience ?? 0;
+          stats.height = d.height ?? 0;
+          stats.weight = d.weight ?? 0;
+          stats.moves_count = d.moves?.length ?? 0;
           return {
             name: p.name,
             id,
@@ -547,6 +630,10 @@ export const getStatRankings = async ({
     special_defense: top10("special_defense"),
     speed: top10("speed"),
     total: top10("total"),
+    base_experience: top10("base_experience"),
+    height: top10("height"),
+    weight: top10("weight"),
+    moves_count: top10("moves_count"),
   } as StatRankings;
 
   writeCache(RANKINGS_CACHE_KEY, RANKINGS_CACHE_VERSION, {
@@ -782,21 +869,96 @@ export async function getPokemonMetadata(name: string): Promise<{
     (m): m is MoveDetail => m !== null,
   );
 
-  const abilities = (
-    await Promise.all(
-      data.abilities.map(async (a: any): Promise<AbilitySummary | null> => {
-        try {
-          const ad = await fetchJson(a.ability.url);
-          return {
-            name: ad.name,
-            description: extractEnglishAbilityEffect(ad),
-          };
-        } catch {
-          return null;
-        }
-      }),
-    )
-  ).filter((a): a is AbilitySummary => a !== null);
+  const abilities = await Promise.all(
+    data.abilities.map(async (a: any): Promise<AbilitySummary> => ({
+      name: a.ability.name,
+      description: (await fetchAbilityData(a.ability.name, a.ability.url))
+        .description,
+    })),
+  );
+  persistAbilityCache();
 
   return { moves, abilities };
+}
+
+// ── Abilities dex ────────────────────────────────────────────────────────────
+
+export interface AbilityEntry {
+  name: string;
+  generation: string | null;
+  effect: string | null;
+  pokemon_count: number;
+}
+
+const ABILITIES_CACHE_KEY = "pokeremote:abilities";
+const ABILITIES_CACHE_VERSION = 3;
+
+async function fetchAbilityEntry(name: string): Promise<AbilityEntry | null> {
+  try {
+    const data = await fetchAbilityData(name, `${API_BASE}/ability/${name}`);
+    return {
+      name,
+      generation: data.generation,
+      effect: data.description,
+      pokemon_count: data.pokemon_count,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Full ability dex with details, cached in localStorage (validated by live count). */
+export async function getAllAbilities(): Promise<AbilityEntry[]> {
+  const cached = readCache<{ data: AbilityEntry[]; total: number }>(
+    ABILITIES_CACHE_KEY,
+    ABILITIES_CACHE_VERSION,
+  );
+  if (cached) {
+    const count = await fetchResourceCount(`${API_BASE}/ability`);
+    if (count !== null && cached.total === count) return cached.data;
+  }
+  const { results } = await fetchNameIdList(`${API_BASE}/ability`);
+  const entries: AbilityEntry[] = [];
+  for (let i = 0; i < results.length; i += 20) {
+    const batch = results.slice(i, i + 20);
+    const fetched = await Promise.all(
+      batch.map((a) => fetchAbilityEntry(a.name)),
+    );
+    entries.push(...fetched.filter((e): e is AbilityEntry => e !== null));
+  }
+  persistAbilityCache();
+  entries.sort((a, b) => a.name.localeCompare(b.name));
+  writeCache(ABILITIES_CACHE_KEY, ABILITIES_CACHE_VERSION, {
+    data: entries,
+    total: results.length,
+  });
+  return entries;
+}
+
+// ── Moves dex ────────────────────────────────────────────────────────────────
+
+let _moveNamesCache: { name: string; id: number }[] | null = null;
+
+async function getAllMoveNames(): Promise<{ name: string; id: number }[]> {
+  if (_moveNamesCache) return _moveNamesCache;
+  _moveNamesCache = (await fetchNameIdList(`${API_BASE}/move`)).results;
+  return _moveNamesCache;
+}
+
+export async function getMovesTotal(): Promise<number> {
+  return (await getAllMoveNames()).length;
+}
+
+/** A name-sorted slice of move details; already-fetched moves come from cache. */
+export async function getMovesSlice(
+  offset: number,
+  limit: number,
+): Promise<MoveDetail[]> {
+  const names = (await getAllMoveNames())
+    .map((r) => r.name)
+    .sort()
+    .slice(offset, offset + limit);
+  return (await fetchMoveDetails(names)).filter(
+    (m): m is MoveDetail => m !== null,
+  );
 }
