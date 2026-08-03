@@ -4,6 +4,7 @@
   import { resolve } from "$app/paths";
   import { onMount, untrack } from "svelte";
   import { getRandomPokemon, getAllPokemonSummaries } from "$lib/api";
+  import { randomFallbackPath } from "$lib/navigation";
   import {
     TYPE_COLORS,
     GEN_RANGES,
@@ -12,7 +13,9 @@
     TOTAL_POKEMON,
     formLabel,
     formatName,
+    formatId,
     getGeneration,
+    generationShortLabel,
     tokenMatch,
   } from "$lib/pokemon-types";
   import {
@@ -23,6 +26,7 @@
   } from "$lib/storage";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
+  import Pokeball from "$lib/components/Pokeball.svelte";
 
   let allPokemon = $state<any[]>([]);
   let loadProgress = $state({ done: 0, total: 0 });
@@ -86,9 +90,7 @@
       const r = await getRandomPokemon();
       goto(resolve(`/pokemon/${r.name}`));
     } catch {
-      goto(
-        resolve(`/pokemon/${Math.floor(Math.random() * TOTAL_SPECIES) + 1}`),
-      );
+      goto(resolve(randomFallbackPath()));
     }
   }
 
@@ -345,7 +347,7 @@
               class="cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-wide uppercase {sel
                 ? 'bg-accent border-accent text-white'
                 : 'border-white/10 bg-white/5 text-white/55'}"
-              >{label.split(" ")[1].replace(/[()]/g, "")}</button
+              >{generationShortLabel(label)}</button
             >
           {/each}
         </div>
@@ -354,17 +356,7 @@
 
     {#if loadPhase === "loading"}
       <div class="flex flex-col items-center justify-center py-20">
-        <div class="relative mb-8 h-24 w-24 animate-spin">
-          <div
-            class="from-pokemon-red absolute inset-0 rounded-full border-4 border-slate-700 bg-linear-to-b from-50% to-white to-50% opacity-80"
-          ></div>
-          <div
-            class="absolute top-1/2 right-0 left-0 h-1 -translate-y-1/2 bg-slate-800"
-          ></div>
-          <div
-            class="absolute top-1/2 left-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-slate-800 bg-white"
-          ></div>
-        </div>
+        <Pokeball class="mb-8 h-24 w-24" spinning />
         {#if loadProgress.total > 0}
           <p class="text-sm font-semibold" style="color: var(--text)">
             Loading {loadProgress.done} / {loadProgress.total} species...
@@ -429,8 +421,7 @@
                 />
                 <span
                   class="absolute top-2.5 left-2.5 rounded-md bg-black/35 px-2 py-0.5 text-[10px] font-black tracking-wider backdrop-blur-sm"
-                  style="color: {primaryColor}"
-                  >#{String(p.id).padStart(3, "0")}</span
+                  style="color: {primaryColor}">{formatId(p.id)}</span
                 >
                 <button
                   onclick={(e) => onFav(e, p)}
@@ -463,8 +454,7 @@
                   <span
                     class="ml-auto rounded-full px-1.5 py-0.5 text-[9px] font-bold text-white/80"
                     style="background: {primaryColor}33"
-                    >{getGeneration(p.id).split(" ")[1]?.replace(/[()]/g, "") ??
-                      "?"}</span
+                    >{generationShortLabel(getGeneration(p.id))}</span
                   >
                 </div>
               </div>

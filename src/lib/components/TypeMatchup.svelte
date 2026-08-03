@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { type TypeMatchup } from "$lib/pokemon-types";
-  import { TYPE_COLORS } from "$lib/pokemon-types";
+  import { MATCHUP_COLORS, type TypeMatchup } from "$lib/pokemon-types";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
 
   let { effectiveness }: { effectiveness: TypeMatchup } = $props();
@@ -13,35 +12,35 @@
         label: "Strong",
         mult: "4×",
         types: effectiveness.four_x_weak,
-        color: "#4ade80",
+        color: MATCHUP_COLORS.strong,
       });
     if (effectiveness.two_x_weak.length)
       r.push({
         label: "Strong",
         mult: "2×",
         types: effectiveness.two_x_weak,
-        color: "#4ade80",
+        color: MATCHUP_COLORS.strong,
       });
     if (effectiveness.half_resist.length)
       r.push({
         label: "Weak",
         mult: "½×",
         types: effectiveness.half_resist,
-        color: "#ff3e3e",
+        color: MATCHUP_COLORS.weak,
       });
     if (effectiveness.quarter_resist.length)
       r.push({
         label: "Weak",
         mult: "¼×",
         types: effectiveness.quarter_resist,
-        color: "#ff3e3e",
+        color: MATCHUP_COLORS.weak,
       });
     if (effectiveness.immune.length)
       r.push({
         label: "No effect",
         mult: "0×",
         types: effectiveness.immune,
-        color: "#f7d02c",
+        color: MATCHUP_COLORS.immune,
       });
     return r;
   });

@@ -126,19 +126,6 @@
 }
 
 @layer components {
-  .glass-card {
-    @apply rounded-2xl border p-6 backdrop-blur-md transition-all duration-300;
-    background: color-mix(in srgb, var(--card) 92%, transparent);
-    border-color: var(--border);
-    box-shadow: var(--shadow);
-    transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  }
-
-  .glass-card:hover {
-    @apply -translate-y-1;
-    border-color: color-mix(in srgb, var(--color-accent) 45%, var(--border));
-  }
-
   .tool-shell {
     @apply mx-auto max-w-6xl px-6 py-8;
   }
@@ -402,16 +389,6 @@
   box-shadow: var(--shadow);
 }
 
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-20px);
-  }
-}
-
 @keyframes bob {
   0%,
   100% {
@@ -470,8 +447,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card-enter,
-  .pokemon-sprite {
+  .card-enter {
     animation: none !important;
   }
 }

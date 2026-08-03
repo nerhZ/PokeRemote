@@ -14,29 +14,25 @@
     color?: string;
   } = $props();
 
-  function formatKey(s: string) {
-    return s.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  }
-
   function describe(s: EvolutionStage): string {
     const parts: string[] = [];
     if (s.min_level != null && s.min_level > 0)
       parts.push(`Level ${s.min_level}`);
-    if (s.item) parts.push(`Use ${formatKey(s.item)}`);
+    if (s.item) parts.push(`Use ${formatName(s.item)}`);
     if (s.min_happiness != null && s.min_happiness > 0)
       parts.push(`Happiness ${s.min_happiness}+`);
     if (s.time_of_day) parts.push(`During ${s.time_of_day}`);
     if (s.held_item && s.held_item !== s.item)
-      parts.push(`Hold ${formatKey(s.held_item)}`);
-    if (s.known_move) parts.push(`Know ${formatKey(s.known_move)}`);
-    if (s.location) parts.push(`At ${formatKey(s.location)}`);
-    if (s.trade_species) parts.push(`Trade for ${formatKey(s.trade_species)}`);
+      parts.push(`Hold ${formatName(s.held_item)}`);
+    if (s.known_move) parts.push(`Know ${formatName(s.known_move)}`);
+    if (s.location) parts.push(`At ${formatName(s.location)}`);
+    if (s.trade_species) parts.push(`Trade for ${formatName(s.trade_species)}`);
     if (s.trigger === "trade" && !s.trade_species) parts.push("Trade");
     if (s.needs_overworld_rain) parts.push("In rain");
     if (s.gender != null)
       parts.push(s.gender === 1 ? "Female only" : "Male only");
     if (s.known_move_type)
-      parts.push(`${formatKey(s.known_move_type)}-type move`);
+      parts.push(`${formatName(s.known_move_type)}-type move`);
     if (s.min_affection != null) parts.push(`Affection ${s.min_affection}+`);
     if (s.relative_physical_stats != null) {
       if (s.relative_physical_stats === 0) parts.push("Atk = Def");

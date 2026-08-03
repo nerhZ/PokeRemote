@@ -20,9 +20,10 @@ This project uses **Bun** as its package manager and runtime. The lockfile is `b
 | `bun run format`         | Fix formatting (prettier)   |
 | `bun run lint:tailwind`  | Check Tailwind class order  |
 | `bun run fix:tailwind`   | Fix Tailwind class order    |
+| `bun knip`               | Check for unused code       |
 
 ### Before committing
 
-Always run `bun run check` and `bun run format` (or at minimum `bun run format:check`) to ensure clean type-checking and consistent formatting before finalizing changes.
+Always run `bun run check`, `bun knip`, and `bun run format` (or at minimum `bun run format:check`) to ensure clean type-checking, no unused code, and consistent formatting before finalizing changes.
 
 The `npm` and `node` aliases may exist but are **not** the canonical toolchain for this repo.

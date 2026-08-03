@@ -3,6 +3,7 @@
   import {
     TYPE_COLORS,
     formatName,
+    formatId,
     TOTAL_POKEMON,
     type StatRankings,
   } from "$lib/pokemon-types";
@@ -109,8 +110,7 @@
               {formatName(entry.name)}
             </div>
             <div class="mt-0.5 flex items-center gap-1.5">
-              <span class="text-[10px] text-white/30"
-                >#{String(entry.id).padStart(3, "0")}</span
+              <span class="text-[10px] text-white/30">{formatId(entry.id)}</span
               >
               {#if entry.types}{#each entry.types as t}<TypeBadge
                     type={t}

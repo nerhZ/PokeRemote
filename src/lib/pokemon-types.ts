@@ -262,16 +262,19 @@ export interface PokemonDetail {
   forms: PokemonFormSummary[];
 }
 
-export interface MoveInfo {
+export interface MoveDetail {
   name: string;
-  level: number;
   type: string;
   power: number | null;
   accuracy: number | null;
   pp: number | null;
   damage_class: string;
+  effect: string | null;
+}
+
+export interface MoveInfo extends MoveDetail {
+  level: number;
   method: string;
-  effect?: string | null;
 }
 
 export interface PokemonMoves {
@@ -298,6 +301,22 @@ export interface StatRankings {
   speed: RankingEntry[];
   total: RankingEntry[];
 }
+
+export interface ItemSummary {
+  name: string;
+  id: number;
+  sprite: string | null;
+  category: string | null;
+  cost: number;
+  effect: string | null;
+}
+
+// ── Shared colors ─────────────────────────────────────────────────────────────
+export const MATCHUP_COLORS = {
+  strong: "#4ade80",
+  weak: "#ff3e3e",
+  immune: "#f7d02c",
+} as const;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 export function getGeneration(id: number): string {
@@ -326,6 +345,16 @@ export function formLabel(pokemonName: string, speciesName: string): string {
 
 export function formatName(name: string): string {
   return name.split("-").map(titleWord).join(" ");
+}
+
+/** Formats a species/form id as a zero-padded dex number, e.g. `#025`. */
+export function formatId(id: number): string {
+  return `#${String(id).padStart(3, "0")}`;
+}
+
+/** Short generation tag from a full range label, e.g. "Gen I (Kanto)" → "I". */
+export function generationShortLabel(gen: string): string {
+  return gen.split(" ")[1]?.replace(/[()]/g, "") ?? "?";
 }
 
 const TITLE_OVERRIDES: Record<string, string> = {

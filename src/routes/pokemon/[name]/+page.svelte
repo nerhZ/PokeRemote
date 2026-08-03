@@ -7,12 +7,14 @@
     TYPE_COLORS,
     formLabel,
     formatName,
+    formatId,
     STAT_LABELS,
     type PokemonDetail,
     type PokemonMoves,
   } from "$lib/pokemon-types";
   import { pushRecent, toggleFavorite, isFavorite } from "$lib/storage";
   import { backLabel } from "$lib/navigation";
+  import { pageLoading } from "$lib/loading-state.svelte";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import MoveTooltip from "$lib/components/MoveTooltip.svelte";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
@@ -46,6 +48,7 @@
     error = null;
     moves = null;
     isShiny = false;
+    pageLoading.active = true;
     const id = ++requestId;
     getSpeciesIds().then((ids) => {
       speciesIds = ids;
@@ -70,7 +73,10 @@
         }
       })
       .finally(() => {
-        if (id === requestId) loading = false;
+        if (id === requestId) {
+          loading = false;
+          pageLoading.active = false;
+        }
       });
   });
 
@@ -289,8 +295,7 @@
           <div class="mt-5 text-center">
             <span
               class="text-sm font-bold tracking-wider"
-              style="color: {primaryColor}"
-              >#{String(pokemon.species_id).padStart(3, "0")}</span
+              style="color: {primaryColor}">{formatId(pokemon.species_id)}</span
             >
             {#if pokemon.id !== pokemon.species_id}
               <span class="ml-1.5 text-xs" style="color: var(--muted)"
@@ -392,7 +397,7 @@
 
         <div class="pb-12">
           <TabBar
-            tabs={tabs.map((t) => ({ id: t.id, label: t.label }))}
+            {tabs}
             active={tab}
             color={primaryColor}
             onchange={(id) => setTab(id as typeof tab)}

@@ -3,6 +3,8 @@ import {
   artworkUrl,
   computeTypeEffectiveness,
   getGeneration,
+  type ItemSummary,
+  type MoveDetail,
   type MoveInfo,
   type PokemonDetail,
   type PokemonFormSummary,
@@ -12,7 +14,43 @@ import {
   type StatRankings,
 } from "$lib/pokemon-types";
 
+const API_BASE = "https://pokeapi.co/api/v2";
+
 // ── Internal helpers ─────────────────────────────────────────────────────────
+
+async function fetchJson(url: string): Promise<any> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Request failed: ${url}`);
+  return res.json();
+}
+
+async function fetchResourceCount(endpoint: string): Promise<number | null> {
+  try {
+    const { count } = await fetchJson(`${endpoint}?limit=1`);
+    return count;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchListCount(endpoint: string): Promise<number> {
+  const { count } = await fetchJson(`${endpoint}?limit=1`);
+  return count;
+}
+
+async function fetchNameIdList(
+  endpoint: string,
+): Promise<{ total: number; results: { name: string; id: number }[] }> {
+  const count = await fetchListCount(endpoint);
+  const data = await fetchJson(`${endpoint}?limit=${count}&offset=0`);
+  return {
+    total: data.count || count,
+    results: data.results.map((p: any) => ({
+      name: p.name,
+      id: parseIdFromUrl(p.url),
+    })),
+  };
+}
 
 function parseIdFromUrl(url: string): number {
   return parseInt(url.split("/").filter(Boolean).pop() || "0", 10);
@@ -91,11 +129,7 @@ async function fetchAbilityDetail(
 ): Promise<{ name: string; is_hidden: boolean; description: string | null }> {
   let description: string | null = null;
   try {
-    const ar = await fetch(a.ability.url);
-    if (ar.ok) {
-      const ad = await ar.json();
-      description = extractEnglishAbilityEffect(ad);
-    }
+    description = extractEnglishAbilityEffect(await fetchJson(a.ability.url));
   } catch {}
   return { name: a.ability.name, is_hidden: !!a.is_hidden, description };
 }
@@ -104,20 +138,17 @@ async function fetchLocations(
   pokemonId: number,
 ): Promise<{ area: string; method: string; chance: number | null }[]> {
   try {
-    const locRes = await fetch(
-      `https://pokeapi.co/api/v2/pokemon/${pokemonId}/encounters`,
+    const locData = await fetchJson(
+      `${API_BASE}/pokemon/${pokemonId}/encounters`,
     );
-    if (locRes.ok) {
-      const locData = await locRes.json();
-      return locData.slice(0, 12).map((loc: any) => {
-        const detail = loc.version_details?.[0]?.encounter_details?.[0];
-        return {
-          area: loc.location_area?.name?.replace(/-/g, " ") ?? "Unknown",
-          method: detail?.method?.name?.replace(/-/g, " ") ?? "walk",
-          chance: detail?.chance ?? null,
-        };
-      });
-    }
+    return locData.slice(0, 12).map((loc: any) => {
+      const detail = loc.version_details?.[0]?.encounter_details?.[0];
+      return {
+        area: loc.location_area?.name?.replace(/-/g, " ") ?? "Unknown",
+        method: detail?.method?.name?.replace(/-/g, " ") ?? "walk",
+        chance: detail?.chance ?? null,
+      };
+    });
   } catch {}
   return [];
 }
@@ -131,13 +162,10 @@ async function resolveMovesCount(
     const defaultForm = forms.find((f) => f.is_default);
     if (defaultForm && defaultForm.name !== data.name) {
       try {
-        const defRes = await fetch(
-          `https://pokeapi.co/api/v2/pokemon/${defaultForm.id}`,
+        const defData = await fetchJson(
+          `${API_BASE}/pokemon/${defaultForm.id}`,
         );
-        if (defRes.ok) {
-          const defData = await defRes.json();
-          movesCount = defData.moves?.length ?? 0;
-        }
+        movesCount = defData.moves?.length ?? 0;
       } catch {}
     }
   }
@@ -157,6 +185,55 @@ function mapVarieties(varieties: any[] | undefined): PokemonFormSummary[] {
   });
 }
 
+async function fetchItemDetail(url: string): Promise<ItemSummary | null> {
+  try {
+    const d = await fetchJson(url);
+    const effect = d.effect_entries?.find((e: any) => e.language.name === "en");
+    return {
+      name: d.name,
+      id: d.id,
+      sprite: d.sprites?.default ?? null,
+      category: d.category?.name ?? null,
+      cost: d.cost ?? 0,
+      effect: effect?.short_effect ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchMoveDetail(name: string): Promise<MoveDetail | null> {
+  try {
+    const md = await fetchJson(`${API_BASE}/move/${name}`);
+    const effect = md.effect_entries?.find(
+      (e: any) => e.language.name === "en",
+    );
+    return {
+      name: md.name,
+      type: md.type?.name ?? "???",
+      power: md.power ?? null,
+      accuracy: md.accuracy ?? null,
+      pp: md.pp ?? null,
+      damage_class: md.damage_class?.name ?? "physical",
+      effect: effect?.short_effect ?? effect?.effect ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchMoveDetails(
+  names: string[],
+): Promise<(MoveDetail | null)[]> {
+  const results: (MoveDetail | null)[] = [];
+  for (let i = 0; i < names.length; i += 20) {
+    const batch = names.slice(i, i + 20);
+    const fetched = await Promise.all(batch.map(fetchMoveDetail));
+    results.push(...fetched);
+  }
+  return results;
+}
+
 let _autocompleteCache: {
   total: number;
   results: { name: string; id: number }[];
@@ -165,10 +242,9 @@ let _speciesIdsCache: number[] | null = null;
 
 export async function getSpeciesIds(): Promise<number[]> {
   if (_speciesIdsCache) return _speciesIdsCache;
-  const res = await fetch(
-    `https://pokeapi.co/api/v2/pokemon-species?limit=1025&offset=0`,
+  const data = await fetchJson(
+    `${API_BASE}/pokemon-species?limit=1025&offset=0`,
   );
-  const data = await res.json();
   const ids = data.results.map((s: any) => parseIdFromUrl(s.url));
   _speciesIdsCache = ids;
   return ids;
@@ -177,24 +253,23 @@ export async function getSpeciesIds(): Promise<number[]> {
 export const getPokemonDetail = async (
   name: string,
 ): Promise<PokemonDetail> => {
-  const pokeRes = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
+  const pokeRes = await fetch(`${API_BASE}/pokemon/${name}`);
   if (!pokeRes.ok) throw new Error("Pokemon not found");
   const data = await pokeRes.json();
 
   let species: any = null;
   if (data.species?.url) {
     try {
-      const speciesRes = await fetch(data.species.url);
-      if (speciesRes.ok) species = await speciesRes.json();
+      species = await fetchJson(data.species.url);
     } catch {}
   }
 
   let evolution: EvolutionStage | null = null;
   if (species?.evolution_chain?.url) {
     try {
-      const evoRes = await fetch(species.evolution_chain.url);
-      if (evoRes.ok)
-        evolution = buildEvolutionTree((await evoRes.json()).chain);
+      evolution = buildEvolutionTree(
+        (await fetchJson(species.evolution_chain.url)).chain,
+      );
     } catch {}
   }
 
@@ -256,47 +331,40 @@ export const getPokemonDetail = async (
   } as PokemonDetail;
 };
 
+const VG_ORDER = [
+  "red-blue",
+  "yellow",
+  "gold-silver",
+  "crystal",
+  "ruby-sapphire",
+  "emerald",
+  "firered-leafgreen",
+  "diamond-pearl",
+  "platinum",
+  "heartgold-soulsilver",
+  "black-white",
+  "colosseum",
+  "xd",
+  "black-2-white-2",
+  "x-y",
+  "omega-ruby-alpha-sapphire",
+  "sun-moon",
+  "ultra-sun-ultra-moon",
+  "lets-go-pikachu-lets-go-eevee",
+  "sword-shield",
+  "the-isle-of-armor",
+  "the-crown-tundra",
+  "brilliant-diamond-and-shining-pearl",
+  "legends-arceus",
+  "scarlet-violet",
+  "the-teal-mask",
+  "the-indigo-disk",
+];
+
 export const getPokemonMoves = async (name: string): Promise<PokemonMoves> => {
-  const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
+  const response = await fetch(`${API_BASE}/pokemon/${name}`);
   if (!response.ok) throw new Error("Pokemon not found");
   const data = await response.json();
-
-  const moves: { level_up: any[]; machine: any[]; egg: any[]; tutor: any[] } = {
-    level_up: [],
-    machine: [],
-    egg: [],
-    tutor: [],
-  };
-
-  const VG_ORDER = [
-    "red-blue",
-    "yellow",
-    "gold-silver",
-    "crystal",
-    "ruby-sapphire",
-    "emerald",
-    "firered-leafgreen",
-    "diamond-pearl",
-    "platinum",
-    "heartgold-soulsilver",
-    "black-white",
-    "colosseum",
-    "xd",
-    "black-2-white-2",
-    "x-y",
-    "omega-ruby-alpha-sapphire",
-    "sun-moon",
-    "ultra-sun-ultra-moon",
-    "lets-go-pikachu-lets-go-eevee",
-    "sword-shield",
-    "the-isle-of-armor",
-    "the-crown-tundra",
-    "brilliant-diamond-and-shining-pearl",
-    "legends-arceus",
-    "scarlet-violet",
-    "the-teal-mask",
-    "the-indigo-disk",
-  ];
 
   let latestVg: string | null = null;
   let latestIdx = -1;
@@ -315,92 +383,43 @@ export const getPokemonMoves = async (name: string): Promise<PokemonMoves> => {
   }
   if (!latestVg) latestVg = [...seenVg][0] ?? "scarlet-violet";
 
+  const collected: { name: string; level: number; method: string }[] = [];
   for (const m of data.moves) {
     for (const det of m.version_group_details) {
-      if (det.version_group.name === latestVg) {
-        const method = det.move_learn_method.name;
-        if (method === "level-up") {
-          moves.level_up.push({
-            name: m.move.name,
-            url: m.move.url,
-            level: det.level_learned_at,
-          });
-        } else if (method === "machine") {
-          moves.machine.push({ name: m.move.name, url: m.move.url });
-        } else if (method === "egg") {
-          moves.egg.push({ name: m.move.name, url: m.move.url });
-        } else if (method === "tutor") {
-          moves.tutor.push({ name: m.move.name, url: m.move.url });
-        }
+      if (det.version_group.name !== latestVg) continue;
+      const method = det.move_learn_method.name;
+      if (method === "level-up") {
+        collected.push({
+          name: m.move.name,
+          level: det.level_learned_at,
+          method,
+        });
+      } else if (
+        method === "machine" ||
+        method === "egg" ||
+        method === "tutor"
+      ) {
+        collected.push({ name: m.move.name, level: 0, method });
       }
     }
   }
+  collected.sort((a, b) => a.level - b.level);
 
-  moves.level_up.sort((a, b) => a.level - b.level);
-
-  const allMoves: {
-    name: string;
-    url: string;
-    level: number;
-    method: string;
-  }[] = [
-    ...moves.level_up.map((m) => ({ ...m, method: "level-up" })),
-    ...moves.machine.map((m) => ({ ...m, level: 0, method: "machine" })),
-    ...moves.egg.map((m) => ({ ...m, level: 0, method: "egg" })),
-    ...moves.tutor.map((m) => ({ ...m, level: 0, method: "tutor" })),
-  ];
-
-  const detailed: MoveInfo[] = [];
-  const batchSize = 20;
-  for (let i = 0; i < allMoves.length; i += batchSize) {
-    const batch = allMoves.slice(i, i + batchSize);
-    const results = await Promise.all(
-      batch.map(async (m): Promise<MoveInfo> => {
-        try {
-          const mr = await fetch(m.url);
-          if (!mr.ok) {
-            return {
-              name: m.name,
-              level: m.level,
-              type: "???",
-              power: null,
-              accuracy: null,
-              pp: null,
-              damage_class: "physical",
-              method: m.method,
-            };
-          }
-          const md = await mr.json();
-          const effect = md.effect_entries?.find(
-            (e: any) => e.language.name === "en",
-          );
-          return {
-            name: m.name,
-            level: m.level,
-            type: md.type?.name ?? "???",
-            power: md.power ?? null,
-            accuracy: md.accuracy ?? null,
-            pp: md.pp ?? null,
-            damage_class: md.damage_class?.name ?? "physical",
-            method: m.method,
-            effect: effect?.short_effect ?? effect?.effect ?? null,
-          };
-        } catch {
-          return {
-            name: m.name,
-            level: m.level,
-            type: "???",
-            power: null,
-            accuracy: null,
-            pp: null,
-            damage_class: "physical",
-            method: m.method,
-          };
-        }
-      }),
-    );
-    detailed.push(...results);
-  }
+  const fetched = await fetchMoveDetails(collected.map((m) => m.name));
+  const detailed: MoveInfo[] = fetched.map((d, i) => {
+    const m = collected[i];
+    return {
+      name: m.name,
+      level: m.level,
+      type: d?.type ?? "???",
+      power: d?.power ?? null,
+      accuracy: d?.accuracy ?? null,
+      pp: d?.pp ?? null,
+      damage_class: d?.damage_class ?? "physical",
+      method: m.method,
+      effect: d?.effect ?? null,
+    };
+  });
 
   return {
     level_up: detailed.filter((m) => m.method === "level-up"),
@@ -413,27 +432,31 @@ export const getPokemonMoves = async (name: string): Promise<PokemonMoves> => {
 const RANKINGS_CACHE_KEY = "pokeremote:rankings";
 const RANKINGS_CACHE_VERSION = 1;
 
-function readRankingsCache(): {
+interface RankingsCache {
+  version: number;
   data: StatRankings;
   speciesCount: number;
-} | null {
+}
+
+function readCache<T>(key: string, version: number): T | null {
   try {
-    const raw = localStorage.getItem(RANKINGS_CACHE_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (parsed.version !== RANKINGS_CACHE_VERSION) return null;
-    return { data: parsed.data, speciesCount: parsed.speciesCount };
+    if (parsed.version !== version) return null;
+    return parsed as T;
   } catch {
     return null;
   }
 }
 
-function writeRankingsCache(data: StatRankings, speciesCount: number) {
+function writeCache(
+  key: string,
+  version: number,
+  payload: Record<string, unknown>,
+) {
   try {
-    localStorage.setItem(
-      RANKINGS_CACHE_KEY,
-      JSON.stringify({ version: RANKINGS_CACHE_VERSION, data, speciesCount }),
-    );
+    localStorage.setItem(key, JSON.stringify({ version, ...payload }));
   } catch {}
 }
 
@@ -443,25 +466,22 @@ export const getStatRankings = async ({
   data: StatRankings;
   fromCache: boolean;
 }> => {
-  const cached = readRankingsCache();
+  const cached = readCache<RankingsCache>(
+    RANKINGS_CACHE_KEY,
+    RANKINGS_CACHE_VERSION,
+  );
   if (cached) {
-    try {
-      const speciesRes = await fetch(
-        `https://pokeapi.co/api/v2/pokemon-species?limit=1`,
-      );
-      if (speciesRes.ok) {
-        const json = await speciesRes.json();
-        if (cached.speciesCount === json.count) {
-          return { data: cached.data, fromCache: true };
-        }
-      }
-    } catch {}
+    const speciesCount = await fetchResourceCount(
+      `${API_BASE}/pokemon-species`,
+    );
+    if (speciesCount !== null && cached.speciesCount === speciesCount) {
+      return { data: cached.data, fromCache: true };
+    }
   }
 
-  const listRes = await fetch(
-    `https://pokeapi.co/api/v2/pokemon?limit=${count}&offset=0`,
+  const listData = await fetchJson(
+    `${API_BASE}/pokemon?limit=${count}&offset=0`,
   );
-  const listData = await listRes.json();
 
   const allStats: {
     name: string;
@@ -477,9 +497,7 @@ export const getStatRankings = async ({
       batch.map(async (p: any) => {
         const id = parseIdFromUrl(p.url);
         try {
-          const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
-          if (!r.ok) return null;
-          const d = await r.json();
+          const d = await fetchJson(`${API_BASE}/pokemon/${id}`);
           const stats: Record<string, number> = {};
           let total = 0;
           for (const s of d.stats) {
@@ -491,7 +509,7 @@ export const getStatRankings = async ({
           return {
             name: p.name,
             id,
-            image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`,
+            image: artworkUrl(id),
             types: d.types.map((t: any) => t.type.name),
             stats,
           };
@@ -531,7 +549,10 @@ export const getStatRankings = async ({
     total: top10("total"),
   } as StatRankings;
 
-  writeRankingsCache(result, listData.count);
+  writeCache(RANKINGS_CACHE_KEY, RANKINGS_CACHE_VERSION, {
+    data: result,
+    speciesCount: listData.count,
+  });
   return { data: result, fromCache: false };
 };
 
@@ -541,21 +562,8 @@ export const getAutocompleteList = async (): Promise<{
   results: { name: string; id: number }[];
 }> => {
   if (_autocompleteCache) return _autocompleteCache;
-  const head = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=1`);
-  const headData = await head.json();
-  const total = headData.count || TOTAL_POKEMON;
   try {
-    const response = await fetch(
-      `https://pokeapi.co/api/v2/pokemon?limit=${total}&offset=0`,
-    );
-    const data = await response.json();
-    _autocompleteCache = {
-      total: data.count || total,
-      results: data.results.map((p: any) => {
-        const id = parseIdFromUrl(p.url);
-        return { name: p.name, id };
-      }),
-    };
+    _autocompleteCache = await fetchNameIdList(`${API_BASE}/pokemon`);
     return _autocompleteCache;
   } catch {
     return { total: 0, results: [] };
@@ -567,17 +575,11 @@ export const getRandomPokemon = async (): Promise<{
   name: string;
   id: number;
 }> => {
-  const head = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=1`);
-  const headData = await head.json();
-  const total = headData.count || TOTAL_POKEMON;
+  const total = (await fetchListCount(`${API_BASE}/pokemon`)) || TOTAL_POKEMON;
   const offset = Math.floor(Math.random() * total);
-  const response = await fetch(
-    `https://pokeapi.co/api/v2/pokemon?limit=1&offset=${offset}`,
-  );
-  const data = await response.json();
+  const data = await fetchJson(`${API_BASE}/pokemon?limit=1&offset=${offset}`);
   const entry = data.results[0];
-  const id = parseIdFromUrl(entry.url);
-  return { name: entry.name as string, id };
+  return { name: entry.name as string, id: parseIdFromUrl(entry.url) };
 };
 
 const ITEMS_CACHE_KEY = "pokeremote:items";
@@ -586,91 +588,49 @@ const ITEMS_CACHE_VERSION = 1;
 interface ItemsCache {
   version: number;
   count: number;
-  results: any[];
-}
-
-function readItemsCache(): ItemsCache | null {
-  try {
-    const raw = localStorage.getItem(ITEMS_CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (parsed.version !== ITEMS_CACHE_VERSION) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function writeItemsCache(count: number, results: any[]) {
-  try {
-    localStorage.setItem(
-      ITEMS_CACHE_KEY,
-      JSON.stringify({ version: ITEMS_CACHE_VERSION, count, results }),
-    );
-  } catch {}
+  results: ItemSummary[];
 }
 
 export const getItemsList = async ({
   limit = 60,
   offset = 0,
 }: { limit?: number; offset?: number } = {}): Promise<{
-  results: any[];
+  results: ItemSummary[];
   count: number;
   next_offset: number;
 }> => {
   if (offset === 0) {
-    const cached = readItemsCache();
+    const cached = readCache<ItemsCache>(ITEMS_CACHE_KEY, ITEMS_CACHE_VERSION);
     if (cached) {
-      try {
-        const checkRes = await fetch(`https://pokeapi.co/api/v2/item?limit=1`);
-        if (checkRes.ok) {
-          const check = await checkRes.json();
-          if (cached.count === check.count) {
-            return {
-              results: cached.results.slice(0, limit),
-              count: cached.count,
-              next_offset: limit,
-            };
-          }
-        }
-      } catch {}
+      const count = await fetchResourceCount(`${API_BASE}/item`);
+      if (count !== null && cached.count === count) {
+        return {
+          results: cached.results.slice(0, limit),
+          count: cached.count,
+          next_offset: limit,
+        };
+      }
     }
   }
 
-  const response = await fetch(
-    `https://pokeapi.co/api/v2/item?limit=${limit}&offset=${offset}`,
+  const data = await fetchJson(
+    `${API_BASE}/item?limit=${limit}&offset=${offset}`,
   );
-  const data = await response.json();
-  const results = await Promise.all(
-    data.results.map(async (item: any) => {
-      try {
-        const r = await fetch(item.url);
-        if (!r.ok) return null;
-        const d = await r.json();
-        const effect = d.effect_entries?.find(
-          (e: any) => e.language.name === "en",
-        );
-        return {
-          name: d.name,
-          id: d.id,
-          sprite: d.sprites?.default ?? null,
-          category: d.category?.name ?? null,
-          cost: d.cost ?? 0,
-          effect: effect?.short_effect ?? null,
-        };
-      } catch {
-        return null;
-      }
-    }),
-  );
-  const filtered = results.filter(Boolean);
+  const results = (
+    await Promise.all(
+      data.results.map((item: any) => fetchItemDetail(item.url)),
+    )
+  ).filter((r): r is ItemSummary => r !== null);
 
   if (offset === 0) {
-    writeItemsCache(data.count, filtered);
+    writeCache(ITEMS_CACHE_KEY, ITEMS_CACHE_VERSION, {
+      count: data.count,
+      results,
+    });
   }
 
   return {
-    results: filtered,
+    results,
     count: data.count,
     next_offset: offset + limit,
   };
@@ -698,47 +658,20 @@ interface GridCache {
 const GRID_CACHE_KEY = "pokeremote:grid-cache";
 const GRID_CACHE_VERSION = 1;
 
-function readGridCache(): GridCache | null {
-  try {
-    const raw = localStorage.getItem(GRID_CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (parsed.version !== GRID_CACHE_VERSION) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function writeGridCache(cache: GridCache) {
-  try {
-    localStorage.setItem(GRID_CACHE_KEY, JSON.stringify(cache));
-  } catch {}
-}
-
 export async function getAllPokemonSummaries(
   onProgress?: (done: number, total: number) => void,
 ): Promise<{ data: CachedPokemonSummary[]; fromCache: boolean }> {
-  const cached = readGridCache();
+  const cached = readCache<GridCache>(GRID_CACHE_KEY, GRID_CACHE_VERSION);
   if (cached) {
-    try {
-      const speciesRes = await fetch(
-        `https://pokeapi.co/api/v2/pokemon-species?limit=1`,
-      );
-      if (speciesRes.ok) {
-        const { count } = await speciesRes.json();
-        if (cached.speciesCount === count) {
-          return { data: cached.data, fromCache: true };
-        }
-      }
-    } catch {}
+    const count = await fetchResourceCount(`${API_BASE}/pokemon-species`);
+    if (count !== null && cached.speciesCount === count) {
+      return { data: cached.data, fromCache: true };
+    }
   }
 
-  const speciesRes = await fetch(
-    `https://pokeapi.co/api/v2/pokemon-species?limit=1025&offset=0`,
+  const { results, count } = await fetchJson(
+    `${API_BASE}/pokemon-species?limit=1025&offset=0`,
   );
-  const speciesData = await speciesRes.json();
-  const { results, count } = speciesData;
 
   const total = results.length;
   let done = 0;
@@ -748,10 +681,10 @@ export async function getAllPokemonSummaries(
       const speciesId = parseIdFromUrl(s.url);
       try {
         const [speciesData, pokeData] = await Promise.all([
-          fetch(`https://pokeapi.co/api/v2/pokemon-species/${speciesId}`).then(
-            (r) => (r.ok ? r.json() : null),
+          fetch(`${API_BASE}/pokemon-species/${speciesId}`).then((r) =>
+            r.ok ? r.json() : null,
           ),
-          fetch(`https://pokeapi.co/api/v2/pokemon/${s.name}`).then((r) =>
+          fetch(`${API_BASE}/pokemon/${s.name}`).then((r) =>
             r.ok ? r.json() : null,
           ),
         ]);
@@ -799,8 +732,7 @@ export async function getAllPokemonSummaries(
 
   entries.sort((a, b) => a.id - b.id);
 
-  writeGridCache({
-    version: GRID_CACHE_VERSION,
+  writeCache(GRID_CACHE_KEY, GRID_CACHE_VERSION, {
     timestamp: Date.now(),
     speciesCount: count,
     data: entries,
@@ -815,117 +747,56 @@ let _itemNamesCache: { name: string; id: number }[] | null = null;
 
 async function getAllItemNames(): Promise<{ name: string; id: number }[]> {
   if (_itemNamesCache) return _itemNamesCache;
-  const head = await fetch(`https://pokeapi.co/api/v2/item?limit=1`);
-  const { count } = await head.json();
-  const res = await fetch(
-    `https://pokeapi.co/api/v2/item?limit=${count}&offset=0`,
-  );
-  const data = await res.json();
-  _itemNamesCache = data.results.map((i: any) => ({
-    name: i.name,
-    id: parseIdFromUrl(i.url),
-  }));
-  return _itemNamesCache!;
+  _itemNamesCache = (await fetchNameIdList(`${API_BASE}/item`)).results;
+  return _itemNamesCache;
 }
 
-export async function searchItems(query: string): Promise<any[]> {
+export async function searchItems(query: string): Promise<ItemSummary[]> {
   const q = query.toLowerCase();
   const allNames = await getAllItemNames();
   const matches = allNames.filter((n) => n.name.includes(q)).slice(0, 30);
-
-  const results = await Promise.all(
-    matches.map(async (m) => {
-      try {
-        const r = await fetch(`https://pokeapi.co/api/v2/item/${m.id}`);
-        if (!r.ok) return null;
-        const d = await r.json();
-        const effect = d.effect_entries?.find(
-          (e: any) => e.language.name === "en",
-        );
-        return {
-          name: d.name,
-          id: d.id,
-          sprite: d.sprites?.default ?? null,
-          category: d.category?.name ?? null,
-          cost: d.cost ?? 0,
-          effect: effect?.short_effect ?? null,
-        };
-      } catch {
-        return null;
-      }
-    }),
-  );
-
-  return results.filter(Boolean);
+  return (
+    await Promise.all(
+      matches.map((m) => fetchItemDetail(`${API_BASE}/item/${m.id}`)),
+    )
+  ).filter((r): r is ItemSummary => r !== null);
 }
 
+type AbilitySummary = { name: string; description: string | null };
+
 export async function getPokemonMetadata(name: string): Promise<{
-  moves: {
-    name: string;
-    type: string;
-    power: number | null;
-    accuracy: number | null;
-    pp: number | null;
-    effect: string | null;
-  }[];
-  abilities: { name: string; description: string | null }[];
+  moves: MoveDetail[];
+  abilities: AbilitySummary[];
 }> {
-  const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
-  if (!res.ok) return { moves: [], abilities: [] };
-  const data = await res.json();
+  let data: any;
+  try {
+    data = await fetchJson(`${API_BASE}/pokemon/${name}`);
+  } catch {
+    return { moves: [], abilities: [] };
+  }
 
   const moveNames: string[] = Array.from(
     new Set(data.moves.map((m: any) => m.move.name)),
   );
-  const abilityUrls = data.abilities.map((a: any) => a.ability.url);
+  const moves = (await fetchMoveDetails(moveNames)).filter(
+    (m): m is MoveDetail => m !== null,
+  );
 
-  const batchSize = 20;
-  const moveDetails: any[] = [];
-  for (let i = 0; i < moveNames.length; i += batchSize) {
-    const batch = moveNames.slice(i, i + batchSize);
-    const results = await Promise.all(
-      batch.map(async (moveName: string) => {
+  const abilities = (
+    await Promise.all(
+      data.abilities.map(async (a: any): Promise<AbilitySummary | null> => {
         try {
-          const mr = await fetch(`https://pokeapi.co/api/v2/move/${moveName}`);
-          if (!mr.ok) return null;
-          const md = await mr.json();
-          const effect = md.effect_entries?.find(
-            (e: any) => e.language.name === "en",
-          );
+          const ad = await fetchJson(a.ability.url);
           return {
-            name: md.name,
-            type: md.type?.name ?? "???",
-            power: md.power ?? null,
-            accuracy: md.accuracy ?? null,
-            pp: md.pp ?? null,
-            effect: effect?.short_effect ?? effect?.effect ?? null,
+            name: ad.name,
+            description: extractEnglishAbilityEffect(ad),
           };
         } catch {
           return null;
         }
       }),
-    );
-    moveDetails.push(...results.filter(Boolean));
-  }
+    )
+  ).filter((a): a is AbilitySummary => a !== null);
 
-  const abilityDetails = await Promise.all(
-    abilityUrls.map(async (url: string) => {
-      try {
-        const ar = await fetch(url);
-        if (!ar.ok) return null;
-        const ad = await ar.json();
-        return {
-          name: ad.name,
-          description: extractEnglishAbilityEffect(ad),
-        };
-      } catch {
-        return null;
-      }
-    }),
-  );
-
-  return {
-    moves: moveDetails,
-    abilities: abilityDetails.filter(Boolean),
-  };
+  return { moves, abilities };
 }

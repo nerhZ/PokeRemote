@@ -5,7 +5,7 @@
   import { onMount } from "svelte";
   import { applyTheme, getTheme, setTheme, type ThemeMode } from "$lib/storage";
   import { getRandomPokemon } from "$lib/api";
-  import { TOTAL_SPECIES } from "$lib/pokemon-types";
+  import { randomFallbackPath } from "$lib/navigation";
   import PokemonSearch from "$lib/components/PokemonSearch.svelte";
   import LoadingBar from "$lib/components/LoadingBar.svelte";
   import "../app.css";
@@ -70,11 +70,7 @@
               goto(resolve(`/pokemon/${r.name}`));
             })
             .catch(() => {
-              goto(
-                resolve(
-                  `/pokemon/${Math.floor(Math.random() * TOTAL_SPECIES) + 1}`,
-                ),
-              );
+              goto(resolve(randomFallbackPath()));
             });
         }
       }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getAttackingMatchups } from "$lib/pokemon-types";
+  import { getAttackingMatchups, MATCHUP_COLORS } from "$lib/pokemon-types";
   import MatchupRow from "./MatchupRow.svelte";
 
   let { type }: { type: string } = $props();
@@ -8,11 +8,19 @@
 </script>
 
 {#if matchups.strong.length}
-  <MatchupRow label="Strong" types={matchups.strong} color="#4ade80" />
+  <MatchupRow
+    label="Strong"
+    types={matchups.strong}
+    color={MATCHUP_COLORS.strong}
+  />
 {/if}
 {#if matchups.weak.length}
-  <MatchupRow label="Weak" types={matchups.weak} color="#ff3e3e" />
+  <MatchupRow label="Weak" types={matchups.weak} color={MATCHUP_COLORS.weak} />
 {/if}
 {#if matchups.immune.length}
-  <MatchupRow label="No effect" types={matchups.immune} color="#f7d02c" />
+  <MatchupRow
+    label="No effect"
+    types={matchups.immune}
+    color={MATCHUP_COLORS.immune}
+  />
 {/if}

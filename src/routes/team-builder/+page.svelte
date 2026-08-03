@@ -2,11 +2,8 @@
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import {
-    getPokemonDetail,
-    getAutocompleteList,
-    getPokemonMetadata,
-  } from "$lib/api";
+  import { getPokemonDetail, getPokemonMetadata } from "$lib/api";
+  import { getCatalog, pageUrlSync, selectPokemonSlot } from "$lib/url-state";
   import {
     TYPE_COLORS,
     ALL_TYPES,
@@ -15,12 +12,19 @@
     formatName,
     type PokemonDetail,
   } from "$lib/pokemon-types";
-  import { saveTeam, getSavedTeams, type EvSpread } from "$lib/storage";
+  import {
+    saveTeam,
+    getSavedTeams,
+    EV_STATS,
+    zeroEvs,
+    type EvSpread,
+  } from "$lib/storage";
   import PokemonSearch from "$lib/components/PokemonSearch.svelte";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import MoveTooltip from "$lib/components/MoveTooltip.svelte";
   import Tooltip from "$lib/components/Tooltip.svelte";
-  import AttackingMatchups from "$lib/components/AttackingMatchups.svelte";
+  import Dropdown from "$lib/components/Dropdown.svelte";
+  import TypePopup from "$lib/components/TypePopup.svelte";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import { onMount } from "svelte";
@@ -59,12 +63,11 @@
   >([]);
   let evWarning = $state("");
 
+  const sync = pageUrlSync("/team-builder");
+
   onMount(async () => {
     saved = getSavedTeams();
-    try {
-      const catalog = await getAutocompleteList();
-      allNames = catalog.results;
-    } catch {}
+    allNames = (await getCatalog()).results;
   });
 
   function initSet() {
@@ -82,12 +85,8 @@
     return evs.hp + evs.atk + evs.def + evs.spa + evs.spd + evs.spe;
   }
 
-  function zeroEvs(): EvSpread {
-    return { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
-  }
-
   function clearState() {
-    localStorage.removeItem(`pageState:${page.url.pathname}`);
+    sync.clear();
     team = [];
     sets = [];
     search = "";
@@ -97,7 +96,6 @@
     abilityDropdowns = {};
     natureDropdowns = {};
     evWarning = "";
-    goto(resolve("/team-builder"), { replaceState: true });
   }
 
   function setEv(stat: keyof EvSpread, val: number) {
@@ -180,8 +178,8 @@
     const p = page.url.searchParams.get("p");
     if (!p) return;
     const names = p.split(",").filter(Boolean).slice(0, 6);
-    const current = team.map((t) => t.name).join(",");
-    if (names.join(",") === current) return;
+    const currentNames = new Set(team.map((t) => t.name));
+    if (names.every((n) => currentNames.has(n))) return;
     const rawSets = page.url.searchParams.get("s");
     const decoded = rawSets ? decodeSets(rawSets) : [];
     loadingTeam = true;
@@ -224,20 +222,17 @@
   });
 
   function evsEncode(evs: EvSpread) {
-    const v = [evs.hp, evs.atk, evs.def, evs.spa, evs.spd, evs.spe];
+    const v = EV_STATS.map((s) => evs[s.key]);
     return v.every((x) => x === 0) ? "0" : v.join(".");
   }
 
   function evsDecode(raw: string): EvSpread {
     const v = raw.split(".").map(Number);
-    return {
-      hp: v[0] || 0,
-      atk: v[1] || 0,
-      def: v[2] || 0,
-      spa: v[3] || 0,
-      spd: v[4] || 0,
-      spe: v[5] || 0,
-    };
+    const evs = zeroEvs();
+    EV_STATS.forEach((s, i) => {
+      evs[s.key] = v[i] || 0;
+    });
+    return evs;
   }
 
   function encodeSets() {
@@ -294,29 +289,22 @@
     if (hasSets()) {
       params.set("s", encodeSets());
     }
-    const q = params.toString();
-    goto(q ? resolve("/team-builder") + `?${q}` : resolve("/team-builder"), {
-      replaceState: true,
-      keepFocus: true,
-      noScroll: true,
-    });
+    sync.push(params);
   }
 
   async function addToTeam(name: string) {
     if (team.length >= 6) return;
     search = "";
-    loading = true;
-    try {
-      const detail = await getPokemonDetail(name);
-      if (!team.some((t) => t.id === detail.id)) {
-        team = [...team, detail];
-        sets = [...sets, initSet()];
-        syncUrl();
-      }
-    } catch {
-    } finally {
-      loading = false;
-    }
+    await selectPokemonSlot(name, {
+      setLoading: (v) => (loading = v),
+      apply: (detail) => {
+        if (!team.some((t) => t.id === detail.id)) {
+          team = [...team, detail];
+          sets = [...sets, initSet()];
+          syncUrl();
+        }
+      },
+    });
   }
 
   function removeFromTeam(id: number) {
@@ -535,17 +523,29 @@
               {#each Array(4) as _, mi}
                 {@const dkey = `${i}-${mi}`}
                 {@const open = moveDropdowns[dkey] ?? false}
-                <div class="relative">
-                  <button
-                    type="button"
-                    onclick={() => {
-                      moveDropdowns = { ...moveDropdowns, [dkey]: !open };
-                    }}
-                    class="w-full cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left text-xs text-white/70 outline-none hover:border-white/20"
-                  >
-                    {#if s.moves[mi]}
+                <Dropdown
+                  {open}
+                  onopen={(v) =>
+                    (moveDropdowns = { ...moveDropdowns, [dkey]: v })}
+                  selected={s.moves[mi]}
+                  onselect={(name) => pickMove(mi, name)}
+                  onclear={() => pickMove(mi, "")}
+                  placeholder={`Move ${mi + 1}...`}
+                  options={moveOptions
+                    .filter(
+                      (m) =>
+                        !s.moves.some((sm, j) => sm === m.name && j !== mi),
+                    )
+                    .map((m) => ({
+                      value: m.name,
+                      badge: m.type,
+                      meta: `${m.power ?? "—"}/${m.accuracy ?? "—"}/${m.pp ?? "—"}`,
+                    }))}
+                >
+                  {#snippet button(selected: string)}
+                    {#if selected}
                       {@const move = moveOptions.find(
-                        (o) => o.name === s.moves[mi],
+                        (o) => o.name === selected,
                       )}
                       <span class="flex items-center gap-1.5">
                         {#if move}
@@ -554,51 +554,20 @@
                             size="xs"
                             tooltip={false}
                           />
-                          <span>{formatName(move.name)}</span>
+                        {/if}
+                        <span>{formatName(selected)}</span>
+                        {#if move}
                           <span class="ml-auto text-[10px] text-white/30"
                             >{move.power ?? "—"}/{move.accuracy ??
                               "—"}/{move.pp ?? "—"}</span
                           >
-                        {:else}
-                          {formatName(s.moves[mi])}
                         {/if}
                       </span>
                     {:else}
                       Move {mi + 1}...
                     {/if}
-                  </button>
-                  {#if open}
-                    <div
-                      class="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border bg-(--card) p-1 shadow-2xl"
-                      style="border-color: var(--border)"
-                    >
-                      <button
-                        type="button"
-                        onclick={() => pickMove(mi, "")}
-                        class="w-full cursor-pointer rounded-lg border-0 bg-transparent px-3 py-2 text-left text-xs text-white/40 hover:bg-white/5"
-                        >None</button
-                      >
-                      {#each moveOptions.filter((m) => !s.moves.some((sm, j) => sm === m.name && j !== mi)) as m}
-                        <button
-                          type="button"
-                          onclick={() => pickMove(mi, m.name)}
-                          class="flex w-full items-center gap-1.5 rounded-lg border-0 bg-transparent px-3 py-2 text-left text-xs text-white/70 hover:bg-white/5 {s
-                            .moves[mi] === m.name
-                            ? 'bg-white/10'
-                            : ''}"
-                        >
-                          <TypeBadge type={m.type} size="xs" tooltip={false} />
-                          <span class="truncate">{formatName(m.name)}</span>
-                          <span
-                            class="ml-auto shrink-0 text-[10px] text-white/30"
-                            >{m.power ?? "—"}/{m.accuracy ?? "—"}/{m.pp ??
-                              "—"}</span
-                          >
-                        </button>
-                      {/each}
-                    </div>
-                  {/if}
-                </div>
+                  {/snippet}
+                </Dropdown>
               {/each}
             </div>
           </div>
@@ -610,48 +579,23 @@
                 Ability
               </div>
               <div class="relative">
-                <button
-                  type="button"
-                  onclick={() => {
-                    abilityDropdowns = {
+                <Dropdown
+                  open={abilityDropdowns[`ability-${i}`] ?? false}
+                  onopen={(v) =>
+                    (abilityDropdowns = {
                       ...abilityDropdowns,
-                      [`ability-${i}`]: !abilityDropdowns[`ability-${i}`],
-                    };
-                  }}
-                  class="mt-2 w-full cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left text-xs text-white/70 outline-none hover:border-white/20"
-                >
-                  {s.ability ? formatName(s.ability) : "None"}
-                </button>
-                {#if abilityDropdowns[`ability-${i}`]}
-                  <div
-                    class="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border bg-(--card) p-1 shadow-2xl"
-                    style="border-color: var(--border)"
-                  >
-                    <button
-                      type="button"
-                      onclick={() => pickAbility("")}
-                      class="w-full cursor-pointer rounded-lg border-0 bg-transparent px-3 py-2 text-left text-xs text-white/40 hover:bg-white/5"
-                      >None</button
-                    >
-                    {#each abilityOptions as a}
-                      <button
-                        type="button"
-                        onclick={() => pickAbility(a.name)}
-                        class="flex w-full flex-col gap-0.5 rounded-lg border-0 bg-transparent px-3 py-2 text-left text-xs text-white/70 hover:bg-white/5 {s.ability ===
-                        a.name
-                          ? 'bg-white/10'
-                          : ''}"
-                      >
-                        <span>{formatName(a.name)}</span>
-                        {#if a.description}
-                          <span class="text-[10px] leading-tight text-white/30"
-                            >{a.description}</span
-                          >
-                        {/if}
-                      </button>
-                    {/each}
-                  </div>
-                {/if}
+                      [`ability-${i}`]: v,
+                    })}
+                  selected={s.ability}
+                  onselect={pickAbility}
+                  onclear={() => pickAbility("")}
+                  buttonClass="mt-2"
+                  options={abilityOptions.map((a) => ({
+                    value: a.name,
+                    label: formatName(a.name),
+                    hint: a.description ?? undefined,
+                  }))}
+                />
               </div>
             </div>
             <div>
@@ -661,46 +605,22 @@
                 Nature
               </div>
               <div class="relative">
-                <button
-                  type="button"
-                  onclick={() => {
-                    natureDropdowns = {
+                <Dropdown
+                  open={natureDropdowns[`nature-${i}`] ?? false}
+                  onopen={(v) =>
+                    (natureDropdowns = {
                       ...natureDropdowns,
-                      [`nature-${i}`]: !natureDropdowns[`nature-${i}`],
-                    };
-                  }}
-                  class="mt-2 w-full cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left text-xs text-white/70 outline-none hover:border-white/20"
-                >
-                  {s.nature || "None"}
-                </button>
-                {#if natureDropdowns[`nature-${i}`]}
-                  <div
-                    class="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border bg-(--card) p-1 shadow-2xl"
-                    style="border-color: var(--border)"
-                  >
-                    <button
-                      type="button"
-                      onclick={() => pickNature("")}
-                      class="w-full cursor-pointer rounded-lg border-0 bg-transparent px-3 py-2 text-left text-xs text-white/40 hover:bg-white/5"
-                      >None</button
-                    >
-                    {#each NATURES as n}
-                      <button
-                        type="button"
-                        onclick={() => pickNature(n)}
-                        class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left text-xs text-white/70 hover:bg-white/5 {s.nature ===
-                        n
-                          ? 'bg-white/10'
-                          : ''}"
-                      >
-                        <span>{n}</span>
-                        <span class="text-[10px] text-white/30"
-                          >{NATURES_MODIFIERS[n]}</span
-                        >
-                      </button>
-                    {/each}
-                  </div>
-                {/if}
+                      [`nature-${i}`]: v,
+                    })}
+                  selected={s.nature}
+                  onselect={pickNature}
+                  onclear={() => pickNature("")}
+                  buttonClass="mt-2"
+                  options={NATURES.map((n) => ({
+                    value: n,
+                    meta: NATURES_MODIFIERS[n],
+                  }))}
+                />
               </div>
             </div>
             <div>
@@ -718,21 +638,20 @@
                 {/if}
               </div>
               <div class="mt-2 grid grid-cols-3 gap-2">
-                {#each ["hp", "atk", "def", "spa", "spd", "spe"] as key, ki}
-                  {@const k = key as keyof EvSpread}
+                {#each EV_STATS as { key, label }}
                   <div class="flex items-center gap-1">
                     <span
                       class="w-7 text-right text-[9px] font-bold text-white/40"
-                      >{["HP", "Atk", "Def", "SpA", "SpD", "Spe"][ki]}</span
+                      >{label}</span
                     >
                     <input
                       type="number"
                       min="0"
                       max="252"
-                      value={s.evs[k] || 0}
+                      value={s.evs[key] || 0}
                       oninput={(e) =>
                         setEv(
-                          k,
+                          key,
                           parseInt((e.target as HTMLInputElement).value) || 0,
                         )}
                       class="focus:border-accent/50 w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-white outline-none"
@@ -761,13 +680,7 @@
             {@const c = coverage[t]}
             <Tooltip width="w-max">
               {#snippet popup()}
-                <div
-                  class="mb-1 block font-semibold capitalize"
-                  style="color: var(--text)"
-                >
-                  {t}
-                </div>
-                <AttackingMatchups type={t} />
+                <TypePopup type={t} />
               {/snippet}
               {#snippet trigger()}
                 <div

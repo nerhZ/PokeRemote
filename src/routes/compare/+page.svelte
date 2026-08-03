@@ -1,12 +1,12 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { getPokemonDetail, getAutocompleteList } from "$lib/api";
+  import { getCatalog, pageUrlSync, selectPokemonSlot } from "$lib/url-state";
   import {
     TYPE_COLORS,
     STAT_LABELS,
     formatName,
+    formatId,
     type PokemonDetail,
   } from "$lib/pokemon-types";
   import PokemonSearch from "$lib/components/PokemonSearch.svelte";
@@ -14,6 +14,7 @@
   import RadarChart from "$lib/components/RadarChart.svelte";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
+  import StatBar from "$lib/components/StatBar.svelte";
   import { onMount, untrack } from "svelte";
 
   let allNames: { name: string; id: number }[] = $state([]);
@@ -26,12 +27,12 @@
   let loadingB = $state(false);
   let effectGen = 0;
 
+  const sync = pageUrlSync("/compare");
+
   onMount(async () => {
-    try {
-      const catalog = await getAutocompleteList();
-      allNames = catalog.results;
-      catalogTotal = catalog.total;
-    } catch {}
+    const catalog = await getCatalog();
+    allNames = catalog.results;
+    catalogTotal = catalog.total;
   });
 
   $effect(() => {
@@ -57,17 +58,11 @@
     const params = new URLSearchParams();
     if (pokemonA) params.set("a", pokemonA.name);
     if (pokemonB) params.set("b", pokemonB.name);
-    const q = params.toString();
-    goto(q ? resolve("/compare") + `?${q}` : resolve("/compare"), {
-      replaceState: true,
-      keepFocus: true,
-      noScroll: true,
-    });
+    sync.push(params);
   }
 
   function clearState() {
-    localStorage.removeItem(`pageState:${page.url.pathname}`);
-    goto(resolve("/compare"), { replaceState: true });
+    sync.clear();
   }
 
   async function selectPokemonA(
@@ -76,16 +71,15 @@
     skipSync?: boolean,
   ) {
     searchA = name;
-    loadingA = true;
-    try {
-      const p = await getPokemonDetail(name);
-      if (gen !== undefined && gen !== effectGen) return;
-      pokemonA = p;
-      if (!skipSync) syncUrl();
-    } catch {
-    } finally {
-      loadingA = false;
-    }
+    await selectPokemonSlot(name, {
+      gen,
+      effectGen,
+      setLoading: (v) => (loadingA = v),
+      apply: (p) => {
+        pokemonA = p;
+        if (!skipSync) syncUrl();
+      },
+    });
   }
 
   async function selectPokemonB(
@@ -94,16 +88,15 @@
     skipSync?: boolean,
   ) {
     searchB = name;
-    loadingB = true;
-    try {
-      const p = await getPokemonDetail(name);
-      if (gen !== undefined && gen !== effectGen) return;
-      pokemonB = p;
-      if (!skipSync) syncUrl();
-    } catch {
-    } finally {
-      loadingB = false;
-    }
+    await selectPokemonSlot(name, {
+      gen,
+      effectGen,
+      setLoading: (v) => (loadingB = v),
+      apply: (p) => {
+        pokemonB = p;
+        if (!skipSync) syncUrl();
+      },
+    });
   }
 </script>
 
@@ -188,7 +181,7 @@
                   {formatName(p.name)}
                 </div>
                 <div class="text-xs text-white/40">
-                  #{String(p.id).padStart(3, "0")}
+                  {formatId(p.id)}
                 </div>
                 <div class="mt-1.5 flex gap-1">
                   {#each p.types as t}<TypeBadge type={t} size="xs" />{/each}
@@ -197,24 +190,12 @@
             </a>
             <div class="space-y-2">
               {#each p.stats as stat}
-                <div class="flex items-center gap-2">
-                  <span
-                    class="w-12 text-right text-[10px] font-bold text-white/45"
-                    >{STAT_LABELS[stat.name]}</span
-                  >
-                  <span class="w-7 text-xs font-black" style="color: {color}"
-                    >{stat.base_stat}</span
-                  >
-                  <div
-                    class="h-1.5 flex-1 overflow-hidden rounded-full bg-white/6"
-                  >
-                    <div
-                      class="h-full rounded-full"
-                      style="width: {(stat.base_stat / 255) *
-                        100}%; background: {color}"
-                    ></div>
-                  </div>
-                </div>
+                <StatBar
+                  label={STAT_LABELS[stat.name]}
+                  value={stat.base_stat}
+                  {color}
+                  size="sm"
+                />
               {/each}
               <div
                 class="border-t border-white/6 pt-2 text-xs font-bold text-white/60"

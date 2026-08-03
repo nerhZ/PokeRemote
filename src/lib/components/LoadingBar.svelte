@@ -1,11 +1,12 @@
 <script lang="ts">
   import { navigating } from "$app/state";
+  import { pageLoading } from "$lib/loading-state.svelte";
 
   let visible = $state(false);
   let showTimer: ReturnType<typeof setTimeout> | undefined;
 
   $effect(() => {
-    if (navigating.to !== null) {
+    if (navigating.to !== null || pageLoading.active) {
       showTimer = setTimeout(() => (visible = true), 120);
       return () => clearTimeout(showTimer);
     }

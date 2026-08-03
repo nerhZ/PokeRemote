@@ -1,12 +1,8 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import {
-    getPokemonDetail,
-    getAutocompleteList,
-    getPokemonMoves,
-  } from "$lib/api";
+  import { getPokemonMoves } from "$lib/api";
+  import { getCatalog, pageUrlSync, selectPokemonSlot } from "$lib/url-state";
   import {
     TYPE_COLORS,
     TYPE_CHART,
@@ -35,11 +31,10 @@
   let loadingDef = $state(false);
   let effectGen = 0;
 
+  const sync = pageUrlSync("/damage-calc");
+
   onMount(async () => {
-    try {
-      const catalog = await getAutocompleteList();
-      allNames = catalog.results;
-    } catch {}
+    allNames = (await getCatalog()).results;
   });
 
   $effect(() => {
@@ -77,17 +72,11 @@
     if (selectedMove) params.set("move", selectedMove.name);
     if (attLevel !== 50) params.set("al", String(attLevel));
     if (defLevel !== 50) params.set("dl", String(defLevel));
-    const q = params.toString();
-    goto(q ? resolve("/damage-calc") + `?${q}` : resolve("/damage-calc"), {
-      replaceState: true,
-      keepFocus: true,
-      noScroll: true,
-    });
+    sync.push(params);
   }
 
   function clearState() {
-    localStorage.removeItem(`pageState:${page.url.pathname}`);
-    goto(resolve("/damage-calc"), { replaceState: true });
+    sync.clear();
   }
 
   async function selectAttacker(
@@ -97,23 +86,22 @@
     skipSync?: boolean,
   ) {
     searchAtt = name;
-    loadingAtt = true;
-    try {
-      const p = await getPokemonDetail(name);
-      if (gen !== undefined && gen !== effectGen) return;
-      attacker = p;
-      selectedMove = null;
-      moveList = null;
-      moveList = await getPokemonMoves(name);
-      if (preferMove && moveList) {
-        selectedMove =
-          moveList.level_up.find((m) => m.name === preferMove) ?? null;
-      }
-      if (!skipSync) syncUrl();
-    } catch {
-    } finally {
-      loadingAtt = false;
-    }
+    await selectPokemonSlot(name, {
+      gen,
+      effectGen,
+      setLoading: (v) => (loadingAtt = v),
+      apply: async (p) => {
+        attacker = p;
+        selectedMove = null;
+        moveList = null;
+        moveList = await getPokemonMoves(name);
+        if (preferMove && moveList) {
+          selectedMove =
+            moveList.level_up.find((m) => m.name === preferMove) ?? null;
+        }
+        if (!skipSync) syncUrl();
+      },
+    });
   }
 
   async function selectDefender(
@@ -122,16 +110,15 @@
     skipSync?: boolean,
   ) {
     searchDef = name;
-    loadingDef = true;
-    try {
-      const p = await getPokemonDetail(name);
-      if (gen !== undefined && gen !== effectGen) return;
-      defender = p;
-      if (!skipSync) syncUrl();
-    } catch {
-    } finally {
-      loadingDef = false;
-    }
+    await selectPokemonSlot(name, {
+      gen,
+      effectGen,
+      setLoading: (v) => (loadingDef = v),
+      apply: (p) => {
+        defender = p;
+        if (!skipSync) syncUrl();
+      },
+    });
   }
 
   function pickMove(m: any) {

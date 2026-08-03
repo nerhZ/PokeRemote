@@ -89,6 +89,19 @@ export type EvSpread = {
   spe: number;
 };
 
+export const EV_STATS: { key: keyof EvSpread; label: string }[] = [
+  { key: "hp", label: "HP" },
+  { key: "atk", label: "Atk" },
+  { key: "def", label: "Def" },
+  { key: "spa", label: "SpA" },
+  { key: "spd", label: "SpD" },
+  { key: "spe", label: "Spe" },
+];
+
+export function zeroEvs(): EvSpread {
+  return { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+}
+
 export function getSavedTeams(): {
   name: string;
   ids: number[];
