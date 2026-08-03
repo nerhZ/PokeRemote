@@ -5,27 +5,65 @@
   import { getAutocompleteList } from "$lib/api";
   import { formatName, spriteUrl, tokenMatch } from "$lib/pokemon-types";
 
-  let query = $state("");
+  interface Props {
+    value?: string;
+    placeholder?: string;
+    options?: { name: string; id: number }[];
+    disabled?: boolean;
+    navigate?: boolean;
+    globalSearch?: boolean;
+    onselect?: (name: string) => void;
+  }
+
+  let {
+    value = $bindable(""),
+    placeholder = "Search Pokémon...",
+    options,
+    disabled = false,
+    navigate = false,
+    globalSearch = false,
+    onselect,
+  }: Props = $props();
+
   let open = $state(false);
   let highlight = $state(0);
-  let options = $state<{ name: string; id: number }[]>([]);
+  let internalOptions = $state<{ name: string; id: number }[]>([]);
+
+  const selfLoading = $derived(options === undefined);
 
   let suggestions = $derived.by(() => {
-    const q = query.trim();
-    if (!q) return [];
-    return options.filter((o) => tokenMatch(q, o.name, o.id)).slice(0, 8);
+    const source = options ?? internalOptions;
+    const q = value.trim();
+    const list = q
+      ? source.filter((o) => tokenMatch(q, o.name, o.id))
+      : selfLoading
+        ? []
+        : source;
+    return list.slice(0, 10);
   });
 
   onMount(() => {
-    getAutocompleteList()
-      .then(({ results }) => (options = results))
-      .catch(() => {});
+    if (selfLoading) {
+      getAutocompleteList()
+        .then(({ results }) => (internalOptions = results))
+        .catch(() => {});
+    }
+  });
+
+  $effect(() => {
+    if (suggestions.length > 0 && highlight >= suggestions.length)
+      highlight = 0;
   });
 
   function select(name: string) {
     open = false;
-    query = "";
-    goto(resolve(`/pokemon/${name}`));
+    onselect?.(name);
+    if (navigate) {
+      value = "";
+      goto(resolve(`/pokemon/${name}`));
+    } else {
+      value = name;
+    }
   }
 
   function onKeydown(e: KeyboardEvent) {
@@ -50,22 +88,22 @@
   }
 </script>
 
-<div class="relative w-full" data-global-search-root>
+<div class="relative w-full">
   <input
     type="search"
-    bind:value={query}
-    placeholder="Search any Pokémon..."
-    aria-label="Search Pokémon"
-    data-global-search
+    {placeholder}
+    bind:value
+    {disabled}
+    data-global-search={globalSearch ? "" : undefined}
     onfocus={() => (open = true)}
     onblur={() => setTimeout(() => (open = false), 150)}
     onkeydown={onKeydown}
-    class="ui-input w-full px-4 py-2 text-sm transition-all focus:shadow-lg"
+    class="ui-input w-full px-4 py-2.5 text-sm transition-all outline-none focus:shadow-lg disabled:opacity-40"
     style="background: var(--input-bg)"
   />
-  {#if open && suggestions.length > 0}
+  {#if open && suggestions.length > 0 && !disabled}
     <div
-      class="absolute top-full left-0 z-30 mt-1 max-h-80 w-full overflow-y-auto rounded-xl border py-1 shadow-2xl"
+      class="absolute top-full left-0 z-30 mt-1 max-h-72 w-full overflow-y-auto rounded-xl border py-1 shadow-2xl"
       style="background: var(--card); border-color: var(--border)"
     >
       {#each suggestions as s, i}

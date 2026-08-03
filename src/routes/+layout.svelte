@@ -6,7 +6,8 @@
   import { applyTheme, getTheme, setTheme, type ThemeMode } from "$lib/storage";
   import { getRandomPokemon } from "$lib/api";
   import { TOTAL_SPECIES } from "$lib/pokemon-types";
-  import GlobalSearch from "$lib/components/GlobalSearch.svelte";
+  import PokemonSearch from "$lib/components/PokemonSearch.svelte";
+  import LoadingBar from "$lib/components/LoadingBar.svelte";
   import "../app.css";
 
   let { children } = $props();
@@ -134,7 +135,11 @@
 
       <div class="hidden min-w-0 flex-1 justify-center px-2 lg:flex">
         <div class="w-full max-w-md">
-          <GlobalSearch />
+          <PokemonSearch
+            navigate
+            globalSearch
+            placeholder="Search any Pokémon..."
+          />
         </div>
       </div>
 
@@ -198,7 +203,11 @@
     </nav>
 
     <div class="px-4 pt-2 md:px-6 lg:hidden">
-      <GlobalSearch />
+      <PokemonSearch
+        navigate
+        globalSearch
+        placeholder="Search any Pokémon..."
+      />
     </div>
 
     {#if mobileOpen}
@@ -222,7 +231,8 @@
     {/if}
   </header>
 
-  <main class="flex-1">
+  <main class="relative flex-1">
+    <LoadingBar />
     {@render children()}
   </main>
 

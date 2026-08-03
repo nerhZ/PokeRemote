@@ -15,7 +15,7 @@
     type PokemonDetail,
     type PokemonMoves,
   } from "$lib/pokemon-types";
-  import PokemonPicker from "$lib/components/PokemonPicker.svelte";
+  import PokemonSearch from "$lib/components/PokemonSearch.svelte";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import MoveTooltip from "$lib/components/MoveTooltip.svelte";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
@@ -249,7 +249,7 @@
       <h2 class="mb-3 text-xs font-bold tracking-wider text-white/40 uppercase">
         Attacker
       </h2>
-      <PokemonPicker
+      <PokemonSearch
         bind:value={searchAtt}
         options={allNames}
         onselect={(n) => selectAttacker(n)}
@@ -315,7 +315,7 @@
       <h2 class="mb-3 text-xs font-bold tracking-wider text-white/40 uppercase">
         Defender
       </h2>
-      <PokemonPicker
+      <PokemonSearch
         bind:value={searchDef}
         options={allNames}
         onselect={selectDefender}

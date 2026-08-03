@@ -27,7 +27,6 @@
   let pokemon = $state<PokemonDetail | null>(null);
   let moves = $state<PokemonMoves | null>(null);
   let loading = $state(true);
-  let navigating = $state(false);
   let error = $state<string | null>(null);
   let isShiny = $state(false);
   let movesLoading = $state(false);
@@ -43,7 +42,6 @@
   $effect(() => {
     const name = page.params.name;
     if (!name) return;
-    navigating = untrack(() => pokemon !== null);
     loading = untrack(() => pokemon === null);
     error = null;
     moves = null;
@@ -56,7 +54,6 @@
       .then((p) => {
         if (id !== requestId) return;
         pokemon = p;
-        navigating = false;
         if (p) {
           fav = isFavorite(p.id);
           pushRecent({
@@ -70,7 +67,6 @@
       .catch((e: any) => {
         if (id === requestId) {
           error = e.message;
-          navigating = false;
         }
       })
       .finally(() => {
@@ -229,16 +225,6 @@
         onaction={() => goto(resolve("/"))}
       />
     {:else if pokemon}
-      {#if navigating}
-        <div
-          class="absolute top-0 right-4 left-4 z-10 h-0.5 overflow-hidden bg-white/5"
-        >
-          <div
-            class="bg-accent/70 h-full"
-            style="width: 33%; animation: nav-loading-bar 1.2s ease-in-out infinite"
-          ></div>
-        </div>
-      {/if}
       <div class="grid grid-cols-1 items-start gap-8 lg:grid-cols-[1fr_1.35fr]">
         <div class="lg:sticky lg:top-24">
           <div

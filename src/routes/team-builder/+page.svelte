@@ -16,7 +16,7 @@
     type PokemonDetail,
   } from "$lib/pokemon-types";
   import { saveTeam, getSavedTeams, type EvSpread } from "$lib/storage";
-  import PokemonPicker from "$lib/components/PokemonPicker.svelte";
+  import PokemonSearch from "$lib/components/PokemonSearch.svelte";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import MoveTooltip from "$lib/components/MoveTooltip.svelte";
   import Tooltip from "$lib/components/Tooltip.svelte";
@@ -406,7 +406,7 @@
   </div>
 
   <div class="panel mb-6 max-w-xl p-4!">
-    <PokemonPicker
+    <PokemonSearch
       bind:value={search}
       options={allNames.filter((n) => !team.some((t) => t.id === n.id))}
       disabled={team.length >= 6}

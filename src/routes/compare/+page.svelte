@@ -9,7 +9,7 @@
     formatName,
     type PokemonDetail,
   } from "$lib/pokemon-types";
-  import PokemonPicker from "$lib/components/PokemonPicker.svelte";
+  import PokemonSearch from "$lib/components/PokemonSearch.svelte";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import RadarChart from "$lib/components/RadarChart.svelte";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
@@ -136,7 +136,7 @@
       >
         Pokémon A
       </div>
-      <PokemonPicker
+      <PokemonSearch
         bind:value={searchA}
         options={allNames}
         onselect={selectPokemonA}
@@ -149,7 +149,7 @@
       >
         Pokémon B
       </div>
-      <PokemonPicker
+      <PokemonSearch
         bind:value={searchB}
         options={allNames}
         onselect={selectPokemonB}
