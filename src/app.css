@@ -33,6 +33,7 @@
     --shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
     --chart-grid: rgba(255, 255, 255, 0.06);
     --chart-label: rgba(255, 255, 255, 0.4);
+    --badge-outline: rgba(0, 0, 0, 0.55);
     color-scheme: dark;
   }
 
@@ -54,6 +55,7 @@
     --color-card-navy: #ffffff;
     --chart-grid: var(--border);
     --chart-label: var(--muted);
+    --badge-outline: rgba(255, 255, 255, 0.6);
     color-scheme: light;
   }
 
@@ -231,6 +233,12 @@
     background: var(--color-accent);
     border-color: var(--color-accent);
     color: #fff;
+  }
+
+  .type-badge-text {
+    text-shadow:
+      0 0 2px var(--badge-outline),
+      0 0 4px var(--badge-outline);
   }
 }
 

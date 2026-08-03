@@ -12,7 +12,7 @@
 </script>
 
 <span
-  class="rounded-full font-bold tracking-wide text-white uppercase shadow-sm {sizes[
+  class="type-badge-text rounded-full font-bold tracking-wide text-white uppercase shadow-sm {sizes[
     size
   ]}"
   style="background-color: {TYPE_COLORS[type] || '#777'}">{type}</span
