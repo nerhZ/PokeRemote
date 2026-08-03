@@ -27,6 +27,7 @@
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Pokeball from "$lib/components/Pokeball.svelte";
+  import PokemonImage from "$lib/components/PokemonImage.svelte";
 
   let allPokemon = $state<any[]>([]);
   let loadProgress = $state({ done: 0, total: 0 });
@@ -72,18 +73,45 @@
 
   $effect(() => {
     const p = page.url.pathname;
-    if (p === resolve("/")) {
+    if (p === resolve("/") && !page.url.searchParams.get("type")) {
       const sq = untrack(() => searchQuery);
-      const at = untrack(() => activeTypes.length);
       const sf = untrack(() => showFavoritesOnly);
-      if (sq || at > 0 || sf) {
+      if (sq || sf) {
         searchQuery = "";
-        activeTypes = [];
         showFavoritesOnly = false;
-        if (untrack(() => activeGens.length > 0)) activeGens = [];
       }
+      if (untrack(() => activeGens.length > 0)) activeGens = [];
     }
   });
+
+  let lastTypeParam = "";
+  $effect(() => {
+    const typeParam = page.url.searchParams.get("type") ?? "";
+    if (typeParam === lastTypeParam) return;
+    lastTypeParam = typeParam;
+    activeTypes = typeParam
+      ? typeParam.split(",").filter((t) => ALL_TYPES.includes(t))
+      : [];
+  });
+
+  function setTypes(next: string[]) {
+    activeTypes = next;
+    lastTypeParam = next.join(",");
+    const params = new URLSearchParams(page.url.search);
+    if (next.length) params.set("type", next.join(","));
+    else params.delete("type");
+    const q = params.toString();
+    goto(q ? resolve("/") + `?${q}` : resolve("/"), {
+      replaceState: true,
+      keepFocus: true,
+      noScroll: true,
+    });
+  }
+
+  function toggleType(t: string) {
+    const sel = activeTypes.includes(t);
+    setTypes(sel ? activeTypes.filter((x) => x !== t) : [...activeTypes, t]);
+  }
 
   async function randomPokemon() {
     try {
@@ -223,7 +251,11 @@
               href={resolve(`/pokemon/${r.name}`)}
               class="flex shrink-0 items-center gap-2 rounded-xl border border-white/6 bg-white/3 px-3 py-2 no-underline transition-all hover:border-white/20"
             >
-              <img src={r.image} alt={r.name} class="h-8 w-8 object-contain" />
+              <PokemonImage
+                src={r.image}
+                alt={r.name}
+                class="h-8 w-8 object-contain"
+              />
               <span class="text-xs font-semibold text-white/70"
                 >{formatName(r.name)}</span
               >
@@ -292,7 +324,7 @@
       <div class="mt-3 space-y-2 {filtersOpen ? 'block' : 'hidden md:block'}">
         <div class="flex flex-wrap gap-1.5">
           <button
-            onclick={() => (activeTypes = [])}
+            onclick={() => setTypes([])}
             class="cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-wide uppercase {activeTypes.length ===
             0
               ? 'text-bg-navy border-white bg-white'
@@ -306,10 +338,7 @@
           {#each ALL_TYPES as t}
             {@const sel = activeTypes.includes(t)}
             <button
-              onclick={() =>
-                (activeTypes = sel
-                  ? activeTypes.filter((x) => x !== t)
-                  : [...activeTypes, t])}
+              onclick={() => toggleType(t)}
               class="cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-wide uppercase {sel
                 ? 'border-transparent text-white'
                 : 'border-white/10 bg-white/5 text-white/55'}"
@@ -386,7 +415,7 @@
         actionLabel="Reset filters"
         onaction={() => {
           searchQuery = "";
-          activeTypes = [];
+          setTypes([]);
           activeGens = [];
           showFavoritesOnly = false;
         }}
@@ -413,10 +442,9 @@
                   class="absolute inset-0 opacity-40"
                   style="background: radial-gradient(circle at 50% 70%, {primaryColor}22 0%, transparent 65%)"
                 ></div>
-                <img
+                <PokemonImage
                   src={p.image}
                   alt={p.name}
-                  loading="lazy"
                   class="relative z-10 max-h-full max-w-full object-contain drop-shadow-2xl transition-transform duration-500 group-hover:-translate-y-1 group-hover:scale-110"
                 />
                 <span
@@ -476,11 +504,10 @@
                     class="flex items-center gap-2 rounded-lg px-2 py-1.5 no-underline transition-colors hover:bg-white/5"
                     style="color: var(--text)"
                   >
-                    <img
+                    <PokemonImage
                       src={form.image}
                       alt={form.name}
                       class="h-8 w-8 object-contain"
-                      loading="lazy"
                     />
                     <div class="min-w-0 flex-1">
                       <div class="truncate text-[11px] font-semibold">

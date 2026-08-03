@@ -12,10 +12,16 @@
     type PokemonDetail,
     type PokemonMoves,
   } from "$lib/pokemon-types";
-  import { pushRecent, toggleFavorite, isFavorite } from "$lib/storage";
+  import {
+    pushRecent,
+    toggleFavorite,
+    isFavorite,
+    getSavedTeams,
+  } from "$lib/storage";
   import { backLabel } from "$lib/navigation";
   import { pageLoading } from "$lib/loading-state.svelte";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
+  import PokemonImage from "$lib/components/PokemonImage.svelte";
   import MoveTooltip from "$lib/components/MoveTooltip.svelte";
   import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
@@ -110,7 +116,8 @@
     speciesIds.length > 0 && pokemon
       ? (() => {
           const idx = speciesIds.indexOf(pokemon.species_id);
-          return idx > 0 ? speciesIds[idx - 1] : null;
+          if (idx < 0) return null;
+          return speciesIds[(idx - 1 + speciesIds.length) % speciesIds.length];
         })()
       : null,
   );
@@ -118,9 +125,8 @@
     speciesIds.length > 0 && pokemon
       ? (() => {
           const idx = speciesIds.indexOf(pokemon.species_id);
-          return idx >= 0 && idx < speciesIds.length - 1
-            ? speciesIds[idx + 1]
-            : null;
+          if (idx < 0) return null;
+          return speciesIds[(idx + 1) % speciesIds.length];
         })()
       : null,
   );
@@ -136,6 +142,17 @@
     ],
   );
 
+  let teamParam = $derived.by(() => {
+    if (!pokemon) return "";
+    const p = pokemon;
+    return [
+      ...(getSavedTeams()[0]?.names ?? []).filter((n) => n !== p.name),
+      p.name,
+    ]
+      .slice(-6)
+      .join(",");
+  });
+
   function onFav() {
     if (!pokemon) return;
     toggleFavorite({
@@ -145,6 +162,13 @@
       types: pokemon.types,
     });
     fav = !fav;
+  }
+
+  let linkCopied = $state(false);
+  function copyLink() {
+    navigator.clipboard?.writeText(window.location.href);
+    linkCopied = true;
+    setTimeout(() => (linkCopied = false), 2000);
   }
 
   async function setTab(t: typeof tab) {
@@ -244,9 +268,10 @@
                 class="absolute h-56 w-56 rounded-full opacity-15"
                 style="background: radial-gradient(circle, {primaryColor}, transparent 70%)"
               ></div>
-              <img
-                src={spriteUrl}
+              <PokemonImage
+                src={spriteUrl ?? ""}
                 alt={pokemon.name}
+                lazy={false}
                 class="relative z-10 w-full max-w-80 object-contain drop-shadow-2xl"
                 style="animation: bob 3s ease-in-out infinite"
               />
@@ -278,6 +303,21 @@
                   ? 'bg-pokemon-yellow/20 border-pokemon-yellow/40 text-pokemon-yellow'
                   : 'border-white/10 bg-black/40 text-white/60'}"
                 >{fav ? "★ Saved" : "☆ Save"}</button
+              >
+              <a
+                href={resolve("/compare") + `?a=${pokemon.name}`}
+                class="cursor-pointer rounded-full border border-white/10 bg-black/40 px-2.5 py-1 text-[10px] font-black text-white/60 uppercase no-underline transition-colors hover:text-white"
+                >⇄ Compare</a
+              >
+              <a
+                href={resolve("/team-builder") + `?p=${teamParam}`}
+                class="cursor-pointer rounded-full border border-white/10 bg-black/40 px-2.5 py-1 text-[10px] font-black text-white/60 uppercase no-underline transition-colors hover:text-white"
+                >⬡ Team</a
+              >
+              <button
+                onclick={copyLink}
+                class="cursor-pointer rounded-full border border-white/10 bg-black/40 px-2.5 py-1 text-[10px] font-black text-white/60 uppercase transition-colors hover:text-white"
+                >{linkCopied ? "Link copied!" : "🔗 Share"}</button
               >
             </div>
             <div class="absolute top-4 right-4 flex flex-col gap-1.5">
@@ -319,8 +359,15 @@
                 )}
               </p>
             {/if}
-            <div class="mt-3 flex justify-center gap-2">
-              {#each pokemon.types as type}<TypeBadge {type} size="md" />{/each}
+            <div class="mt-3 flex flex-wrap justify-center gap-2">
+              {#each pokemon.types as type}
+                <a
+                  href={resolve("/") + `?type=${type}`}
+                  class="no-underline"
+                  title={`Show ${formatName(type)}-type Pokémon`}
+                  ><TypeBadge {type} size="md" /></a
+                >
+              {/each}
             </div>
             {#if pokemon.flavor_text}
               <p
@@ -378,11 +425,10 @@
                     style="color: var(--text)"
                     title={form.name}
                   >
-                    <img
+                    <PokemonImage
                       src={form.image}
                       alt={form.name}
                       class="h-12 w-12 object-contain"
-                      loading="lazy"
                     />
                     <span
                       class="line-clamp-2 text-center text-[9px] leading-tight font-semibold"
