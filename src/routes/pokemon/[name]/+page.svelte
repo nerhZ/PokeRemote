@@ -445,6 +445,7 @@
                     <PokemonImage
                       src={form.image}
                       alt={form.name}
+                      lazy={false}
                       class="h-12 w-12 object-contain"
                     />
                     <span

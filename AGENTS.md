@@ -27,3 +27,7 @@ This project uses **Bun** as its package manager and runtime. The lockfile is `b
 Always run `bun run check`, `bun knip`, and `bun run format` (or at minimum `bun run format:check`) to ensure clean type-checking, no unused code, and consistent formatting before finalizing changes.
 
 The `npm` and `node` aliases may exist but are **not** the canonical toolchain for this repo.
+
+## Debugging UI bugs
+
+Don't start Playwright (or write servers/scripts to try to interact with the app) to investigate UI issues — it's slow and inefficient. Just make a change, let the user verify it in the browser, and iterate from there; that's much simpler.
