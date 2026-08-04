@@ -4,6 +4,7 @@ const FAV_KEY = "pokeremote:favorites";
 const RECENT_KEY = "pokeremote:recent";
 const THEME_KEY = "pokeremote:theme";
 const TEAM_KEY = "pokeremote:teams";
+const QUIZ_KEY = "pokeremote:quiz";
 
 export type FavEntry = {
   id: number;
@@ -178,4 +179,18 @@ export function saveTeam(
   });
   write(TEAM_KEY, teams.slice(0, 12));
   return teams;
+}
+
+export type QuizStats = {
+  best: number;
+  correct: number;
+  rounds: number;
+};
+
+export function getQuizStats(): QuizStats {
+  return read<QuizStats>(QUIZ_KEY, { best: 0, correct: 0, rounds: 0 });
+}
+
+export function saveQuizStats(stats: QuizStats) {
+  write(QUIZ_KEY, stats);
 }

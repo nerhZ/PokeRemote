@@ -11,6 +11,7 @@
     NATURE_STAT_MODS,
     calculateDamage,
     formatName,
+    type MoveInfo,
     type PokemonDetail,
     type PokemonMoves,
   } from "$lib/pokemon-types";
@@ -291,9 +292,26 @@
     return item.mult;
   }
 
-  let damageResult = $derived.by(() => {
-    if (!attacker || !defender || !selectedMove) return null;
-    const move = selectedMove;
+  type DamageResult =
+    | { noDamage: true; label: string }
+    | {
+        noDamage: false;
+        min: number;
+        max: number;
+        minPct: number;
+        maxPct: number;
+        effectiveness: number;
+        effLabel: string;
+        stab: boolean;
+        isSpecial: boolean;
+        atk: number;
+        def: number;
+        hp: number;
+        ko: string;
+      };
+
+  function computeMove(move: any): DamageResult | null {
+    if (!attacker || !defender) return null;
     if (!move.power)
       return {
         noDamage: true as const,
@@ -368,6 +386,24 @@
       ko: estimateKO(min, max, hp),
       noDamage: false as const,
     };
+  }
+
+  let damageResult = $derived(selectedMove ? computeMove(selectedMove) : null);
+
+  let bestMoves = $derived.by(() => {
+    if (!attacker || !defender || !moveList) return [];
+    return moveList.level_up
+      .map((m) => ({ move: m, result: computeMove(m) }))
+      .filter(
+        (
+          x,
+        ): x is {
+          move: MoveInfo;
+          result: Extract<DamageResult, { noDamage: false }>;
+        } => !!x.result && !x.result.noDamage,
+      )
+      .sort((a, b) => b.result.max - a.result.max)
+      .slice(0, 5);
   });
 </script>
 
@@ -378,7 +414,8 @@
         <h1>Damage Calculator</h1>
         <p>
           Attacker + move + defender with natures, EVs, IVs, items, STAB, type
-          effectiveness, and KO estimates. Shareable via query params.
+          effectiveness, KO estimates, and best-move suggestions. Shareable via
+          query params.
         </p>
       </div>
       <ClearButton onclick={clearState} />
@@ -743,6 +780,48 @@
           </div>
         </div>
       </div>
+    </div>
+  {/if}
+
+  {#if bestMoves.length > 1}
+    <div class="panel">
+      <h2 class="mb-4 text-lg font-bold">
+        Best moves vs {formatName(defender!.name)}
+      </h2>
+      <div class="space-y-2">
+        {#each bestMoves as { move, result }}
+          <button
+            onclick={() => pickMove(move)}
+            class="flex w-full cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors {selectedMove?.name ===
+            move.name
+              ? 'border-accent bg-accent/10'
+              : 'border-white/6 bg-white/2 hover:bg-white/5'}"
+          >
+            <TypeBadge type={move.type} size="xs" tooltip={false} />
+            <span class="w-36 shrink-0 truncate font-semibold text-white/80"
+              >{formatName(move.name)}</span
+            >
+            <span class="shrink-0 text-xs text-white/40"
+              >{result.min}–{result.max}</span
+            >
+            <div
+              class="relative h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-white/6"
+            >
+              <div
+                class="bg-accent/50 absolute inset-y-0 left-0 rounded-full"
+                style="width: {(result.max / bestMoves[0].result.max) * 100}%"
+              ></div>
+            </div>
+            <span
+              class="bg-accent/20 text-accent border-accent/30 shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black whitespace-nowrap uppercase"
+              >{result.ko}</span
+            >
+          </button>
+        {/each}
+      </div>
+      <p class="mt-3 text-xs text-white/40">
+        Click a move to apply it to the calculation above.
+      </p>
     </div>
   {/if}
 </div>

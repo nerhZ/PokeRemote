@@ -1,10 +1,10 @@
 <script lang="ts">
   import { getAllAbilities, type AbilityEntry } from "$lib/api";
   import { formatName, generationLabel, GEN_COLORS } from "$lib/pokemon-types";
-  import Pokeball from "$lib/components/Pokeball.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import SearchInput from "$lib/components/SearchInput.svelte";
   import FilterChip from "$lib/components/FilterChip.svelte";
+  import Skeleton from "$lib/components/Skeleton.svelte";
   import { onMount } from "svelte";
 
   let abilities = $state<AbilityEntry[]>([]);
@@ -77,9 +77,7 @@
   </div>
 
   {#if loading}
-    <div class="flex justify-center py-24">
-      <Pokeball spinning class="h-16 w-16" />
-    </div>
+    <Skeleton rows={12} />
   {:else if error}
     <EmptyState title="Failed to load abilities" subtitle={error} />
   {:else if filtered.length === 0}

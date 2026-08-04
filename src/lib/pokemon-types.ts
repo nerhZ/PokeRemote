@@ -238,6 +238,16 @@ export interface PokemonDetail {
         front_shiny: string | null;
       };
     };
+    versions?: {
+      "generation-v"?: {
+        "black-white"?: {
+          animated?: {
+            front_default: string | null;
+            back_default: string | null;
+          };
+        };
+      };
+    };
   };
   stats: { name: string; base_stat: number }[];
   abilities: { name: string; is_hidden: boolean; description: string | null }[];

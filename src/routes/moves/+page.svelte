@@ -7,10 +7,10 @@
     type MoveDetail,
   } from "$lib/pokemon-types";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
-  import Pokeball from "$lib/components/Pokeball.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import SearchInput from "$lib/components/SearchInput.svelte";
   import FilterChip from "$lib/components/FilterChip.svelte";
+  import Skeleton from "$lib/components/Skeleton.svelte";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import { onMount } from "svelte";
 
@@ -136,9 +136,7 @@
   </div>
 
   {#if loading}
-    <div class="flex justify-center py-24">
-      <Pokeball spinning class="h-16 w-16" />
-    </div>
+    <Skeleton rows={12} />
   {:else if error}
     <EmptyState
       title="Failed to load moves"
@@ -172,8 +170,8 @@
       {/each}
     </div>
     {#if loadingMore}
-      <div class="flex justify-center pb-12">
-        <Pokeball spinning class="h-8 w-8" />
+      <div class="pb-4">
+        <Skeleton rows={6} />
       </div>
     {/if}
     <InfiniteScroll {loadMore} hasMore={offset < total} />

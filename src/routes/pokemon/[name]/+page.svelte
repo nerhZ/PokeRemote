@@ -38,6 +38,7 @@
   let loading = $state(true);
   let error = $state<string | null>(null);
   let isShiny = $state(false);
+  let animated = $state(false);
   let movesLoading = $state(false);
   let activeMoveTab = $state("level_up");
   let tab = $state<"overview" | "stats" | "matchups" | "moves" | "data">(
@@ -55,6 +56,7 @@
     error = null;
     moves = null;
     isShiny = false;
+    animated = false;
     pageLoading.active = true;
     const id = ++requestId;
     getSpeciesIds().then((ids) => {
@@ -135,10 +137,17 @@
   let primaryColor = $derived(TYPE_COLORS[primaryType] || "#777");
   let totalStats = $derived(pokemon ? statTotal(pokemon.stats) : 0);
 
+  let animatedFront = $derived(
+    pokemon?.sprites.versions?.["generation-v"]?.["black-white"]?.animated
+      ?.front_default ?? null,
+  );
+
   let spriteUrl = $derived(
-    pokemon?.sprites.other["official-artwork"][
-      isShiny ? "front_shiny" : "front_default"
-    ],
+    animated
+      ? animatedFront
+      : pokemon?.sprites.other["official-artwork"][
+          isShiny ? "front_shiny" : "front_default"
+        ],
   );
 
   let teamParam = $derived.by(() => {
@@ -276,13 +285,22 @@
               />
             </div>
             <div class="absolute top-4 left-4 flex flex-wrap gap-1.5">
-              {#if pokemon.sprites.other["official-artwork"].front_shiny}
+              {#if pokemon.sprites.other["official-artwork"].front_shiny && !animated}
                 <button
                   onclick={() => (isShiny = !isShiny)}
                   class="cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-black uppercase {isShiny
                     ? 'text-bg-navy border-white bg-white'
                     : 'border-white/10 bg-black/40 text-white/60'}"
                   >{isShiny ? "★ Shiny" : "☆ Shiny"}</button
+                >
+              {/if}
+              {#if animatedFront}
+                <button
+                  onclick={() => (animated = !animated)}
+                  class="cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-black uppercase {animated
+                    ? 'text-bg-navy border-white bg-white'
+                    : 'border-white/10 bg-black/40 text-white/60'}"
+                  >{animated ? "■ Static" : "▶ Animated"}</button
                 >
               {/if}
               {#if pokemon.cries}

@@ -15,6 +15,7 @@
   let { children } = $props();
   let mobileOpen = $state(false);
   let theme = $state<ThemeMode>("dark");
+  let showTop = $state(false);
 
   const groups = [
     {
@@ -54,6 +55,11 @@
     theme = getTheme();
     applyTheme();
 
+    function onScroll() {
+      showTop = window.scrollY > 400;
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+
     function onKey(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement)?.tagName;
       if (
@@ -78,7 +84,10 @@
       }
     }
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onScroll);
+    };
   });
 
   beforeNavigate(({ from, to }) => {
@@ -272,6 +281,29 @@
     <LoadingBar />
     {@render children()}
   </main>
+
+  {#if showTop}
+    <button
+      onclick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      class="fixed right-5 bottom-5 z-40 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border shadow-lg transition-transform hover:-translate-y-0.5"
+      style="border-color: var(--border); background: color-mix(in srgb, var(--card) 90%, transparent); color: var(--text)"
+      aria-label="Back to top"
+      title="Back to top"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        class="size-5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M12 19V5" />
+        <path d="m5 12 7-7 7 7" />
+      </svg>
+    </button>
+  {/if}
 
   <footer
     class="mx-auto max-w-7xl px-6 py-8 text-center text-xs"
