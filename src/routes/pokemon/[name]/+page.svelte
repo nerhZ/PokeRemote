@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
-  import { resolve, base } from "$app/paths";
+  import { resolve } from "$app/paths";
   import { getPokemonDetail, getPokemonMoves, getSpeciesIds } from "$lib/api";
   import {
     TYPE_COLORS,
@@ -19,7 +19,7 @@
     isFavorite,
     getSavedTeams,
   } from "$lib/storage";
-  import { backLabel } from "$lib/navigation";
+  import { backTarget } from "$lib/navigation";
   import { pageLoading } from "$lib/loading-state.svelte";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import PokemonImage from "$lib/components/PokemonImage.svelte";
@@ -57,6 +57,7 @@
     moves = null;
     movesLoading = false;
     moveGen++;
+    back = backTarget(localStorage.getItem("previousUrl"));
     isShiny = false;
     animated = false;
     pageLoading.active = true;
@@ -209,13 +210,10 @@
     { id: "data" as const, label: "Data" },
   ];
 
-  let raw = $derived(localStorage.getItem("previousUrl"));
-  let backUrl = $derived.by(() => {
-    if (!raw) return resolve("/");
-    if (base === "/") return raw;
-    return base + raw;
+  let back = $state<{ url: string; label: string }>({
+    url: resolve("/"),
+    label: "Pokédex",
   });
-  let backText = $derived(backLabel(raw));
 </script>
 
 <div
@@ -225,9 +223,9 @@
   <div class="relative mx-auto max-w-6xl px-4 py-6 md:px-6">
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
       <a
-        href={backUrl}
+        href={back.url}
         class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/60 no-underline transition-all hover:text-white"
-        >← {backText}</a
+        >← {back.label}</a
       >
       {#if pokemon}
         <div class="flex items-center gap-2">

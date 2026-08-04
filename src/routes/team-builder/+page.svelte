@@ -4,9 +4,10 @@
   import {
     getPokemonDetail,
     getPokemonMetadata,
+    getAutocompleteList,
     type AbilitySummary,
   } from "$lib/api";
-  import { getCatalog, pageUrlSync, selectPokemonSlot } from "$lib/url-state";
+  import { pageUrlSync, selectPokemonSlot } from "$lib/url-state";
   import {
     TYPE_COLORS,
     ALL_TYPES,
@@ -21,7 +22,6 @@
   import {
     saveTeam,
     getSavedTeams,
-    EV_STATS,
     zeroEvs,
     evTotal,
     evsEncode,
@@ -34,6 +34,7 @@
   import MoveTooltip from "$lib/components/MoveTooltip.svelte";
   import Tooltip from "$lib/components/Tooltip.svelte";
   import Dropdown from "$lib/components/Dropdown.svelte";
+  import EVInput from "$lib/components/EVInput.svelte";
   import TypePopup from "$lib/components/TypePopup.svelte";
   import Pokeball from "$lib/components/Pokeball.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
@@ -66,7 +67,7 @@
 
   onMount(async () => {
     saved = getSavedTeams();
-    allNames = (await getCatalog()).results;
+    allNames = (await getAutocompleteList()).results;
   });
 
   function initSet() {
@@ -588,41 +589,12 @@
               </div>
             </div>
             <div>
-              <div class="flex items-center justify-between">
-                <div
-                  class="text-[10px] font-bold tracking-wider text-white/40 uppercase"
-                >
-                  EVs
-                </div>
-                <span class="text-[10px] text-white/40"
-                  >{evTotal(s.evs)} / 510</span
-                >
-                {#if evWarning}
-                  <span class="text-pokemon-red text-[10px]">{evWarning}</span>
-                {/if}
-              </div>
-              <div class="mt-2 grid grid-cols-3 gap-2">
-                {#each EV_STATS as { key, label }}
-                  <div class="flex items-center gap-1">
-                    <span
-                      class="w-7 text-right text-[9px] font-bold text-white/40"
-                      >{label}</span
-                    >
-                    <input
-                      type="number"
-                      min="0"
-                      max="252"
-                      value={s.evs[key] || 0}
-                      oninput={(e) =>
-                        setEv(
-                          key,
-                          parseInt((e.target as HTMLInputElement).value) || 0,
-                        )}
-                      class="focus:border-accent/50 w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-white outline-none"
-                    />
-                  </div>
-                {/each}
-              </div>
+              <EVInput
+                evs={s.evs}
+                oninput={setEv}
+                warning={evWarning}
+                cols="grid-cols-3"
+              />
             </div>
           </div>
         </div>

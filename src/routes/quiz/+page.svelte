@@ -1,7 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getSpeciesIds, getPokemonDetail } from "$lib/api";
-  import { getCatalog } from "$lib/url-state";
+  import {
+    getSpeciesIds,
+    getPokemonDetail,
+    getAutocompleteList,
+  } from "$lib/api";
   import {
     artworkUrl,
     formatName,
@@ -54,7 +57,7 @@
   }
 
   onMount(async () => {
-    catalog = (await getCatalog()).results;
+    catalog = (await getAutocompleteList()).results;
     loading = false;
     if (catalog.length === 0) {
       error = true;

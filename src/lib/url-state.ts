@@ -1,7 +1,7 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import { resolve } from "$app/paths";
-import { getAutocompleteList, getPokemonDetail } from "$lib/api";
+import { getPokemonDetail } from "$lib/api";
 import type { PokemonDetail } from "$lib/pokemon-types";
 
 /** Shared query-param sync + clear behavior for tool pages. */
@@ -38,19 +38,6 @@ export function pageUrlSync(
     },
     clearPageState,
   };
-}
-
-/** Full Pokémon catalog (forms) with its live count, or empty on failure. */
-export async function getCatalog(): Promise<{
-  results: { name: string; id: number }[];
-  total: number;
-}> {
-  try {
-    const catalog = await getAutocompleteList();
-    return { results: catalog.results, total: catalog.total };
-  } catch {
-    return { results: [], total: 0 };
-  }
 }
 
 /**

@@ -1,7 +1,8 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
-  import { getCatalog, pageUrlSync, selectPokemonSlot } from "$lib/url-state";
+  import { getAutocompleteList } from "$lib/api";
+  import { pageUrlSync, selectPokemonSlot } from "$lib/url-state";
   import {
     TYPE_COLORS,
     STAT_LABELS,
@@ -33,7 +34,7 @@
   const sync = pageUrlSync("/compare");
 
   onMount(async () => {
-    const catalog = await getCatalog();
+    const catalog = await getAutocompleteList();
     allNames = catalog.results;
     catalogTotal = catalog.total;
   });

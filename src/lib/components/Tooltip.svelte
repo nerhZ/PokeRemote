@@ -35,6 +35,7 @@
 
   let host: HTMLElement | undefined = $state();
   let tooltipWidth = $state(0);
+  let popupHeight = $state(0);
   let align = $state<PopupAlign>("center");
   let visible = $state(false);
   let popupPos = $state({ left: 0, top: 0 });
@@ -44,9 +45,17 @@
     if (!host) return;
     const rect = host.getBoundingClientRect();
     const pos = popupPosition(rect.left, rect.right, tooltipWidth);
+    const top = position === "bottom" ? rect.bottom + 10 : rect.top - 10;
+    // Keep the popup inside the viewport: top-positioned popups extend upward
+    // (translate -100%), bottom-positioned ones extend downward from the anchor.
+    const minTop = 8;
+    const maxTop =
+      position === "bottom"
+        ? window.innerHeight - 8 - popupHeight
+        : window.innerHeight - 8;
     popupPos = {
       left: pos.left,
-      top: position === "bottom" ? rect.bottom + 10 : rect.top - 10,
+      top: Math.max(minTop, Math.min(top, maxTop)),
     };
     popupTranslate = pos.translateX;
   }
@@ -70,6 +79,7 @@
   $effect(() => {
     if (!host) return;
     void tooltipWidth;
+    void popupHeight;
     void visible;
 
     function update() {
@@ -125,6 +135,7 @@
     {#if visible}
       <div
         bind:clientWidth={tooltipWidth}
+        bind:clientHeight={popupHeight}
         class="pointer-events-none fixed z-100 rounded-xl border p-3 text-left text-[11px] leading-relaxed shadow-2xl {width} {nowrap
           ? 'whitespace-nowrap'
           : 'whitespace-normal'}"

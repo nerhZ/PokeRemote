@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
-  import { getPokemonMoves } from "$lib/api";
-  import { getCatalog, pageUrlSync, selectPokemonSlot } from "$lib/url-state";
+  import { getPokemonMoves, getAutocompleteList } from "$lib/api";
+  import { pageUrlSync, selectPokemonSlot } from "$lib/url-state";
   import {
     TYPE_COLORS,
     TYPE_CHART,
@@ -11,6 +11,7 @@
     NATURE_STAT_MODS,
     calculateDamage,
     formatName,
+    multiplierLabel,
     type MoveInfo,
     type PokemonDetail,
     type PokemonMoves,
@@ -30,6 +31,7 @@
   import Pokeball from "$lib/components/Pokeball.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Dropdown from "$lib/components/Dropdown.svelte";
+  import EVInput from "$lib/components/EVInput.svelte";
   import ClearButton from "$lib/components/ClearButton.svelte";
   import { onMount, untrack } from "svelte";
 
@@ -103,7 +105,7 @@
   const sync = pageUrlSync("/damage-calc");
 
   onMount(async () => {
-    allNames = (await getCatalog()).results;
+    allNames = (await getAutocompleteList()).results;
   });
 
   $effect(() => {
@@ -265,10 +267,10 @@
 
   function effectivenessLabel(effectiveness: number): string {
     if (effectiveness === 0) return "No effect";
-    if (effectiveness === 0.25) return "Not very effective (¼×)";
-    if (effectiveness === 0.5) return "Not very effective (½×)";
-    if (effectiveness === 2) return "Super effective (2×)";
-    if (effectiveness === 4) return "Super effective (4×)";
+    if (effectiveness < 1)
+      return `Not very effective (${multiplierLabel(effectiveness)})`;
+    if (effectiveness > 1)
+      return `Super effective (${multiplierLabel(effectiveness)})`;
     return "Normal (1×)";
   }
 
@@ -497,51 +499,14 @@
               options={ATTACK_ITEMS.map((i) => ({ value: i.label }))}
             />
           </div>
-          <div class="mb-3 rounded-xl border border-white/6 bg-white/2 p-2.5">
-            <div class="mb-1.5 flex items-center justify-between">
-              <span
-                class="text-[10px] font-bold tracking-wider text-white/40 uppercase"
-                >EVs {evTotal(attEvs)}/510</span
-              >
-              <span class="flex items-center gap-1 text-[10px] text-white/40">
-                IV
-                <input
-                  type="number"
-                  min="0"
-                  max="31"
-                  value={attIv}
-                  oninput={(e) =>
-                    (attIv = clampInt(
-                      (e.target as HTMLInputElement).value,
-                      0,
-                      31,
-                      attIv,
-                    ))}
-                  onchange={syncUrl}
-                  class="w-12 rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-right text-[10px] outline-none"
-                />
-              </span>
-            </div>
-            <div class="grid grid-cols-6 gap-1.5">
-              {#each EV_STATS as { key, label }}
-                <label class="flex flex-col items-center gap-0.5">
-                  <span class="text-[9px] font-bold text-white/40">{label}</span
-                  >
-                  <input
-                    type="number"
-                    min="0"
-                    max="252"
-                    value={attEvs[key]}
-                    oninput={(e) =>
-                      setAttEv(
-                        key,
-                        parseInt((e.target as HTMLInputElement).value) || 0,
-                      )}
-                    class="w-full rounded-md border border-white/10 bg-white/5 px-1 py-1 text-center text-[10px] outline-none"
-                  />
-                </label>
-              {/each}
-            </div>
+          <div class="mb-3">
+            <EVInput
+              evs={attEvs}
+              oninput={setAttEv}
+              iv={attIv}
+              onIvInput={(v) => (attIv = v)}
+              onIvChange={syncUrl}
+            />
           </div>
           <div class="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
             {#each moveList.level_up as m}
@@ -623,50 +588,19 @@
             options={DEFENSE_ITEMS.map((i) => ({ value: i.label }))}
           />
         </div>
-        <div class="mb-3 rounded-xl border border-white/6 bg-white/2 p-2.5">
-          <div class="mb-1.5 flex items-center justify-between">
-            <span
-              class="text-[10px] font-bold tracking-wider text-white/40 uppercase"
-              >Defender EVs {evTotal(defEvs)}/510</span
-            >
-            <span class="flex items-center gap-1 text-[10px] text-white/40">
-              IV
-              <input
-                type="number"
-                min="0"
-                max="31"
-                value={defIv}
-                oninput={(e) =>
-                  (defIv = clampInt(
-                    (e.target as HTMLInputElement).value,
-                    0,
-                    31,
-                    defIv,
-                  ))}
-                onchange={syncUrl}
-                class="w-12 rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-right text-[10px] outline-none"
-              />
-            </span>
-          </div>
-          <div class="grid grid-cols-3 gap-1.5">
-            {#each EV_STATS.filter((s) => s.key === "hp" || s.key === "def" || s.key === "spd") as { key, label }}
-              <label class="flex flex-col items-center gap-0.5">
-                <span class="text-[9px] font-bold text-white/40">{label}</span>
-                <input
-                  type="number"
-                  min="0"
-                  max="252"
-                  value={defEvs[key]}
-                  oninput={(e) =>
-                    setDefEv(
-                      key,
-                      parseInt((e.target as HTMLInputElement).value) || 0,
-                    )}
-                  class="w-full rounded-md border border-white/10 bg-white/5 px-1 py-1 text-center text-[10px] outline-none"
-                />
-              </label>
-            {/each}
-          </div>
+        <div class="mb-3">
+          <EVInput
+            evs={defEvs}
+            oninput={setDefEv}
+            iv={defIv}
+            onIvInput={(v) => (defIv = v)}
+            onIvChange={syncUrl}
+            label="Defender EVs"
+            stats={EV_STATS.filter(
+              (s) => s.key === "hp" || s.key === "def" || s.key === "spd",
+            )}
+            cols="grid-cols-3"
+          />
         </div>
         {@const defHp = statValue(
           defender.stats.find((s) => s.name === "hp")?.base_stat ?? 0,

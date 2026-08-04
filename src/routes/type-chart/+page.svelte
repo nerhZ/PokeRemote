@@ -5,6 +5,7 @@
     TYPE_CHART,
     TYPE_COLORS,
     formatName,
+    multiplierLabel,
   } from "$lib/pokemon-types";
   import Tooltip from "$lib/components/Tooltip.svelte";
   import TypePopup from "$lib/components/TypePopup.svelte";
@@ -48,15 +49,6 @@
 
   function multOf(att: string, def: string): number {
     return TYPE_CHART[att]?.[def] ?? 1;
-  }
-
-  function multLabel(m: number): string {
-    if (m === 0) return "0×";
-    if (m === 0.25) return "¼×";
-    if (m === 0.5) return "½×";
-    if (m === 2) return "2×";
-    if (m === 4) return "4×";
-    return "1×";
   }
 
   function cellClass(m: number): string {
@@ -147,9 +139,9 @@
           <div
             class="flex items-center justify-center font-bold {cellClass(m)}"
             style="height: {rowHeight}px; font-size: {cellFont}px"
-            title="{formatName(att)} vs {formatName(def)}: {multLabel(m)}"
+            title="{formatName(att)} vs {formatName(def)}: {multiplierLabel(m)}"
           >
-            {multLabel(m)}
+            {multiplierLabel(m)}
           </div>
         {/each}
       {/each}

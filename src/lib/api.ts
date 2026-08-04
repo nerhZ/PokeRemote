@@ -386,13 +386,31 @@ let _autocompleteCache: {
 } | null = null;
 let _speciesIdsCache: number[] | null = null;
 
+const SPECIES_IDS_CACHE_KEY = "pokeremote:species-ids";
+const SPECIES_IDS_CACHE_VERSION = 1;
+
 export async function getSpeciesIds(): Promise<number[]> {
   if (_speciesIdsCache) return _speciesIdsCache;
+  const cached = readCache<{ ids: number[]; total: number }>(
+    SPECIES_IDS_CACHE_KEY,
+    SPECIES_IDS_CACHE_VERSION,
+  );
+  if (cached) {
+    const count = await fetchResourceCount(`${API_BASE}/pokemon-species`);
+    if (count !== null && cached.total === count) {
+      _speciesIdsCache = cached.ids;
+      return _speciesIdsCache;
+    }
+  }
   const data = await fetchJson(
     `${API_BASE}/pokemon-species?limit=1025&offset=0`,
   );
   const ids = data.results.map((s: any) => parseIdFromUrl(s.url));
   _speciesIdsCache = ids;
+  writeCache(SPECIES_IDS_CACHE_KEY, SPECIES_IDS_CACHE_VERSION, {
+    ids,
+    total: ids.length,
+  });
   return ids;
 }
 
@@ -443,12 +461,13 @@ const fetchPokemonDetail = async (name: string): Promise<PokemonDetail> => {
   // Mirror the evolution chain to the viewed form's region (e.g. alolan rattata
   // shows rattata-alola → raticate-alola) where those variants exist. The region
   // is detected from the pokemon resource name — regional forms point at the
-  // base species, so speciesName alone never carries the suffix.
-  const regionMatch = data.name.match(/-([a-z]+)$/);
+  // base species, so speciesName alone never carries the suffix. Region names
+  // can appear in any segment (e.g. tauros-paldea-combat-breed).
   const region =
-    regionMatch && REGIONAL_SUFFIXES.includes(regionMatch[1])
-      ? regionMatch[1]
-      : findAliasRegion(data.name);
+    data.name
+      .split("-")
+      .find((seg: string) => REGIONAL_SUFFIXES.includes(seg)) ??
+    findAliasRegion(data.name);
   if (evolution && region) {
     const regional = await getRegionalVariantMap(region);
     if (regional.size > 0) evolution = applyRegionalForms(evolution, regional);
@@ -643,18 +662,16 @@ function writeCache(
   } catch {}
 }
 
-export const getStatRankings = async ({
-  count = TOTAL_POKEMON,
-}: { count?: number } = {}): Promise<{
+export const getStatRankings = async (): Promise<{
   data: StatRankings;
   fromCache: boolean;
 }> => {
+  const pokemonCount = await fetchResourceCount(`${API_BASE}/pokemon`);
   const cached = readCache<RankingsCache>(
     RANKINGS_CACHE_KEY,
     RANKINGS_CACHE_VERSION,
   );
   if (cached) {
-    const pokemonCount = await fetchResourceCount(`${API_BASE}/pokemon`);
     // Offline: keep the cached rankings rather than discarding them.
     if (pokemonCount === null) return { data: cached.data, fromCache: true };
     if (cached.pokemonCount === pokemonCount) {
@@ -662,6 +679,7 @@ export const getStatRankings = async ({
     }
   }
 
+  const count = pokemonCount || TOTAL_POKEMON;
   const listData = await fetchJson(
     `${API_BASE}/pokemon?limit=${count}&offset=0`,
   );
@@ -805,6 +823,10 @@ export const getRandomPokemon = async (): Promise<{
   name: string;
   id: number;
 }> => {
+  const { results } = await getAutocompleteList();
+  if (results.length > 0) {
+    return results[Math.floor(Math.random() * results.length)];
+  }
   const total = (await fetchListCount(`${API_BASE}/pokemon`)) || TOTAL_POKEMON;
   const offset = Math.floor(Math.random() * total);
   const data = await fetchJson(`${API_BASE}/pokemon?limit=1&offset=${offset}`);
@@ -837,7 +859,7 @@ export const getItemsList = async ({
         return {
           results: cached.results.slice(0, limit),
           count: cached.count,
-          next_offset: limit,
+          next_offset: Math.min(limit, cached.results.length),
         };
       }
     }
@@ -880,7 +902,6 @@ interface CachedPokemonSummary {
 
 interface GridCache {
   version: number;
-  timestamp: number;
   speciesCount: number;
   data: CachedPokemonSummary[];
 }
@@ -986,7 +1007,6 @@ export async function getAllPokemonSummaries(
   entries.sort((a, b) => a.id - b.id);
 
   writeCache(GRID_CACHE_KEY, GRID_CACHE_VERSION, {
-    timestamp: Date.now(),
     speciesCount: count,
     data: entries,
   });

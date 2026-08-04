@@ -60,12 +60,19 @@
     }
     const gen = ++searchGen;
     searchLoading = true;
-    searchItems(q).then((results) => {
-      if (gen === searchGen) {
-        searchResults = results;
-        searchLoading = false;
-      }
-    });
+    searchItems(q)
+      .then((results) => {
+        if (gen === searchGen) {
+          searchResults = results;
+          searchLoading = false;
+        }
+      })
+      .catch(() => {
+        if (gen === searchGen) {
+          searchResults = [];
+          searchLoading = false;
+        }
+      });
   });
 
   let filtered = $derived(search ? searchResults : items);

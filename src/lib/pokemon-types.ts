@@ -502,99 +502,187 @@ export function calculateDamage(opts: {
   return { min, max };
 }
 
-export const NATURES = [
-  "Adamant",
-  "Bashful",
-  "Bold",
-  "Brave",
-  "Calm",
-  "Careful",
-  "Docile",
-  "Gentle",
-  "Hardy",
-  "Hasty",
-  "Impish",
-  "Jolly",
-  "Lax",
-  "Lonely",
-  "Mild",
-  "Modest",
-  "Naive",
-  "Naughty",
-  "Quiet",
-  "Quirky",
-  "Rash",
-  "Relaxed",
-  "Sassy",
-  "Serious",
-  "Timid",
+const NATURE_DEFS: {
+  name: string;
+  modifier: string;
+  up: string | null;
+  down: string | null;
+}[] = [
+  {
+    name: "Adamant",
+    modifier: "+Atk  /  \u2212SpA",
+    up: "attack",
+    down: "special-attack",
+  },
+  { name: "Bashful", modifier: "neutral", up: null, down: null },
+  {
+    name: "Bold",
+    modifier: "+Def  /  \u2212Atk",
+    up: "defense",
+    down: "attack",
+  },
+  {
+    name: "Brave",
+    modifier: "+Atk  /  \u2212Spe",
+    up: "attack",
+    down: "speed",
+  },
+  {
+    name: "Calm",
+    modifier: "+SpD  /  \u2212Atk",
+    up: "special-defense",
+    down: "attack",
+  },
+  {
+    name: "Careful",
+    modifier: "+SpD  /  \u2212SpA",
+    up: "special-defense",
+    down: "special-attack",
+  },
+  { name: "Docile", modifier: "neutral", up: null, down: null },
+  {
+    name: "Gentle",
+    modifier: "+SpD  /  \u2212Def",
+    up: "special-defense",
+    down: "defense",
+  },
+  { name: "Hardy", modifier: "neutral", up: null, down: null },
+  {
+    name: "Hasty",
+    modifier: "+Spe  /  \u2212Def",
+    up: "speed",
+    down: "defense",
+  },
+  {
+    name: "Impish",
+    modifier: "+Def  /  \u2212SpA",
+    up: "defense",
+    down: "special-attack",
+  },
+  {
+    name: "Jolly",
+    modifier: "+Spe  /  \u2212SpA",
+    up: "speed",
+    down: "special-attack",
+  },
+  {
+    name: "Lax",
+    modifier: "+Def  /  \u2212SpD",
+    up: "defense",
+    down: "special-defense",
+  },
+  {
+    name: "Lonely",
+    modifier: "+Atk  /  \u2212Def",
+    up: "attack",
+    down: "defense",
+  },
+  {
+    name: "Mild",
+    modifier: "+SpA  /  \u2212Def",
+    up: "special-attack",
+    down: "defense",
+  },
+  {
+    name: "Modest",
+    modifier: "+SpA  /  \u2212Atk",
+    up: "special-attack",
+    down: "attack",
+  },
+  {
+    name: "Naive",
+    modifier: "+Spe  /  \u2212SpD",
+    up: "speed",
+    down: "special-defense",
+  },
+  {
+    name: "Naughty",
+    modifier: "+Atk  /  \u2212SpD",
+    up: "attack",
+    down: "special-defense",
+  },
+  {
+    name: "Quiet",
+    modifier: "+SpA  /  \u2212Spe",
+    up: "special-attack",
+    down: "speed",
+  },
+  { name: "Quirky", modifier: "neutral", up: null, down: null },
+  {
+    name: "Rash",
+    modifier: "+SpA  /  \u2212SpD",
+    up: "special-attack",
+    down: "special-defense",
+  },
+  {
+    name: "Relaxed",
+    modifier: "+Def  /  \u2212Spe",
+    up: "defense",
+    down: "speed",
+  },
+  {
+    name: "Sassy",
+    modifier: "+SpD  /  \u2212Spe",
+    up: "special-defense",
+    down: "speed",
+  },
+  { name: "Serious", modifier: "neutral", up: null, down: null },
+  {
+    name: "Timid",
+    modifier: "+Spe  /  \u2212Atk",
+    up: "speed",
+    down: "attack",
+  },
 ];
 
-export const NATURES_MODIFIERS: Record<string, string> = {
-  Adamant: "+Atk  /  \u2212SpA",
-  Bashful: "neutral",
-  Bold: "+Def  /  \u2212Atk",
-  Brave: "+Atk  /  \u2212Spe",
-  Calm: "+SpD  /  \u2212Atk",
-  Careful: "+SpD  /  \u2212SpA",
-  Docile: "neutral",
-  Gentle: "+SpD  /  \u2212Def",
-  Hardy: "neutral",
-  Hasty: "+Spe  /  \u2212Def",
-  Impish: "+Def  /  \u2212SpA",
-  Jolly: "+Spe  /  \u2212SpA",
-  Lax: "+Def  /  \u2212SpD",
-  Lonely: "+Atk  /  \u2212Def",
-  Mild: "+SpA  /  \u2212Def",
-  Modest: "+SpA  /  \u2212Atk",
-  Naive: "+Spe  /  \u2212SpD",
-  Naughty: "+Atk  /  \u2212SpD",
-  Quiet: "+SpA  /  \u2212Spe",
-  Quirky: "neutral",
-  Rash: "+SpA  /  \u2212SpD",
-  Relaxed: "+Def  /  \u2212Spe",
-  Sassy: "+SpD  /  \u2212Spe",
-  Serious: "neutral",
-  Timid: "+Spe  /  \u2212Atk",
-};
+export const NATURES: string[] = NATURE_DEFS.map((n) => n.name);
 
-/** Raised/lowered stat per nature (stat names match PokemonDetail stats). */
+export const NATURES_MODIFIERS: Record<string, string> = Object.fromEntries(
+  NATURE_DEFS.map((n) => [n.name, n.modifier]),
+);
+
 export const NATURE_STAT_MODS: Record<
   string,
   { up: string | null; down: string | null }
-> = {
-  Adamant: { up: "attack", down: "special-attack" },
-  Bashful: { up: null, down: null },
-  Bold: { up: "defense", down: "attack" },
-  Brave: { up: "attack", down: "speed" },
-  Calm: { up: "special-defense", down: "attack" },
-  Careful: { up: "special-defense", down: "special-attack" },
-  Docile: { up: null, down: null },
-  Gentle: { up: "special-defense", down: "defense" },
-  Hardy: { up: null, down: null },
-  Hasty: { up: "speed", down: "defense" },
-  Impish: { up: "defense", down: "special-attack" },
-  Jolly: { up: "speed", down: "special-attack" },
-  Lax: { up: "defense", down: "special-defense" },
-  Lonely: { up: "attack", down: "defense" },
-  Mild: { up: "special-attack", down: "defense" },
-  Modest: { up: "special-attack", down: "attack" },
-  Naive: { up: "speed", down: "special-defense" },
-  Naughty: { up: "attack", down: "special-defense" },
-  Quiet: { up: "special-attack", down: "speed" },
-  Quirky: { up: null, down: null },
-  Rash: { up: "special-attack", down: "special-defense" },
-  Relaxed: { up: "defense", down: "speed" },
-  Sassy: { up: "special-defense", down: "speed" },
-  Serious: { up: null, down: null },
-  Timid: { up: "speed", down: "attack" },
-};
+> = Object.fromEntries(
+  NATURE_DEFS.map((n) => [n.name, { up: n.up, down: n.down }]),
+);
 
-export const STAT_LABELS: Record<string, string> = {
-  hp: "HP",
-  attack: "ATK",
-  defense: "DEF",
-  "special-attack": "SP.ATK",
-  "special-defense": "SP.DEF",
-  speed: "SPD",
-};
+/** Single source for the six base stats: API name, stat-bar label, EV-input label, EvSpread key. */
+export const STAT_DEFS: {
+  apiName: string;
+  label: string;
+  shortLabel: string;
+  evKey: "hp" | "atk" | "def" | "spa" | "spd" | "spe";
+}[] = [
+  { apiName: "hp", label: "HP", shortLabel: "HP", evKey: "hp" },
+  { apiName: "attack", label: "ATK", shortLabel: "Atk", evKey: "atk" },
+  { apiName: "defense", label: "DEF", shortLabel: "Def", evKey: "def" },
+  {
+    apiName: "special-attack",
+    label: "SP.ATK",
+    shortLabel: "SpA",
+    evKey: "spa",
+  },
+  {
+    apiName: "special-defense",
+    label: "SP.DEF",
+    shortLabel: "SpD",
+    evKey: "spd",
+  },
+  { apiName: "speed", label: "SPD", shortLabel: "Spe", evKey: "spe" },
+];
+
+export const STAT_LABELS: Record<string, string> = Object.fromEntries(
+  STAT_DEFS.map((s) => [s.apiName, s.label]),
+);
+
+/** Format a type-effectiveness multiplier, e.g. 2 → "2×". */
+export function multiplierLabel(m: number): string {
+  if (m === 0) return "0×";
+  if (m === 0.25) return "¼×";
+  if (m === 0.5) return "½×";
+  if (m === 2) return "2×";
+  if (m === 4) return "4×";
+  return "1×";
+}

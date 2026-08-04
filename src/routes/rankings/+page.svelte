@@ -34,7 +34,7 @@
 
   async function loadRankings() {
     try {
-      const { data } = await getStatRankings({ count: TOTAL_POKEMON });
+      const { data } = await getStatRankings();
       rankings = data;
     } catch (e: any) {
       if (!rankings) error = e.message;

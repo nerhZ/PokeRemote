@@ -4,7 +4,6 @@
   import { onMount, untrack } from "svelte";
   import { getAllPokemonSummaries } from "$lib/api";
   import { gotoRandomPokemon } from "$lib/navigation";
-  import { dismissAppLoader } from "$lib/loader";
   import { pageUrlSync } from "$lib/url-state";
   import {
     TYPE_COLORS,
@@ -59,12 +58,10 @@
       .then(({ data }) => {
         allPokemon = data;
         loadPhase = "ready";
-        dismissAppLoader();
       })
       .catch((e: any) => {
         error = e.message || "Failed to load Pokémon";
         loadPhase = "error";
-        dismissAppLoader();
       });
   });
 
@@ -131,23 +128,22 @@
       favs?: boolean;
     },
   ): any[] {
+    const { types, gens, search, favs } = opts;
     let result = list;
-    if (opts.favs) {
+    if (favs) {
       const favIds = new Set(favorites.map((f) => f.id));
       result = result.filter((p) => favIds.has(p.id));
     }
-    if (opts.types && opts.types.length > 0) {
-      result = result.filter((p) =>
-        opts.types!.every((t) => p.types.includes(t)),
-      );
+    if (types && types.length > 0) {
+      result = result.filter((p) => types.every((t) => p.types.includes(t)));
     }
-    if (opts.gens && opts.gens.length > 0) {
-      result = result.filter((p) => opts.gens!.includes(p.gen));
+    if (gens && gens.length > 0) {
+      result = result.filter((p) => gens.includes(p.gen));
     }
-    if (opts.search) {
+    if (search) {
       result = result.filter((p) =>
         tokenMatch(
-          opts.search!,
+          search,
           p.name,
           p.id,
           (p.forms || []).map((f: any) => f.name),
