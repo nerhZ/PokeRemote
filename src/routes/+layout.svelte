@@ -10,6 +10,7 @@
   import LoadingBar from "$lib/components/LoadingBar.svelte";
   import NavMenu from "$lib/components/NavMenu.svelte";
   import Pokeball from "$lib/components/Pokeball.svelte";
+  import SpriteToggle from "$lib/components/SpriteToggle.svelte";
   import "../app.css";
 
   let { children } = $props();
@@ -189,6 +190,7 @@
           class="nav-link {isActive(quiz.href) ? 'nav-link-active' : ''}"
           >{quiz.icon} {quiz.label}</a
         >
+        <SpriteToggle />
         <button
           onclick={toggleTheme}
           class="nav-link cursor-pointer border-0"
@@ -287,6 +289,7 @@
             ? 'nav-link-active'
             : ''} mt-2 block">{quiz.icon} {quiz.label}</a
         >
+        <SpriteToggle mobile onclick={() => (mobileOpen = false)} />
         <p class="px-3 pt-2 text-[10px]" style="color: var(--muted)">
           Shortcuts: <kbd>/</kbd> search · <kbd>R</kbd> random
         </p>

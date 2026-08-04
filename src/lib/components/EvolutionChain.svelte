@@ -1,8 +1,8 @@
 <script lang="ts">
   import EvolutionChain from "./EvolutionChain.svelte";
-  import { type EvolutionStage } from "$lib/pokemon-types";
-  import { formatName } from "$lib/pokemon-types";
+  import { type EvolutionStage, formatName } from "$lib/pokemon-types";
   import { resolve } from "$app/paths";
+  import PokemonImage from "./PokemonImage.svelte";
 
   let {
     stage,
@@ -56,9 +56,11 @@
           ? `box-shadow: 0 0 0 2px ${color}`
           : ""}
       >
-        <img
+        <PokemonImage
           src={stage.image}
+          id={stage.id}
           alt={stage.name}
+          lazy={false}
           class="h-full w-full object-contain"
         />
       </div>

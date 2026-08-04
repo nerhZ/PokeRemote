@@ -35,6 +35,7 @@
   import Tooltip from "$lib/components/Tooltip.svelte";
   import Dropdown from "$lib/components/Dropdown.svelte";
   import EVInput from "$lib/components/EVInput.svelte";
+  import PokemonImage from "$lib/components/PokemonImage.svelte";
   import TypePopup from "$lib/components/TypePopup.svelte";
   import Pokeball from "$lib/components/Pokeball.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
@@ -415,8 +416,9 @@
             onclick={() => editPokemon(i)}
             title={hoverTitle(i)}
           >
-            <img
+            <PokemonImage
               src={p.sprites.other["official-artwork"].front_default}
+              id={p.id}
               alt={p.name}
               class="mx-auto h-16 w-16 object-contain"
             />
@@ -468,8 +470,9 @@
     <div class="panel mb-8 max-w-2xl">
       <div class="mb-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <img
+          <PokemonImage
             src={p.sprites.other["official-artwork"].front_default}
+            id={p.id}
             alt={p.name}
             class="h-12 w-12 object-contain"
           />
@@ -753,8 +756,9 @@
           {@const s = sets[i]}
           <div class="rounded-2xl border border-white/6 bg-white/2 p-4">
             <div class="flex flex-wrap items-start gap-4">
-              <img
+              <PokemonImage
                 src={p.sprites.other["official-artwork"].front_default}
+                id={p.id}
                 alt={p.name}
                 class="h-16 w-16 shrink-0 object-contain"
               />

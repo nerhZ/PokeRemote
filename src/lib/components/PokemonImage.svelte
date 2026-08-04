@@ -1,48 +1,46 @@
 <script lang="ts">
-  import Pokeball from "./Pokeball.svelte";
+  import { spriteMode } from "$lib/sprite-mode.svelte";
+  import PokemonImageCore from "./PokemonImageCore.svelte";
 
   let {
     src,
+    id,
     alt = "",
     class: klass = "",
     style = "",
     lazy = true,
   }: {
     src: string;
+    /** Pokemon id — when provided, the component honors global sprite mode
+        internally (animated → classic sprite → artwork fallback). */
+    id?: number;
     alt?: string;
     class?: string;
     style?: string;
     lazy?: boolean;
   } = $props();
 
-  let loaded = $state(false);
-  let failed = $state(false);
+  const sources = $derived(
+    id != null ? spriteMode.thumbnail(id, src) : { src, fallback: [] },
+  );
+
+  const effectiveStyle = $derived(
+    id != null && spriteMode.active
+      ? `${style}${style ? "; " : ""}image-rendering: pixelated`
+      : style,
+  );
 </script>
 
-{#if failed}
-  <div class="{klass} flex items-center justify-center" {style}>
-    <Pokeball class="h-1/2 w-1/2 opacity-40" />
-  </div>
-{:else}
-  <!-- Keyed on src so a source change recreates the element: a reused <img>
-       doesn't reliably fire load for a re-assigned (cached) URL. No $effect
-       reset here — flipping loaded back to false after the element started
-       loading could outrun the load event and leave the image stuck faded
-       out. A fresh element always fires load/error. -->
-  {#key src}
-    <img
-      {src}
-      {alt}
-      {style}
-      loading={lazy ? "lazy" : "eager"}
-      onload={() => (loaded = true)}
-      onerror={() => {
-        loaded = true;
-        failed = true;
-      }}
-      class="{klass} transition-opacity duration-300 {loaded
-        ? 'opacity-100'
-        : 'opacity-0'}"
-    />
-  {/key}
-{/if}
+<!-- Keyed on the primary source: a source change recreates the core (fresh
+     fade-in + fresh fallback chain), so a reused <img> never has to swallow a
+     re-assigned (cached) URL without firing load. -->
+{#key sources.src}
+  <PokemonImageCore
+    src={sources.src}
+    fallback={sources.fallback}
+    {alt}
+    class={klass}
+    style={effectiveStyle}
+    {lazy}
+  />
+{/key}

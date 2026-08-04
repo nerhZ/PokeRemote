@@ -32,6 +32,7 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Dropdown from "$lib/components/Dropdown.svelte";
   import EVInput from "$lib/components/EVInput.svelte";
+  import PokemonImage from "$lib/components/PokemonImage.svelte";
   import ClearButton from "$lib/components/ClearButton.svelte";
   import { onMount, untrack } from "svelte";
 
@@ -442,8 +443,9 @@
           href={resolve(`/pokemon/${attacker.name}`)}
           class="mt-4 flex items-center gap-3 rounded-xl bg-white/2 p-3 no-underline transition-colors hover:bg-white/5"
         >
-          <img
+          <PokemonImage
             src={attacker.sprites.other["official-artwork"].front_default}
+            id={attacker.id}
             alt={attacker.name}
             class="h-14 w-14 object-contain"
           />
@@ -548,8 +550,9 @@
           href={resolve(`/pokemon/${defender.name}`)}
           class="mt-4 flex items-center gap-3 rounded-xl bg-white/2 p-3 no-underline transition-colors hover:bg-white/5"
         >
-          <img
+          <PokemonImage
             src={defender.sprites.other["official-artwork"].front_default}
+            id={defender.id}
             alt={defender.name}
             class="h-14 w-14 object-contain"
           />

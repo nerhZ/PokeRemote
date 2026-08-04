@@ -348,6 +348,11 @@ export function spriteUrl(id: number): string {
   return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
 }
 
+/** Animated gen-5 pixel sprite (GIF), where available (mostly ≤ Gen V + early forms). */
+export function animatedSpriteUrl(id: number): string {
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/${id}.gif`;
+}
+
 export function formLabel(pokemonName: string, speciesName: string): string {
   if (pokemonName === speciesName) return "Default";
   const prefix = speciesName + "-";

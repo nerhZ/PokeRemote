@@ -82,6 +82,24 @@ export function applyTheme() {
   document.documentElement.dataset.theme = getTheme();
 }
 
+const SPRITES_KEY = "pokeremote:sprites";
+
+export function getSpritesEnabled(): boolean {
+  if (!browser) return false;
+  try {
+    return localStorage.getItem(SPRITES_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+export function setSpritesEnabled(enabled: boolean) {
+  if (!browser) return;
+  try {
+    localStorage.setItem(SPRITES_KEY, String(enabled));
+  } catch {}
+}
+
 export type EvSpread = {
   hp: number;
   atk: number;

@@ -17,6 +17,7 @@
   import RadarChart from "$lib/components/RadarChart.svelte";
   import Pokeball from "$lib/components/Pokeball.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
+  import PokemonImage from "$lib/components/PokemonImage.svelte";
   import StatBar from "$lib/components/StatBar.svelte";
   import ClearButton from "$lib/components/ClearButton.svelte";
   import { onMount, untrack } from "svelte";
@@ -172,8 +173,9 @@
               href={resolve(`/pokemon/${p.name}`)}
               class="mb-5 flex items-center gap-4 rounded-xl p-2 no-underline transition-colors hover:bg-white/5"
             >
-              <img
+              <PokemonImage
                 src={p.sprites.other["official-artwork"].front_default}
+                id={p.id}
                 alt={p.name}
                 class="h-20 w-20 object-contain drop-shadow-xl"
               />

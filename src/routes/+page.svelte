@@ -5,6 +5,7 @@
   import { getAllPokemonSummaries } from "$lib/api";
   import { gotoRandomPokemon } from "$lib/navigation";
   import { pageUrlSync } from "$lib/url-state";
+  import { spriteMode } from "$lib/sprite-mode.svelte";
   import {
     TYPE_COLORS,
     GEN_RANGES,
@@ -272,6 +273,7 @@
             >
               <PokemonImage
                 src={r.image}
+                id={r.id}
                 alt={r.name}
                 class="h-8 w-8 object-contain"
               />
@@ -453,8 +455,11 @@
                 ></div>
                 <PokemonImage
                   src={p.image}
+                  id={p.id}
                   alt={p.name}
-                  class="relative z-10 max-h-full max-w-full object-contain drop-shadow-2xl transition-transform duration-500 group-hover:-translate-y-1 group-hover:scale-110"
+                  class="relative z-10 object-contain drop-shadow-2xl transition-transform duration-500 group-hover:-translate-y-1 group-hover:scale-110 {spriteMode.active
+                    ? 'h-full w-full'
+                    : 'max-h-full max-w-full'}"
                 />
                 <span
                   class="absolute top-2.5 left-2.5 rounded-md bg-black/35 px-2 py-0.5 text-[10px] font-black tracking-wider backdrop-blur-sm"
@@ -515,6 +520,7 @@
                   >
                     <PokemonImage
                       src={form.image}
+                      id={form.id}
                       alt={form.name}
                       class="h-8 w-8 object-contain"
                     />

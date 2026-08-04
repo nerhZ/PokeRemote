@@ -4,6 +4,7 @@
   import { onMount } from "svelte";
   import { getAutocompleteList } from "$lib/api";
   import { formatName, spriteUrl, tokenMatch } from "$lib/pokemon-types";
+  import PokemonImage from "./PokemonImage.svelte";
 
   interface Props {
     value?: string;
@@ -31,8 +32,9 @@
 
   const selfLoading = $derived(options === undefined);
 
+  const source = $derived(options ?? internalOptions);
+
   let suggestions = $derived.by(() => {
-    const source = options ?? internalOptions;
     const q = value.trim();
     const list = q
       ? source.filter((o) => tokenMatch(q, o.name, o.id))
@@ -41,6 +43,12 @@
         : source;
     return list.slice(0, 10);
   });
+
+  /** Show the display name once the value is a full catalog entry (e.g. after
+      selecting "charizard-mega-x"), while keeping the raw identifier as value. */
+  let displayValue = $derived(
+    value && source.some((o) => o.name === value) ? formatName(value) : value,
+  );
 
   onMount(() => {
     if (selfLoading) {
@@ -92,7 +100,8 @@
   <input
     type="search"
     {placeholder}
-    bind:value
+    value={displayValue}
+    oninput={(e) => (value = (e.target as HTMLInputElement).value)}
     {disabled}
     data-global-search={globalSearch ? "" : undefined}
     onfocus={() => (open = true)}
@@ -118,10 +127,12 @@
             ? 'var(--text)'
             : 'var(--muted-strong)'}"
         >
-          <img
+          <!-- Classic sprites are tiny; in sprite mode the id switches rows to
+               animated GIFs (classic sprite as fallback). -->
+          <PokemonImage
             src={spriteUrl(s.id)}
+            id={s.id}
             alt=""
-            loading="lazy"
             class="size-9 shrink-0 object-contain"
           />
           <span class="truncate text-sm font-medium">{formatName(s.name)}</span>

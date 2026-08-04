@@ -10,6 +10,7 @@
   import { resolve } from "$app/paths";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
+  import PokemonImage from "$lib/components/PokemonImage.svelte";
   import Skeleton from "$lib/components/Skeleton.svelte";
   import { onMount } from "svelte";
 
@@ -101,8 +102,9 @@
             class="w-8 text-center text-lg font-black"
             style="color: {medalColor(i)}">#{i + 1}</span
           >
-          <img
+          <PokemonImage
             src={entry.image}
+            id={entry.id}
             alt={entry.name}
             class="h-12 w-12 object-contain transition-transform group-hover:scale-110"
           />
