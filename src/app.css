@@ -155,15 +155,19 @@
   }
 
   .tooltip-content {
-    display: none;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.15s ease;
   }
 
   .tooltip-host:hover > .tooltip-content {
-    display: block;
+    visibility: visible;
+    opacity: 1;
   }
 
   .tooltip-host:has(.tooltip-host:hover) > .tooltip-content {
-    display: none;
+    visibility: hidden;
+    opacity: 0;
   }
 
   .nav-link {

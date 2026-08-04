@@ -396,9 +396,18 @@ export async function getSpeciesIds(): Promise<number[]> {
   return ids;
 }
 
-export const getPokemonDetail = async (
-  name: string,
-): Promise<PokemonDetail> => {
+export const getPokemonDetail = (name: string): Promise<PokemonDetail> => {
+  const cached = _pokemonDetailCache.get(name);
+  if (cached) return cached;
+  const promise = fetchPokemonDetail(name);
+  _pokemonDetailCache.set(name, promise);
+  promise.catch(() => _pokemonDetailCache.delete(name));
+  return promise;
+};
+
+const _pokemonDetailCache = new Map<string, Promise<PokemonDetail>>();
+
+const fetchPokemonDetail = async (name: string): Promise<PokemonDetail> => {
   const data = await fetchPokemonResource(name);
 
   let species: any = null;
@@ -520,7 +529,25 @@ const VG_ORDER = [
   "the-indigo-disk",
 ];
 
-export const getPokemonMoves = async (name: string): Promise<PokemonMoves> => {
+const _pokemonMovesCache = new Map<string, Promise<PokemonMoves>>();
+
+export const getPokemonMoves = (
+  name: string,
+  opts: { levelUpOnly?: boolean } = {},
+): Promise<PokemonMoves> => {
+  const key = `${name}${opts.levelUpOnly ? ":level-up" : ""}`;
+  const cached = _pokemonMovesCache.get(key);
+  if (cached) return cached;
+  const promise = fetchPokemonMoves(name, opts.levelUpOnly);
+  _pokemonMovesCache.set(key, promise);
+  promise.catch(() => _pokemonMovesCache.delete(key));
+  return promise;
+};
+
+const fetchPokemonMoves = async (
+  name: string,
+  levelUpOnly = false,
+): Promise<PokemonMoves> => {
   const data = await fetchPokemonResource(name);
 
   let latestVg: string | null = null;
@@ -552,9 +579,8 @@ export const getPokemonMoves = async (name: string): Promise<PokemonMoves> => {
           method,
         });
       } else if (
-        method === "machine" ||
-        method === "egg" ||
-        method === "tutor"
+        (method === "machine" || method === "egg" || method === "tutor") &&
+        !levelUpOnly
       ) {
         collected.push({ name: m.move.name, level: 0, method });
       }

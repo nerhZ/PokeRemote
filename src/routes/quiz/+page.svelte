@@ -39,6 +39,8 @@
     letterHint = false;
     typeHint = false;
     targetDetail = null;
+    hintLoading = false;
+    hintGen++;
     try {
       const ids = await getSpeciesIds();
       const pool = difficulty === "easy" ? ids.filter((id) => id <= 386) : ids;
@@ -72,9 +74,12 @@
     const gen = ++hintGen;
     try {
       const detail = await getPokemonDetail(target.name);
-      if (gen === hintGen) targetDetail = detail;
-      typeHint = true;
+      if (gen === hintGen) {
+        targetDetail = detail;
+        typeHint = true;
+      }
     } catch {
+      if (gen === hintGen) hint = "Couldn't load type info — try again.";
     } finally {
       if (gen === hintGen) hintLoading = false;
     }

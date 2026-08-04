@@ -189,7 +189,7 @@
         attacker = p;
         selectedMove = null;
         moveList = null;
-        moveList = await getPokemonMoves(name);
+        moveList = await getPokemonMoves(name, { levelUpOnly: true });
         if (preferMove && moveList) {
           selectedMove =
             moveList.level_up.find((m) => m.name === preferMove) ?? null;
@@ -515,7 +515,7 @@
                       (e.target as HTMLInputElement).value,
                       0,
                       31,
-                      31,
+                      attIv,
                     ))}
                   onchange={syncUrl}
                   class="w-12 rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-right text-[10px] outline-none"
@@ -641,7 +641,7 @@
                     (e.target as HTMLInputElement).value,
                     0,
                     31,
-                    31,
+                    defIv,
                   ))}
                 onchange={syncUrl}
                 class="w-12 rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-right text-[10px] outline-none"

@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import {
     getPokemonDetail,
@@ -407,58 +406,48 @@
             sets[i].ability ||
             sets[i].nature ||
             (sets[i].evs && evTotal(sets[i].evs) > 0))}
-        <div
-          class="panel relative cursor-pointer p-3! text-center transition-all hover:-translate-y-1"
-          style="box-shadow: inset 0 0 0 1px {color}40"
-          onclick={() => editPokemon(i)}
-          role="button"
-          tabindex="0"
-          onkeydown={(e) => {
-            if (e.key === "Enter") editPokemon(i);
-          }}
-          title={hoverTitle(i)}
-        >
-          <div class="absolute top-2 left-2 z-10 flex gap-1">
-            <a
-              href={resolve(`/pokemon/${p.name}`)}
-              onclick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                goto(resolve(`/pokemon/${p.name}`));
-              }}
-              class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-white/10 bg-black/20 text-xs text-white/50 no-underline hover:text-white"
-              title="Open Pokédex">◉</a
-            >
-          </div>
+        <div class="relative transition-all hover:-translate-y-1">
           <button
-            onclick={(e) => {
-              e.stopPropagation();
-              removeFromTeam(p.id);
-            }}
+            type="button"
+            class="panel relative w-full cursor-pointer p-3! text-center"
+            style="box-shadow: inset 0 0 0 1px {color}40"
+            onclick={() => editPokemon(i)}
+            title={hoverTitle(i)}
+          >
+            <img
+              src={p.sprites.other["official-artwork"].front_default}
+              alt={p.name}
+              class="mx-auto h-16 w-16 object-contain"
+            />
+            <span
+              class="mt-1 block truncate text-xs font-bold"
+              style="color: var(--text)"
+            >
+              {formatName(p.name)}
+            </span>
+            <span class="mt-1 flex justify-center gap-0.5">
+              {#each p.types as t}<TypeBadge type={t} size="xs" />{/each}
+            </span>
+            {#if hasSet}
+              <span
+                class="bg-pokemon-green/20 text-pokemon-green mt-1.5 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold"
+              >
+                set
+              </span>
+            {/if}
+          </button>
+          <a
+            href={resolve(`/pokemon/${p.name}`)}
+            class="absolute top-2 left-2 z-10 flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-white/10 bg-black/20 text-xs text-white/50 no-underline hover:text-white"
+            title="Open Pokédex">◉</a
+          >
+          <button
+            type="button"
+            onclick={() => removeFromTeam(p.id)}
+            aria-label="Remove from team"
             class="bg-pokemon-red/20 text-pokemon-red hover:bg-pokemon-red/40 absolute top-2 right-2 z-10 h-6 w-6 cursor-pointer rounded-md border-0 text-xs font-bold transition-colors"
             >×</button
           >
-          <img
-            src={p.sprites.other["official-artwork"].front_default}
-            alt={p.name}
-            class="mx-auto h-16 w-16 object-contain"
-          />
-          <div
-            class="mt-1 truncate text-xs font-bold"
-            style="color: var(--text)"
-          >
-            {formatName(p.name)}
-          </div>
-          <div class="mt-1 flex justify-center gap-0.5">
-            {#each p.types as t}<TypeBadge type={t} size="xs" />{/each}
-          </div>
-          {#if hasSet}
-            <div
-              class="bg-pokemon-green/20 text-pokemon-green mt-1.5 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold"
-            >
-              set
-            </div>
-          {/if}
         </div>
       {:else}
         <div

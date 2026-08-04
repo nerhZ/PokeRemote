@@ -104,14 +104,31 @@
   });
 
   afterNavigate(({ to }) => {
-    if (to?.url && to.url.search) {
-      localStorage.setItem(`pageState:${to.url.pathname}`, to.url.search);
+    if (!to?.url) return;
+    const pathname = to.url.pathname;
+    if (to.url.search) {
+      localStorage.setItem(`pageState:${pathname}`, to.url.search);
     }
 
-    if (to?.url && !to.url.search) {
-      const saved = localStorage.getItem(`pageState:${to.url.pathname}`);
+    // Bound retained per-path states so they can't accumulate indefinitely.
+    const stateKeys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith("pageState:")) stateKeys.push(key);
+    }
+    if (stateKeys.length > 12) {
+      let removed = 0;
+      for (const key of stateKeys) {
+        if (key === `pageState:${pathname}`) continue;
+        localStorage.removeItem(key);
+        if (++removed >= stateKeys.length - 12) break;
+      }
+    }
+
+    if (!to.url.search) {
+      const saved = localStorage.getItem(`pageState:${pathname}`);
       if (saved) {
-        goto(`${to.url.pathname}${saved}`, { replaceState: true });
+        goto(`${pathname}${saved}`, { replaceState: true });
       }
     }
   });
