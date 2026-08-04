@@ -714,48 +714,49 @@
           </div>
         </div>
       </div>
-    </div>
-  {/if}
 
-  {#if bestMoves.length > 1}
-    <div class="panel">
-      <h2 class="mb-4 text-lg font-bold">
-        Best moves vs {formatName(defender!.name)}
-      </h2>
-      <div class="space-y-2">
-        {#each bestMoves as { move, result }}
-          <button
-            onclick={() => pickMove(move)}
-            class="flex w-full cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors {selectedMove?.name ===
-            move.name
-              ? 'border-accent bg-accent/10'
-              : 'border-white/6 bg-white/2 hover:bg-white/5'}"
-          >
-            <TypeBadge type={move.type} size="xs" tooltip={false} />
-            <span class="w-36 shrink-0 truncate font-semibold text-white/80"
-              >{formatName(move.name)}</span
-            >
-            <span class="shrink-0 text-xs text-white/40"
-              >{result.min}–{result.max}</span
-            >
-            <div
-              class="relative h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-white/6"
-            >
-              <div
-                class="bg-accent/50 absolute inset-y-0 left-0 rounded-full"
-                style="width: {(result.max / bestMoves[0].result.max) * 100}%"
-              ></div>
-            </div>
-            <span
-              class="bg-accent/20 text-accent border-accent/30 shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black whitespace-nowrap uppercase"
-              >{result.ko}</span
-            >
-          </button>
-        {/each}
-      </div>
-      <p class="mt-3 text-xs text-white/40">
-        Click a move to apply it to the calculation above.
-      </p>
+      {#if bestMoves.length > 1}
+        <div class="mt-6 border-t border-white/6 pt-5">
+          <h2 class="mb-4 text-lg font-bold">
+            Best moves vs {formatName(defender!.name)}
+          </h2>
+          <div class="space-y-2">
+            {#each bestMoves as { move, result }}
+              <button
+                onclick={() => pickMove(move)}
+                class="flex w-full cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors {selectedMove?.name ===
+                move.name
+                  ? 'border-accent bg-accent/10'
+                  : 'border-white/6 bg-white/2 hover:bg-white/5'}"
+              >
+                <TypeBadge type={move.type} size="xs" tooltip={false} />
+                <span class="w-36 shrink-0 truncate font-semibold text-white/80"
+                  >{formatName(move.name)}</span
+                >
+                <span class="shrink-0 text-xs text-white/40"
+                  >{result.min}–{result.max}</span
+                >
+                <div
+                  class="relative h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-white/6"
+                >
+                  <div
+                    class="bg-accent/50 absolute inset-y-0 left-0 rounded-full"
+                    style="width: {(result.max / bestMoves[0].result.max) *
+                      100}%"
+                  ></div>
+                </div>
+                <span
+                  class="bg-accent/20 text-accent border-accent/30 shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black whitespace-nowrap uppercase"
+                  >{result.ko}</span
+                >
+              </button>
+            {/each}
+          </div>
+          <p class="mt-3 text-xs text-white/40">
+            Click a move to apply it to the calculation above.
+          </p>
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
