@@ -1,6 +1,4 @@
 <script lang="ts">
-  import Pokeball from "./Pokeball.svelte";
-
   let {
     src,
     fallback,
@@ -29,9 +27,9 @@
 </script>
 
 {#if failed}
-  <div class="{klass} flex items-center justify-center" {style}>
-    <Pokeball class="h-1/2 w-1/2 opacity-40" />
-  </div>
+  <!-- Neutral tile: a white pokeball placeholder read as a bright dead-pixel
+       spot against the dark page background. -->
+  <div class="{klass} rounded-lg bg-white/5" {style}></div>
 {:else}
   <!-- Keyed on the effective source: advancing the fallback chain recreates
        the element, so the browser always fires load for the new URL. -->
