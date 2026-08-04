@@ -22,6 +22,5 @@
     ? 'mt-2 block w-full text-left'
     : ''} {spriteMode.active
     ? 'opacity-100 drop-shadow-[0_0_6px_rgba(255,203,5,0.55)]'
-    : 'opacity-55'}"
-  >{mobile && spriteMode.active ? "✓ Sprites on" : "▶ Sprites"}</button
+    : 'opacity-55'}">{spriteMode.active ? "⏸ Sprites" : "▶ Sprites"}</button
 >
