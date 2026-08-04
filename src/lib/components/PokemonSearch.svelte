@@ -69,8 +69,6 @@
     if (navigate) {
       value = "";
       goto(resolve(`/pokemon/${name}`));
-    } else {
-      value = name;
     }
   }
 
