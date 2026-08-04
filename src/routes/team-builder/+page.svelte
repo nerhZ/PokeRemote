@@ -199,8 +199,12 @@
     }
   }
 
+  let lastTeamUrl = "";
   $effect(() => {
+    const url = page.url.href;
     if (loadingTeam) return;
+    if (url === lastTeamUrl) return;
+    lastTeamUrl = url;
     loadTeamFromUrl();
   });
 
