@@ -587,12 +587,12 @@ export const getPokemonMoves = async (name: string): Promise<PokemonMoves> => {
 };
 
 const RANKINGS_CACHE_KEY = "pokeremote:rankings";
-const RANKINGS_CACHE_VERSION = 2;
+const RANKINGS_CACHE_VERSION = 3;
 
 interface RankingsCache {
   version: number;
   data: StatRankings;
-  speciesCount: number;
+  pokemonCount: number;
 }
 
 function readCache<T>(key: string, version: number): T | null {
@@ -628,10 +628,10 @@ export const getStatRankings = async ({
     RANKINGS_CACHE_VERSION,
   );
   if (cached) {
-    const speciesCount = await fetchResourceCount(
-      `${API_BASE}/pokemon-species`,
-    );
-    if (speciesCount !== null && cached.speciesCount === speciesCount) {
+    const pokemonCount = await fetchResourceCount(`${API_BASE}/pokemon`);
+    // Offline: keep the cached rankings rather than discarding them.
+    if (pokemonCount === null) return { data: cached.data, fromCache: true };
+    if (cached.pokemonCount === pokemonCount) {
       return { data: cached.data, fromCache: true };
     }
   }
@@ -714,10 +714,19 @@ export const getStatRankings = async ({
     moves_count: top10("moves_count"),
   } as StatRankings;
 
-  writeCache(RANKINGS_CACHE_KEY, RANKINGS_CACHE_VERSION, {
-    data: result,
-    speciesCount: listData.count,
-  });
+  // If the rebuild came back empty (e.g. rate-limited detail fetches), keep a
+  // previously cached rebuild for this visit too — and never persist an empty
+  // result, which would otherwise serve as a permanent "No data" cache.
+  const rebuildEmpty = Object.values(result).every((list) => list.length === 0);
+  if (rebuildEmpty && cached) {
+    return { data: cached.data, fromCache: true };
+  }
+  if (!rebuildEmpty) {
+    writeCache(RANKINGS_CACHE_KEY, RANKINGS_CACHE_VERSION, {
+      data: result,
+      pokemonCount: listData.count,
+    });
+  }
   return { data: result, fromCache: false };
 };
 

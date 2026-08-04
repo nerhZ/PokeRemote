@@ -25,18 +25,29 @@
   let search = $state("");
   let typeFilter = $state("");
   let classFilter = $state("");
+  let stalled = $state(false);
 
   const DAMAGE_CLASSES = ["physical", "special", "status"];
 
   async function loadMore() {
     if (loadingMore) return;
     loadingMore = true;
+    stalled = false;
     try {
       const slice = await getMovesSlice(offset, PAGE);
-      moves = [...moves, ...slice];
-      offset += slice.length;
+      if (slice.length === 0) {
+        // Every fetch in this slice failed (offline/rate-limited): stop paging
+        // instead of re-requesting the same empty range forever.
+        total = offset;
+        if (moves.length === 0) error = "Failed to load moves";
+        else stalled = true;
+      } else {
+        moves = [...moves, ...slice];
+        offset += slice.length;
+      }
     } catch (e: any) {
       if (moves.length === 0) error = e.message;
+      else stalled = true;
     } finally {
       loadingMore = false;
       loading = false;
@@ -174,6 +185,16 @@
         <Skeleton rows={6} />
       </div>
     {/if}
-    <InfiniteScroll {loadMore} hasMore={offset < total} />
+    {#if stalled}
+      <div class="mb-4 flex justify-center">
+        <button
+          onclick={loadMore}
+          class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/60 hover:text-white"
+          >Couldn't load more moves — retry</button
+        >
+      </div>
+    {:else}
+      <InfiniteScroll {loadMore} hasMore={offset < total} />
+    {/if}
   {/if}
 </div>

@@ -55,6 +55,8 @@
     loading = untrack(() => pokemon === null);
     error = null;
     moves = null;
+    movesLoading = false;
+    moveGen++;
     isShiny = false;
     animated = false;
     pageLoading.active = true;
