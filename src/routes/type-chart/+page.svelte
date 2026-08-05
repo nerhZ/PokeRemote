@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import {
     ALL_TYPES,
     TYPE_CHART,
@@ -9,6 +8,7 @@
   } from "$lib/pokemon-types";
   import Tooltip from "$lib/components/Tooltip.svelte";
   import TypePopup from "$lib/components/TypePopup.svelte";
+  import FitViewport from "$lib/components/FitViewport.svelte";
 
   let heroRef = $state<HTMLElement | undefined>();
   let legendRef = $state<HTMLElement | undefined>();
@@ -17,35 +17,22 @@
   let cellFont = $state(13);
   let labelFont = $state(10);
 
-  function measure() {
-    const header =
-      document.querySelector("header")?.getBoundingClientRect().height ?? 0;
-    const footer =
-      document.querySelector("footer")?.getBoundingClientRect().height ?? 0;
+  /** Size the chart rows to the available viewport space (via FitViewport). */
+  function fitChart(pageH: number) {
     const heroH = heroRef?.getBoundingClientRect().height ?? 0;
     const legendH = legendRef?.getBoundingClientRect().height ?? 0;
     // fixed spacing: page py (16) + hero mb (12) + legend mt (12) + chart borders (2)
-    const avail = window.innerHeight - header - footer - heroH - legendH - 42;
+    const avail = pageH - heroH - legendH - 42;
     headerHeight = Math.min(52, Math.max(30, Math.round(avail * 0.06)));
     rowHeight = Math.max(22, Math.floor((avail - headerHeight) / 18));
     cellFont = Math.min(16, Math.max(11, Math.round(rowHeight * 0.5)));
     labelFont = Math.min(13, Math.max(9, Math.round(rowHeight * 0.42)));
-    // safety: if the document still overflows, shrink rows to fit exactly
-    requestAnimationFrame(() => {
-      const overflow =
-        document.documentElement.scrollHeight - window.innerHeight;
-      if (overflow > 1) {
-        rowHeight = Math.max(22, rowHeight - Math.ceil(overflow / 18));
-      }
-    });
   }
 
-  onMount(() => {
-    measure();
-    document.fonts?.ready.then(measure).catch(() => {});
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  });
+  /** Safety: if the document still overflows, shrink rows to fit exactly. */
+  function shrinkChart(px: number) {
+    rowHeight = Math.max(22, rowHeight - Math.ceil(px / 18));
+  }
 
   function multOf(att: string, def: string): number {
     return TYPE_CHART[att]?.[def] ?? 1;
@@ -59,7 +46,11 @@
   }
 </script>
 
-<div class="px-4 py-2 md:px-6">
+<FitViewport
+  class="px-4 py-2 md:px-6"
+  onMeasure={fitChart}
+  onOverflow={shrinkChart}
+>
   <div bind:this={heroRef} class="tool-hero mx-auto mb-3 max-w-7xl">
     <h1 class="text-2xl md:text-3xl">Type Chart</h1>
     <p class="text-xs md:text-sm">
@@ -169,4 +160,4 @@
       (1×)</span
     >
   </div>
-</div>
+</FitViewport>

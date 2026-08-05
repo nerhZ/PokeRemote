@@ -12,6 +12,7 @@
   } from "$lib/pokemon-types";
   import { getQuizStats, saveQuizStats } from "$lib/storage";
   import PokemonSearch from "$lib/components/PokemonSearch.svelte";
+  import FitViewport from "$lib/components/FitViewport.svelte";
   import Pokeball from "$lib/components/Pokeball.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Dropdown from "$lib/components/Dropdown.svelte";
@@ -34,6 +35,10 @@
   let targetDetail = $state<PokemonDetail | null>(null);
   let hintLoading = $state(false);
   let hintGen = 0;
+  let silHeight = $state(240);
+  let heroRef: HTMLElement | undefined = $state();
+  let fixedTopRef: HTMLElement | undefined = $state();
+  let fixedBottomRef: HTMLElement | undefined = $state();
 
   async function newRound() {
     revealed = false;
@@ -55,6 +60,30 @@
       error = true;
     }
   }
+
+  /** Size the silhouette to the available viewport space (via FitViewport). */
+  function fitQuiz(pageH: number) {
+    const hero = heroRef?.getBoundingClientRect().height ?? 0;
+    const fixedTop = fixedTopRef?.getBoundingClientRect().height ?? 0;
+    const fixedBottom = fixedBottomRef?.getBoundingClientRect().height ?? 0;
+    // Shell padding (64) + hero margin (32) + panel padding (64 on md); the
+    // silhouette takes whatever remains.
+    const avail = pageH - 64 - 32 - 64 - hero - fixedTop - fixedBottom;
+    // Same envelope as the original design: min 16rem, max min(72vw, 55vh, 30rem).
+    const cap = Math.min(
+      window.innerWidth * 0.72,
+      window.innerHeight * 0.55,
+      480,
+    );
+    silHeight = Math.min(cap, Math.max(256, avail));
+  }
+
+  /** Safety shrink when the document still overflows (footer wrap, etc.). */
+  function shrinkSilhouette(px: number) {
+    silHeight = Math.max(256, silHeight - px);
+  }
+
+  let fitDeps = $derived([target, revealed, hint, typeHint, difficulty]);
 
   onMount(async () => {
     catalog = (await getAutocompleteList()).results;
@@ -115,8 +144,13 @@
   }
 </script>
 
-<div class="tool-shell max-w-5xl">
-  <div class="tool-hero">
+<FitViewport
+  class="tool-shell max-w-5xl"
+  deps={fitDeps}
+  onMeasure={fitQuiz}
+  onOverflow={shrinkSilhouette}
+>
+  <div class="tool-hero" bind:this={heroRef}>
     <h1>Who's That Pokémon?</h1>
     <p>
       Guess the silhouette. Consecutive correct answers build your streak — pick
@@ -137,7 +171,10 @@
     />
   {:else if target}
     <div class="panel text-center">
-      <div class="mb-5 flex flex-wrap items-center justify-center gap-4">
+      <div
+        bind:this={fixedTopRef}
+        class="mb-5 flex flex-wrap items-center justify-center gap-4"
+      >
         <div class="w-52 text-left">
           <Dropdown
             selected={difficulty}
@@ -156,83 +193,87 @@
         <span class="text-sm text-white/40">Best: {stats.best}</span>
       </div>
 
-      <div
-        class="mx-auto flex h-[clamp(16rem,min(72vw,55vh),30rem)] w-[clamp(16rem,min(72vw,55vh),30rem)] items-center justify-center overflow-hidden rounded-3xl border"
-        style="border-color: var(--border)"
-      >
-        <img
-          src={artworkUrl(target.id)}
-          alt={revealed ? formatName(target.name) : "Silhouette"}
-          class="h-full w-full object-contain"
-          style={revealed ? "" : "filter: brightness(0) contrast(1.05)"}
-        />
-      </div>
-
-      {#if revealed}
-        <h2
-          class="mt-6 text-4xl font-black md:text-5xl"
-          style="color: var(--text)"
+      <div class="flex justify-center">
+        <div
+          class="flex aspect-square max-w-full items-center justify-center overflow-hidden rounded-3xl border"
+          style="height: {silHeight}px; border-color: var(--border)"
         >
-          {formatName(target.name)}
-        </h2>
-        <div class="mt-4 flex justify-center gap-2">
-          <button
-            onclick={newRound}
-            class="bg-accent hover:bg-accent/80 cursor-pointer rounded-xl border-0 px-6 py-2.5 text-sm font-semibold text-white"
-            >Next Pokémon</button
-          >
-        </div>
-      {:else}
-        <p class="mt-6 text-base" style="color: var(--muted)">
-          Who's that Pokémon?
-        </p>
-        <div class="mx-auto mt-3 max-w-lg">
-          <PokemonSearch
-            bind:value={guess}
-            options={catalog}
-            onselect={onGuess}
-            placeholder="Type your guess..."
+          <img
+            src={artworkUrl(target.id)}
+            alt={revealed ? formatName(target.name) : "Silhouette"}
+            class="h-full w-full object-contain"
+            style={revealed ? "" : "filter: brightness(0) contrast(1.05)"}
           />
         </div>
-        {#if hint}<p class="text-pokemon-red mt-2 text-xs">{hint}</p>{/if}
-        {#if difficulty !== "hard"}
-          <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+      </div>
+
+      <div bind:this={fixedBottomRef}>
+        {#if revealed}
+          <h2
+            class="mt-6 text-4xl font-black md:text-5xl"
+            style="color: var(--text)"
+          >
+            {formatName(target.name)}
+          </h2>
+          <div class="mt-4 flex justify-center gap-2">
             <button
-              onclick={() => (letterHint = true)}
-              disabled={letterHint}
-              class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/60 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-              >{letterHint
-                ? "Letter: " + formatName(target.name)[0]
-                : "Reveal letter"}</button
+              onclick={newRound}
+              class="bg-accent hover:bg-accent/80 cursor-pointer rounded-xl border-0 px-6 py-2.5 text-sm font-semibold text-white"
+              >Next Pokémon</button
             >
-            <button
-              onclick={revealType}
-              disabled={typeHint || hintLoading}
-              class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/60 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {hintLoading ? "…" : typeHint ? "Type revealed" : "Reveal type"}
-            </button>
           </div>
-          {#if typeHint && targetDetail}
-            <div
-              class="mt-3 flex flex-wrap items-center justify-center gap-1.5 text-xs text-white/60"
-            >
-              <span>Type:</span>
-              {#each targetDetail.types as t}
-                <TypeBadge type={t} size="xs" />
-              {/each}
+        {:else}
+          <p class="mt-6 text-base" style="color: var(--muted)">
+            Who's that Pokémon?
+          </p>
+          <div class="mx-auto mt-3 max-w-lg">
+            <PokemonSearch
+              bind:value={guess}
+              options={catalog}
+              onselect={onGuess}
+              placeholder="Type your guess..."
+            />
+          </div>
+          {#if hint}<p class="text-pokemon-red mt-2 text-xs">{hint}</p>{/if}
+          {#if difficulty !== "hard"}
+            <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <button
+                onclick={() => (letterHint = true)}
+                disabled={letterHint}
+                class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/60 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                >{letterHint
+                  ? "Letter: " + formatName(target.name)[0]
+                  : "Reveal letter"}</button
+              >
+              <button
+                onclick={revealType}
+                disabled={typeHint || hintLoading}
+                class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/60 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {hintLoading ? "…" : typeHint ? "Type revealed" : "Reveal type"}
+              </button>
             </div>
+            {#if typeHint && targetDetail}
+              <div
+                class="mt-3 flex flex-wrap items-center justify-center gap-1.5 text-xs text-white/60"
+              >
+                <span>Type:</span>
+                {#each targetDetail.types as t}
+                  <TypeBadge type={t} size="xs" />
+                {/each}
+              </div>
+            {/if}
           {/if}
+          <button
+            onclick={skip}
+            class="mt-4 cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/60 hover:text-white"
+            >Skip</button
+          >
         {/if}
-        <button
-          onclick={skip}
-          class="mt-4 cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/60 hover:text-white"
-          >Skip</button
-        >
-      {/if}
-      <p class="mt-4 text-[10px] text-white/30">
-        Lifetime: {stats.correct} correct across {stats.rounds} rounds
-      </p>
+        <p class="mt-4 text-[10px] text-white/30">
+          Lifetime: {stats.correct} correct across {stats.rounds} rounds
+        </p>
+      </div>
     </div>
   {/if}
-</div>
+</FitViewport>
