@@ -44,6 +44,9 @@
   const primary = [{ href: "/", label: "Pokédex", icon: "◎" }] as const;
   const quiz = { href: "/quiz", label: "Quiz", icon: "❓" } as const;
 
+  /** The Pokédex page has its own filter search — hide the global one there. */
+  const onHome = $derived(page.url.pathname === resolve("/"));
+
   function toggleTheme() {
     const next = theme === "dark" ? "light" : "dark";
     theme = next;
@@ -156,15 +159,17 @@
         PokéRemote
       </a>
 
-      <div class="hidden min-w-0 flex-1 justify-center px-2 lg:flex">
-        <div class="w-full max-w-md">
-          <PokemonSearch
-            navigate
-            globalSearch
-            placeholder="Search any Pokémon..."
-          />
+      {#if !onHome}
+        <div class="hidden min-w-0 flex-1 justify-center px-2 lg:flex">
+          <div class="w-full max-w-md">
+            <PokemonSearch
+              navigate
+              globalSearch
+              placeholder="Search any Pokémon..."
+            />
+          </div>
         </div>
-      </div>
+      {/if}
 
       <div class="hidden flex-wrap items-center gap-1 lg:flex">
         {#each primary as link}
@@ -242,13 +247,15 @@
       </div>
     </nav>
 
-    <div class="px-4 pt-2 md:px-6 lg:hidden">
-      <PokemonSearch
-        navigate
-        globalSearch
-        placeholder="Search any Pokémon..."
-      />
-    </div>
+    {#if !onHome}
+      <div class="px-4 pt-2 md:px-6 lg:hidden">
+        <PokemonSearch
+          navigate
+          globalSearch
+          placeholder="Search any Pokémon..."
+        />
+      </div>
+    {/if}
 
     {#if mobileOpen}
       <div
