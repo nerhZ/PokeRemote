@@ -40,6 +40,7 @@
   let attacker = $state<PokemonDetail | null>(null);
   let defender = $state<PokemonDetail | null>(null);
   let moveList = $state<PokemonMoves | null>(null);
+  let movesError = $state(false);
   let searchAtt = $state("");
   let searchDef = $state("");
   let selectedMove = $state<any>(null);
@@ -146,6 +147,7 @@
       searchDef = "";
       selectedMove = null;
       moveList = null;
+      movesError = false;
       return;
     }
     (async () => {
@@ -192,10 +194,21 @@
         attacker = p;
         selectedMove = null;
         moveList = null;
-        moveList = await getPokemonMoves(name, { levelUpOnly: true });
-        if (preferMove && moveList) {
-          selectedMove =
-            moveList.level_up.find((m) => m.name === preferMove) ?? null;
+        movesError = false;
+        const fetchName = name;
+        try {
+          const m = await getPokemonMoves(name, { levelUpOnly: true });
+          // Discard stale results: switching attackers (or clearing) while
+          // this fetch is in flight changes attacker.name.
+          if (attacker?.name !== fetchName) return;
+          moveList = m;
+          if (preferMove && m) {
+            selectedMove =
+              m.level_up.find((mv) => mv.name === preferMove) ?? null;
+          }
+        } catch {
+          if (attacker?.name !== fetchName) return;
+          movesError = true;
         }
         if (!skipSync) syncUrl();
       },
@@ -416,7 +429,9 @@
   });
 </script>
 
-{#snippet bestMovesList()}
+{#snippet bestMovesList(
+  footer = "Click a move to apply it to the calculation above.",
+)}
   <h2 class="mb-4 text-lg font-bold">
     Best moves vs {formatName(defender!.name)}
   </h2>
@@ -451,9 +466,9 @@
       </button>
     {/each}
   </div>
-  <p class="mt-3 text-xs text-white/40">
-    Click a move to apply it to the calculation above.
-  </p>
+  {#if footer}
+    <p class="mt-3 text-xs text-white/40">{footer}</p>
+  {/if}
 {/snippet}
 
 <div class="tool-shell max-w-5xl">
@@ -685,11 +700,44 @@
     </div>
   </div>
 
-  {#if !attacker || !defender || !selectedMove}
+  {#if !attacker || !defender}
     <EmptyState
       title="Set up a calculation"
       subtitle="Choose attacker, a damaging move, and a defender to see damage ranges."
     />
+  {:else if !selectedMove}
+    {#if moveList === null && !movesError}
+      <div class="panel flex justify-center py-8">
+        <Pokeball spinning class="h-8 w-8" />
+      </div>
+    {:else if movesError}
+      <div class="panel py-8 text-center">
+        <p class="text-sm" style="color: var(--muted)">
+          Couldn't load {formatName(attacker.name)}'s moves — check your
+          connection.
+        </p>
+        <button
+          onclick={() => attacker && selectAttacker(attacker.name)}
+          class="bg-accent hover:bg-accent/80 mt-4 cursor-pointer rounded-xl border-0 px-4 py-2 text-xs font-semibold text-white"
+          >Try again</button
+        >
+      </div>
+    {:else if bestMoves.length > 0}
+      <div class="panel">
+        <p
+          class="mb-4 rounded-xl border border-white/6 bg-white/2 p-3 text-xs text-white/50"
+        >
+          Pick a damaging move to see the damage calculation — or click a
+          suggestion below.
+        </p>
+        {@render bestMovesList("")}
+      </div>
+    {:else}
+      <div class="panel py-8 text-center text-sm text-white/40">
+        No damaging moves available for {formatName(attacker.name)} against{" "}
+        {formatName(defender.name)}.
+      </div>
+    {/if}
   {:else if damageResult?.noDamage}
     <div class="panel text-center text-white/50">{damageResult.label}</div>
   {:else if damageResult && !damageResult.noDamage}
@@ -764,7 +812,7 @@
         </div>
       </div>
 
-      {#if bestMoves.length > 1}
+      {#if bestMoves.length > 0}
         <div class="mt-6 border-t border-white/6 pt-5">
           {@render bestMovesList()}
         </div>
@@ -772,7 +820,7 @@
     </div>
   {/if}
 
-  {#if bestMoves.length > 1 && (!selectedMove || damageResult?.noDamage)}
+  {#if bestMoves.length > 0 && damageResult?.noDamage}
     <div class="panel mt-6">
       {@render bestMovesList()}
     </div>
