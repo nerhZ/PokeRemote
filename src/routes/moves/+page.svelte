@@ -179,12 +179,10 @@
             </p>{/if}
         </div>
       {/each}
+      {#if loadingMore}
+        <Skeleton rows={6} tiles class="h-32" />
+      {/if}
     </div>
-    {#if loadingMore}
-      <div class="pb-4">
-        <Skeleton rows={6} />
-      </div>
-    {/if}
     {#if stalled}
       <div class="mb-4 flex justify-center">
         <button

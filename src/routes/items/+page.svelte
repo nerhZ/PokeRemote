@@ -131,13 +131,11 @@
           </div>
         </div>
       {/each}
+      {#if !search && loadingMore}
+        <Skeleton rows={6} tiles class="h-28" />
+      {/if}
     </div>
     {#if !search}
-      {#if loadingMore}
-        <div class="pb-4">
-          <Skeleton rows={6} />
-        </div>
-      {/if}
       <InfiniteScroll {loadMore} hasMore={nextOffset < total} />
     {/if}
   {/if}
