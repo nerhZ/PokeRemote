@@ -2,7 +2,6 @@
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
   import { onMount, untrack } from "svelte";
-  import { fly } from "svelte/transition";
   import { getAllPokemonSummaries } from "$lib/api";
   import { gotoRandomPokemon } from "$lib/navigation";
   import { pageUrlSync } from "$lib/url-state";
@@ -32,6 +31,7 @@
   import Pokeball from "$lib/components/Pokeball.svelte";
   import PokemonImage from "$lib/components/PokemonImage.svelte";
   import FilterChip from "$lib/components/FilterChip.svelte";
+  import { onCollapseFinished } from "$lib/search-anim";
 
   let allPokemon = $state<any[]>([]);
   let loadProgress = $state({ done: 0, total: 0 });
@@ -52,19 +52,33 @@
   onMount(() => {
     favorites = getFavorites();
     recent = getRecent();
-    loadPhase = "loading";
+    loadPhase = "loading"; // show the spinner, not the empty state, while waiting
 
-    getAllPokemonSummaries((done, total) => {
-      loadProgress = { done, total };
-    })
-      .then(({ data }) => {
-        allPokemon = data;
-        loadPhase = "ready";
+    // Defer the heavy catalog fetch until the header's collapse animation
+    // (running right as we mount, ~1s) finishes — its parse would freeze it.
+    let started = false;
+    const start = () => {
+      if (started) return;
+      started = true;
+      getAllPokemonSummaries((done, total) => {
+        loadProgress = { done, total };
       })
-      .catch((e: any) => {
-        error = e.message || "Failed to load Pokémon";
-        loadPhase = "error";
-      });
+        .then(({ data }) => {
+          allPokemon = data;
+          loadPhase = "ready";
+        })
+        .catch((e: any) => {
+          error = e.message || "Failed to load Pokémon";
+          loadPhase = "error";
+        });
+    };
+
+    const unsub = onCollapseFinished(start);
+    const fallback = setTimeout(start, 2500); // safety net
+    return () => {
+      unsub();
+      clearTimeout(fallback);
+    };
   });
 
   $effect(() => {
@@ -316,7 +330,6 @@
             type="search"
             placeholder="Search name or #..."
             bind:value={searchQuery}
-            in:fly={{ y: -10, duration: 400, delay: 150 }}
             class="focus:border-accent/50 w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pr-3 pl-10 text-sm text-white placeholder-white/30 outline-none"
           />
         </div>
