@@ -146,11 +146,11 @@
   >
     <span class="flex items-center gap-1.5"
       ><span class="bg-pokemon-red/40 h-2.5 w-2.5 rounded-sm"></span> Super effective
-      (2× / 4×)</span
+      (2×)</span
     >
     <span class="flex items-center gap-1.5"
       ><span class="bg-pokemon-green/40 h-2.5 w-2.5 rounded-sm"></span> Not very effective
-      (½× / ¼×)</span
+      (½×)</span
     >
     <span class="flex items-center gap-1.5"
       ><span class="h-2.5 w-2.5 rounded-sm bg-black/50"></span> No effect (0×)</span
@@ -158,6 +158,10 @@
     <span class="flex items-center gap-1.5"
       ><span class="h-2.5 w-2.5 rounded-sm border border-white/25"></span> Neutral
       (1×)</span
+    >
+    <span class="basis-full"
+      >Single-type matchups cap at 2× / ½× — 4× / ¼× only happens against
+      dual-type defenders.</span
     >
   </div>
 </FitViewport>
