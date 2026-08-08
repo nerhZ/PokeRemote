@@ -47,10 +47,22 @@
   let requestId = 0;
   let moveGen = 0;
   let speciesIds = $state<number[]>([]);
+  /** Raw URL key whose content is currently displayed. The URL may use ids or
+      names (PokeAPI normalizes `/pokemon/26` → raticate), so identity can't be
+      compared to `pokemon.name` — the requested key itself is tracked. */
+  let loadedName = "";
 
   $effect(() => {
     const name = page.params.name;
     if (!name) return;
+    if (untrack(() => loadedName) !== name) {
+      // The URL now points at a different entry: drop the previous Pokémon so
+      // the skeleton shows instead of stale content (and stale prev/next
+      // arrows). `pokemon` is only read untracked here, so this write does
+      // not re-trigger the effect.
+      pokemon = null;
+      loadedName = name;
+    }
     loading = untrack(() => pokemon === null);
     error = null;
     moves = null;

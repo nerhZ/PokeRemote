@@ -81,17 +81,24 @@
     };
   });
 
+  // Arrival-only reset: wipe in-page-only state (search, favorites mode) when
+  // arriving at a bare home URL. `isHome` is a derived boolean so this effect
+  // only re-runs when the pathname crosses the home boundary — `page.url` is
+  // replaced on *every* navigation (including search-param-only changes), so
+  // reading it directly here would wipe the search whenever the query params
+  // change in-page (e.g. clearing a type chip).
+  const isHome = $derived(page.url.pathname === resolve("/"));
   $effect(() => {
-    const p = page.url.pathname;
-    if (p === resolve("/") && !page.url.searchParams.get("type")) {
-      const sq = untrack(() => searchQuery);
-      const sf = untrack(() => showFavoritesOnly);
-      if (sq || sf) {
-        searchQuery = "";
-        showFavoritesOnly = false;
-      }
-      if (untrack(() => activeGens.length > 0)) activeGens = [];
+    if (!isHome) return;
+    if (untrack(() => page.url.searchParams.get("type"))) return;
+    if (untrack(() => page.url.searchParams.get("gen"))) return;
+    const sq = untrack(() => searchQuery);
+    const sf = untrack(() => showFavoritesOnly);
+    if (sq || sf) {
+      searchQuery = "";
+      showFavoritesOnly = false;
     }
+    if (untrack(() => activeGens.length > 0)) activeGens = [];
   });
 
   let lastTypeParam = "";
@@ -104,6 +111,22 @@
       : [];
   });
 
+  let lastGenParam = "";
+  $effect(() => {
+    const genParam = page.url.searchParams.get("gen") ?? "";
+    if (genParam === lastGenParam) return;
+    lastGenParam = genParam;
+    activeGens = genParam
+      ? genParam
+          .split(",")
+          .map((g) =>
+            GEN_RANGES.find((r) => generationShortLabel(r.label) === g),
+          )
+          .filter((r): r is (typeof GEN_RANGES)[number] => !!r)
+          .map((r) => r.label)
+      : [];
+  });
+
   function setTypes(next: string[]) {
     activeTypes = next;
     lastTypeParam = next.join(",");
@@ -111,6 +134,17 @@
     if (next.length) params.set("type", next.join(","));
     else sync.clearPageState();
     sync.pushMerged(params, next.length ? [] : ["type"]);
+  }
+
+  /** Sync the generation filters into the URL (short labels, e.g. `?gen=I,III`). */
+  function setGens(next: string[]) {
+    activeGens = next;
+    lastGenParam = next.map(generationShortLabel).join(",");
+    const params = new URLSearchParams();
+    if (next.length)
+      params.set("gen", next.map(generationShortLabel).join(","));
+    else sync.clearPageState();
+    sync.pushMerged(params, next.length ? [] : ["gen"]);
   }
 
   function toggleType(t: string) {
@@ -302,7 +336,7 @@
     {/if}
 
     <div
-      class="sticky top-14.25 z-40 mb-6 rounded-2xl border px-4 py-3 backdrop-blur-md md:px-6"
+      class="sticky top-17 z-40 mb-6 rounded-2xl border px-4 py-3 backdrop-blur-md md:px-6"
       style="background: color-mix(in srgb, var(--bg) 92%, transparent); border-color: var(--border)"
     >
       <div
@@ -329,6 +363,7 @@
             data-global-search
             type="search"
             placeholder="Search name or #..."
+            aria-label="Search Pokémon by name or number"
             bind:value={searchQuery}
             class="focus:border-accent/50 w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pr-3 pl-10 text-sm text-white placeholder-white/30 outline-none"
           />
@@ -340,12 +375,11 @@
           >
             Filters {filtersOpen ? "▴" : "▾"}
           </button>
-          <span class="hidden text-xs text-white/40 sm:inline"
-            >{filtered.length} results</span
-          >
+          <span class="text-xs text-white/40">{filtered.length} results</span>
           <select
             bind:value={sortBy}
-            class="cursor-pointer rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-xs text-white/70 outline-none"
+            aria-label="Sort Pokémon"
+            class="focus:border-accent/50 cursor-pointer rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-xs text-white/70 outline-none"
           >
             <option value="id-asc">ID ↑</option>
             <option value="id-desc">ID ↓</option>
@@ -385,7 +419,7 @@
             active={activeGens.length === 0}
             count={activeGens.length > 0 ? activeGens.length : undefined}
             onclick={() => {
-              activeGens = [];
+              setGens([]);
             }}
           />
           {#each GEN_RANGES as gen}
@@ -397,11 +431,11 @@
                 !activeGens.includes(label) &&
                 !possibleGens.has(label)}
               onclick={() => {
-                if (activeGens.includes(label)) {
-                  activeGens = activeGens.filter((x) => x !== label);
-                } else {
-                  activeGens = [...activeGens, label];
-                }
+                setGens(
+                  activeGens.includes(label)
+                    ? activeGens.filter((x) => x !== label)
+                    : [...activeGens, label],
+                );
               }}
             />
           {/each}
@@ -442,7 +476,7 @@
         onaction={() => {
           searchQuery = "";
           setTypes([]);
-          activeGens = [];
+          setGens([]);
           showFavoritesOnly = false;
         }}
       />
@@ -506,7 +540,7 @@
                 </h3>
                 <div class="mt-1.5 flex flex-wrap items-center gap-1">
                   {#each p.types || [] as type}
-                    <TypeBadge {type} size="xs" />
+                    <TypeBadge {type} size="xs" focusable={false} />
                   {/each}
                   <span
                     class="ml-auto rounded-full px-1.5 py-0.5 text-[9px] font-bold text-white/80"

@@ -150,7 +150,9 @@
         return;
       if (e.key === "/" || (e.key === "k" && (e.metaKey || e.ctrlKey))) {
         e.preventDefault();
-        const onHome = page.url.pathname === "/";
+        // resolve() so this works under a base path (GitHub Pages), where
+        // page.url.pathname includes the repo name.
+        const onHome = page.url.pathname === resolve("/");
         const el = document.querySelector<HTMLInputElement>(
           onHome ? "main [data-global-search]" : "[data-global-search]",
         );

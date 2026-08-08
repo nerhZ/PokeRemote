@@ -23,7 +23,9 @@
 </script>
 
 {#snippet defaultTrigger()}
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex: tooltip trigger; focus reveals the popup -->
   <span
+    tabindex="0"
     class="inline-flex items-center gap-1 rounded-full border border-white/6 bg-white/3 px-2 py-0.5 text-[11px]"
   >
     {#if move.type}

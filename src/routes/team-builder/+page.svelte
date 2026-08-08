@@ -49,6 +49,7 @@
   let teamName = $state("My Team");
   let saved = $state<ReturnType<typeof getSavedTeams>>([]);
   let copied = $state(false);
+  let slotError = $state("");
 
   let editingIndex = $state<number | null>(null);
   let editLoading = $state(false);
@@ -90,6 +91,7 @@
     editingIndex = null;
     teamName = "My Team";
     evWarning = "";
+    slotError = "";
   }
 
   function setEv(stat: keyof EvSpread, val: number) {
@@ -268,6 +270,7 @@
   async function addToTeam(name: string) {
     if (team.length >= 6) return;
     search = "";
+    slotError = "";
     await selectPokemonSlot(name, {
       setLoading: (v) => (loading = v),
       apply: (detail) => {
@@ -277,6 +280,7 @@
           syncUrl();
         }
       },
+      onError: (msg) => (slotError = msg),
     });
   }
 
@@ -399,6 +403,9 @@
     {#if loading}<div class="mt-2 flex justify-center">
         <Pokeball spinning class="h-6 w-6" />
       </div>{/if}
+    {#if slotError}<p class="text-pokemon-red mt-2 text-xs" role="alert">
+        {slotError}
+      </p>{/if}
   </div>
 
   <div class="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
@@ -515,6 +522,7 @@
                   onselect={(name) => pickMove(mi, name)}
                   onclear={() => pickMove(mi, "")}
                   placeholder={`Move ${mi + 1}...`}
+                  searchable
                   options={moveOptions
                     .filter(
                       (m) =>
@@ -568,6 +576,7 @@
                   onselect={pickAbility}
                   onclear={() => pickAbility("")}
                   buttonClass="mt-2"
+                  searchable
                   options={abilityOptions.map((a) => ({
                     value: a.name,
                     label: formatName(a.name),
@@ -626,7 +635,9 @@
                 <TypePopup type={t} />
               {/snippet}
               {#snippet trigger()}
+                <!-- svelte-ignore a11y_no_noninteractive_tabindex: tooltip trigger; focus reveals the popup -->
                 <div
+                  tabindex="0"
                   class="cursor-pointer rounded-lg px-2 py-2 text-center text-[10px] font-bold uppercase"
                   style="background-color: {c >= 2
                     ? 'rgba(255,62,62,0.2)'
@@ -724,6 +735,7 @@
         >
           <input
             bind:value={teamName}
+            aria-label="Team name"
             class="focus:border-accent/50 min-w-30 flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none"
             placeholder="Team name"
           />
@@ -810,9 +822,15 @@
                         {/if}
                       {/snippet}
                       {#snippet trigger()}
-                        <span class="text-white/40">Ability:</span>
-                        <span class="text-white/70">
-                          {s.ability ? formatName(s.ability) : "—"}
+                        <!-- svelte-ignore a11y_no_noninteractive_tabindex: tooltip trigger; focus reveals the popup -->
+                        <span
+                          tabindex="0"
+                          class="inline-flex items-baseline gap-1"
+                        >
+                          <span class="text-white/40">Ability:</span>
+                          <span class="text-white/70">
+                            {s.ability ? formatName(s.ability) : "—"}
+                          </span>
                         </span>
                       {/snippet}
                     </Tooltip>
@@ -826,8 +844,14 @@
                         {/if}
                       {/snippet}
                       {#snippet trigger()}
-                        <span class="text-white/40">Nature:</span>
-                        <span class="text-white/70"> {s.nature || "—"}</span>
+                        <!-- svelte-ignore a11y_no_noninteractive_tabindex: tooltip trigger; focus reveals the popup -->
+                        <span
+                          tabindex="0"
+                          class="inline-flex items-baseline gap-1"
+                        >
+                          <span class="text-white/40">Nature:</span>
+                          <span class="text-white/70"> {s.nature || "—"}</span>
+                        </span>
                       {/snippet}
                     </Tooltip>
                     <Tooltip width="" nowrap>
@@ -837,12 +861,18 @@
                         </div>
                       {/snippet}
                       {#snippet trigger()}
-                        <span class="text-white/40">EVs:</span>
-                        <span class="text-white/70">
-                          {s.evs?.hp ?? 0}/{s.evs?.atk ?? 0}/{s.evs?.def ??
-                            0}/{s.evs?.spa ?? 0}/{s.evs?.spd ?? 0}/{s.evs
-                            ?.spe ?? 0}</span
+                        <!-- svelte-ignore a11y_no_noninteractive_tabindex: tooltip trigger; focus reveals the popup -->
+                        <span
+                          tabindex="0"
+                          class="inline-flex items-baseline gap-1"
                         >
+                          <span class="text-white/40">EVs:</span>
+                          <span class="text-white/70">
+                            {s.evs?.hp ?? 0}/{s.evs?.atk ?? 0}/{s.evs?.def ??
+                              0}/{s.evs?.spa ?? 0}/{s.evs?.spd ?? 0}/{s.evs
+                              ?.spe ?? 0}</span
+                          >
+                        </span>
                       {/snippet}
                     </Tooltip>
                   </div>

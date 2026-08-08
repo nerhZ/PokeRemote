@@ -59,20 +59,24 @@
       return;
     }
     const gen = ++searchGen;
-    searchLoading = true;
-    searchItems(q)
-      .then((results) => {
+    // Debounce: each keystroke would otherwise trigger a network search
+    // (name-list fetch + up to 30 item detail fetches).
+    const timer = setTimeout(async () => {
+      searchLoading = true;
+      try {
+        const results = await searchItems(q);
         if (gen === searchGen) {
           searchResults = results;
           searchLoading = false;
         }
-      })
-      .catch(() => {
+      } catch {
         if (gen === searchGen) {
           searchResults = [];
           searchLoading = false;
         }
-      });
+      }
+    }, 200);
+    return () => clearTimeout(timer);
   });
 
   let filtered = $derived(search ? searchResults : items);
@@ -101,7 +105,10 @@
       <Pokeball spinning class="h-16 w-16" />
     </div>
   {:else if filtered.length === 0}
-    <EmptyState title="No items match" subtitle="No items match." />
+    <EmptyState
+      title="No items match"
+      subtitle="Try a different search term."
+    />
   {:else}
     <div class="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {#each filtered as item}

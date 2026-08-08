@@ -30,6 +30,7 @@
   let pokemonB = $state<PokemonDetail | null>(null);
   let loadingA = $state(false);
   let loadingB = $state(false);
+  let slotError = $state("");
   let effectGen = 0;
 
   const sync = pageUrlSync("/compare");
@@ -49,6 +50,7 @@
       pokemonB = null;
       searchA = "";
       searchB = "";
+      slotError = "";
       return;
     }
     (async () => {
@@ -76,6 +78,7 @@
     skipSync?: boolean,
   ) {
     searchA = name;
+    slotError = "";
     await selectPokemonSlot(name, {
       gen,
       effectGen,
@@ -84,6 +87,7 @@
         pokemonA = p;
         if (!skipSync) syncUrl();
       },
+      onError: (msg) => (slotError = msg),
     });
   }
 
@@ -93,6 +97,7 @@
     skipSync?: boolean,
   ) {
     searchB = name;
+    slotError = "";
     await selectPokemonSlot(name, {
       gen,
       effectGen,
@@ -101,6 +106,7 @@
         pokemonB = p;
         if (!skipSync) syncUrl();
       },
+      onError: (msg) => (slotError = msg),
     });
   }
 </script>
@@ -152,6 +158,15 @@
         </div>{/if}
     </div>
   </div>
+
+  {#if slotError}
+    <div
+      class="border-pokemon-red/30 bg-pokemon-red/10 text-pokemon-red mb-6 rounded-xl border px-4 py-3 text-center text-xs"
+      role="alert"
+    >
+      {slotError}
+    </div>
+  {/if}
 
   {#if !pokemonA && !pokemonB}
     <EmptyState

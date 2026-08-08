@@ -11,6 +11,7 @@
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PokemonImage from "$lib/components/PokemonImage.svelte";
+  import Pokeball from "$lib/components/Pokeball.svelte";
   import Skeleton from "$lib/components/Skeleton.svelte";
   import { onMount } from "svelte";
 
@@ -18,6 +19,7 @@
   let loading = $state(true);
   let error = $state<string | null>(null);
   let activeStat = $state("total");
+  let loadProgress = $state({ done: 0, total: 0 });
 
   const stats = [
     { key: "total", label: "Total", max: 720 },
@@ -35,7 +37,11 @@
 
   async function loadRankings() {
     try {
-      const { data } = await getStatRankings();
+      loading = true;
+      error = null;
+      const { data } = await getStatRankings((done, total) => {
+        loadProgress = { done, total };
+      });
       rankings = data;
     } catch (e: any) {
       if (!rankings) error = e.message;
@@ -83,9 +89,30 @@
   </div>
 
   {#if loading}
-    <Skeleton rows={10} class="h-16" grid={false} />
+    {#if loadProgress.total > 0}
+      <div class="flex flex-col items-center justify-center py-20">
+        <Pokeball class="mb-8 h-24 w-24" spinning />
+        <p class="text-sm font-semibold" style="color: var(--text)">
+          Loading {loadProgress.done} / {loadProgress.total} Pokémon...
+        </p>
+        <div class="mt-4 h-1.5 w-64 overflow-hidden rounded-full bg-white/6">
+          <div
+            class="bg-accent h-full rounded-full transition-all duration-300"
+            style="width: {(loadProgress.done / (loadProgress.total || 1)) *
+              100}%"
+          ></div>
+        </div>
+      </div>
+    {:else}
+      <Skeleton rows={10} class="h-16" grid={false} />
+    {/if}
   {:else if error && !rankings}
-    <EmptyState title="Could not load rankings" subtitle={error} />
+    <EmptyState
+      title="Could not load rankings"
+      subtitle={error}
+      actionLabel="Try again"
+      onaction={loadRankings}
+    />
   {:else if rankings && activeList.length === 0}
     <EmptyState
       title="No data"

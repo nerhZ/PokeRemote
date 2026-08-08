@@ -48,6 +48,9 @@
   let defLevel = $state(50);
   let loadingAtt = $state(false);
   let loadingDef = $state(false);
+  let attError = $state("");
+  let defError = $state("");
+  let moveFilter = $state("");
   let effectGen = 0;
 
   let attNature = $state("");
@@ -148,6 +151,8 @@
       selectedMove = null;
       moveList = null;
       movesError = false;
+      attError = "";
+      defError = "";
       return;
     }
     (async () => {
@@ -186,6 +191,8 @@
     skipSync?: boolean,
   ) {
     searchAtt = name;
+    attError = "";
+    moveFilter = "";
     await selectPokemonSlot(name, {
       gen,
       effectGen,
@@ -212,6 +219,7 @@
         }
         if (!skipSync) syncUrl();
       },
+      onError: (msg) => (attError = msg),
     });
   }
 
@@ -221,6 +229,7 @@
     skipSync?: boolean,
   ) {
     searchDef = name;
+    defError = "";
     await selectPokemonSlot(name, {
       gen,
       effectGen,
@@ -229,6 +238,7 @@
         defender = p;
         if (!skipSync) syncUrl();
       },
+      onError: (msg) => (defError = msg),
     });
   }
 
@@ -406,6 +416,14 @@
 
   let damageResult = $derived(selectedMove ? computeMove(selectedMove) : null);
 
+  /** Level-up moves narrowed by the move-filter input (name substring). */
+  let filteredMoveList = $derived.by(() => {
+    const ml = moveList;
+    if (!ml) return [];
+    const q = moveFilter.trim().toLowerCase();
+    return q ? ml.level_up.filter((m) => m.name.includes(q)) : ml.level_up;
+  });
+
   let bestMoves = $derived.by(() => {
     if (!attacker || !defender || !moveList) return [];
     return moveList.level_up
@@ -499,6 +517,9 @@
       {#if loadingAtt}<div class="mt-2 flex justify-center">
           <Pokeball spinning class="h-6 w-6" />
         </div>{/if}
+      {#if attError}<p class="text-pokemon-red mt-2 text-xs" role="alert">
+          {attError}
+        </p>{/if}
       {#if attacker}
         <a
           href={resolve(`/pokemon/${attacker.name}`)}
@@ -528,7 +549,8 @@
               onchange={syncUrl}
               min={1}
               max={100}
-              class="w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs outline-none"
+              aria-label="Attacker level"
+              class="focus:border-accent/50 w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs outline-none"
             />
           </div>
           <div class="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -571,8 +593,17 @@
               onIvChange={syncUrl}
             />
           </div>
+          <div class="mb-2">
+            <input
+              type="search"
+              bind:value={moveFilter}
+              placeholder="Filter moves..."
+              aria-label="Filter attacker's moves"
+              class="focus:border-accent/50 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/70 placeholder-white/30 outline-none"
+            />
+          </div>
           <div class="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-            {#each moveList.level_up as m}
+            {#each filteredMoveList as m}
               <MoveTooltip move={m}>
                 {#snippet children()}
                   <button
@@ -606,6 +637,9 @@
       {#if loadingDef}<div class="mt-2 flex justify-center">
           <Pokeball spinning class="h-6 w-6" />
         </div>{/if}
+      {#if defError}<p class="text-pokemon-red mt-2 text-xs" role="alert">
+          {defError}
+        </p>{/if}
       {#if defender}
         <a
           href={resolve(`/pokemon/${defender.name}`)}
@@ -634,7 +668,8 @@
             onchange={syncUrl}
             min={1}
             max={100}
-            class="w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs outline-none"
+            aria-label="Defender level"
+            class="focus:border-accent/50 w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs outline-none"
           />
         </div>
         <div class="mt-3 mb-3 max-w-xs">

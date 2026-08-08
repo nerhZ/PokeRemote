@@ -146,6 +146,13 @@
     </div>
   </div>
 
+  {#if search && moves.length > 0}
+    <p class="mb-3 text-xs" style="color: var(--muted)">
+      Results only cover the {moves.length} of {total} moves loaded so far (loaded
+      alphabetically) — scroll to the bottom to load more.
+    </p>
+  {/if}
+
   {#if loading}
     <Skeleton rows={12} />
   {:else if error}
@@ -162,7 +169,7 @@
       {#each filtered as m}
         <div class="panel flex flex-col gap-2 p-4!">
           <div class="flex items-center gap-2">
-            <TypeBadge type={m.type} size="xs" />
+            <TypeBadge type={m.type} size="xs" focusable={false} />
             <span class="truncate text-sm font-bold">{formatName(m.name)}</span>
             <span
               class="ml-auto shrink-0 text-[10px] font-bold text-white/40 capitalize"

@@ -160,7 +160,9 @@
     transition: opacity 0.15s ease;
   }
 
-  .tooltip-host:hover > .tooltip-content {
+  .tooltip-host:hover > .tooltip-content,
+  .tooltip-host:focus-within > .tooltip-content,
+  .tooltip-host.pinned > .tooltip-content {
     visibility: visible;
     opacity: 1;
   }
@@ -281,6 +283,7 @@
 [data-theme="light"] .bg-white\/5,
 [data-theme="light"] .bg-white\/2,
 [data-theme="light"] .bg-white\/3,
+[data-theme="light"] .bg-white\/4,
 [data-theme="light"] .bg-white\/6,
 [data-theme="light"] .bg-white\/\[0\.02\],
 [data-theme="light"] .bg-white\/\[0\.03\],
@@ -326,6 +329,7 @@
   color: var(--muted) !important;
 }
 
+[data-theme="light"] .bg-black\/20,
 [data-theme="light"] .bg-black\/30,
 [data-theme="light"] .bg-black\/35,
 [data-theme="light"] .bg-black\/40 {

@@ -69,18 +69,19 @@
     // Shell padding (64) + hero margin (32) + panel padding (64 on md); the
     // silhouette takes whatever remains.
     const avail = pageH - 64 - 32 - 64 - hero - fixedTop - fixedBottom;
-    // Same envelope as the original design: min 16rem, max min(72vw, 55vh, 30rem).
+    // Envelope: min 10rem (small enough to fit short landscape phones),
+    // max min(72vw, 55vh, 30rem).
     const cap = Math.min(
       window.innerWidth * 0.72,
       window.innerHeight * 0.55,
       480,
     );
-    silHeight = Math.min(cap, Math.max(256, avail));
+    silHeight = Math.min(cap, Math.max(160, avail));
   }
 
   /** Safety shrink when the document still overflows (footer wrap, etc.). */
   function shrinkSilhouette(px: number) {
-    silHeight = Math.max(256, silHeight - px);
+    silHeight = Math.max(160, silHeight - px);
   }
 
   let fitDeps = $derived([target, revealed, hint, typeHint, difficulty]);

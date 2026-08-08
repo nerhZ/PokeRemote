@@ -662,24 +662,55 @@ function writeCache(
   } catch {}
 }
 
-export const getStatRankings = async (): Promise<{
+export const getStatRankings = async (
+  onProgress?: (done: number, total: number) => void,
+): Promise<{
   data: StatRankings;
   fromCache: boolean;
 }> => {
-  const pokemonCount = await fetchResourceCount(`${API_BASE}/pokemon`);
   const cached = readCache<RankingsCache>(
     RANKINGS_CACHE_KEY,
     RANKINGS_CACHE_VERSION,
   );
   if (cached) {
-    // Offline: keep the cached rankings rather than discarding them.
-    if (pokemonCount === null) return { data: cached.data, fromCache: true };
-    if (cached.pokemonCount === pokemonCount) {
-      return { data: cached.data, fromCache: true };
-    }
+    // Serve the cached rankings instantly; validate the live count in the
+    // background and rebuild only when it changed (offline keeps the cache).
+    void (async () => {
+      const pokemonCount = await fetchResourceCount(`${API_BASE}/pokemon`);
+      if (pokemonCount === null || cached.pokemonCount === pokemonCount) return;
+      try {
+        const fresh = await rebuildRankings(pokemonCount, onProgress);
+        if (!Object.values(fresh).every((list) => list.length === 0)) {
+          writeCache(RANKINGS_CACHE_KEY, RANKINGS_CACHE_VERSION, {
+            data: fresh,
+            pokemonCount,
+          });
+        }
+      } catch {}
+    })();
+    return { data: cached.data, fromCache: true };
   }
 
+  const pokemonCount = await fetchResourceCount(`${API_BASE}/pokemon`);
   const count = pokemonCount || TOTAL_POKEMON;
+  const fresh = await rebuildRankings(count, onProgress);
+
+  // Never persist an empty result, which would otherwise serve as a
+  // permanent "No data" cache.
+  const rebuildEmpty = Object.values(fresh).every((list) => list.length === 0);
+  if (!rebuildEmpty) {
+    writeCache(RANKINGS_CACHE_KEY, RANKINGS_CACHE_VERSION, {
+      data: fresh,
+      pokemonCount: count,
+    });
+  }
+  return { data: fresh, fromCache: false };
+};
+
+async function rebuildRankings(
+  count: number,
+  onProgress?: (done: number, total: number) => void,
+): Promise<StatRankings> {
   const listData = await fetchJson(
     `${API_BASE}/pokemon?limit=${count}&offset=0`,
   );
@@ -728,6 +759,10 @@ export const getStatRankings = async (): Promise<{
         (r): r is NonNullable<(typeof results)[number]> => r != null,
       ),
     );
+    onProgress?.(
+      Math.min(i + batch.length, listData.results.length),
+      listData.results.length,
+    );
   }
 
   function top10(key: string): RankingEntry[] {
@@ -744,7 +779,7 @@ export const getStatRankings = async (): Promise<{
       }));
   }
 
-  const result = {
+  return {
     hp: top10("hp"),
     attack: top10("attack"),
     defense: top10("defense"),
@@ -757,22 +792,7 @@ export const getStatRankings = async (): Promise<{
     weight: top10("weight"),
     moves_count: top10("moves_count"),
   } as StatRankings;
-
-  // If the rebuild came back empty (e.g. rate-limited detail fetches), keep a
-  // previously cached rebuild for this visit too — and never persist an empty
-  // result, which would otherwise serve as a permanent "No data" cache.
-  const rebuildEmpty = Object.values(result).every((list) => list.length === 0);
-  if (rebuildEmpty && cached) {
-    return { data: cached.data, fromCache: true };
-  }
-  if (!rebuildEmpty) {
-    writeCache(RANKINGS_CACHE_KEY, RANKINGS_CACHE_VERSION, {
-      data: result,
-      pokemonCount: listData.count,
-    });
-  }
-  return { data: result, fromCache: false };
-};
+}
 
 const AUTOCOMPLETE_CACHE_KEY = "pokeremote:autocomplete";
 const AUTOCOMPLETE_CACHE_VERSION = 1;
@@ -787,10 +807,19 @@ async function loadAutocompleteList() {
     data: { total: number; results: { name: string; id: number }[] };
   }>(AUTOCOMPLETE_CACHE_KEY, AUTOCOMPLETE_CACHE_VERSION);
   if (cached) {
-    const count = await fetchResourceCount(`${API_BASE}/pokemon`);
-    if (count !== null && cached.data.total === count) {
-      return cached.data;
-    }
+    // Serve the cached list immediately; refresh it in the background when
+    // the live count changed (and keep it when offline).
+    void (async () => {
+      const count = await fetchResourceCount(`${API_BASE}/pokemon`);
+      if (count === null || cached.data.total === count) return;
+      try {
+        const data = await fetchNameIdList(`${API_BASE}/pokemon`);
+        writeCache(AUTOCOMPLETE_CACHE_KEY, AUTOCOMPLETE_CACHE_VERSION, {
+          data,
+        });
+      } catch {}
+    })();
+    return cached.data;
   }
   try {
     const data = await fetchNameIdList(`${API_BASE}/pokemon`);
@@ -914,12 +943,35 @@ export async function getAllPokemonSummaries(
 ): Promise<{ data: CachedPokemonSummary[]; fromCache: boolean }> {
   const cached = readCache<GridCache>(GRID_CACHE_KEY, GRID_CACHE_VERSION);
   if (cached) {
-    const count = await fetchResourceCount(`${API_BASE}/pokemon-species`);
-    if (count !== null && cached.speciesCount === count) {
-      return { data: cached.data, fromCache: true };
-    }
+    // Serve the cached grid immediately (no network round-trip before the
+    // grid paints). Validate the species count in the background and rebuild
+    // the cache only when it changed — or when offline, keep what we have.
+    void (async () => {
+      const count = await fetchResourceCount(`${API_BASE}/pokemon-species`);
+      if (count === null || cached.speciesCount === count) return;
+      try {
+        const fresh = await buildGridCache(onProgress);
+        writeCache(GRID_CACHE_KEY, GRID_CACHE_VERSION, {
+          speciesCount: fresh.count,
+          data: fresh.entries,
+        });
+      } catch {}
+    })();
+    return { data: cached.data, fromCache: true };
   }
 
+  const fresh = await buildGridCache(onProgress);
+  writeCache(GRID_CACHE_KEY, GRID_CACHE_VERSION, {
+    speciesCount: fresh.count,
+    data: fresh.entries,
+  });
+
+  return { data: fresh.entries, fromCache: false };
+}
+
+async function buildGridCache(
+  onProgress?: (done: number, total: number) => void,
+): Promise<{ count: number; entries: CachedPokemonSummary[] }> {
   const { results, count } = await fetchJson(
     `${API_BASE}/pokemon-species?limit=1025&offset=0`,
   );
@@ -973,7 +1025,9 @@ export async function getAllPokemonSummaries(
       } as CachedPokemonSummary;
     } finally {
       done++;
-      onProgress?.(done, total);
+      // Retried entries can push `done` past `total` — cap it so the
+      // progress bar never exceeds 100%.
+      onProgress?.(Math.min(done, total), total);
     }
   }
 
@@ -1006,12 +1060,7 @@ export async function getAllPokemonSummaries(
 
   entries.sort((a, b) => a.id - b.id);
 
-  writeCache(GRID_CACHE_KEY, GRID_CACHE_VERSION, {
-    speciesCount: count,
-    data: entries,
-  });
-
-  return { data: entries, fromCache: false };
+  return { count, entries };
 }
 
 // ── Item search ──────────────────────────────────────────────────────────────

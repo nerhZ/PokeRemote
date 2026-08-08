@@ -46,7 +46,8 @@
           oninput={(e) =>
             onIvInput?.(clampIv((e.target as HTMLInputElement).value, iv))}
           onchange={onIvChange}
-          class="w-12 rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-right text-[10px] outline-none"
+          aria-label={`${label} IV`}
+          class="focus:border-accent/50 w-12 rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-right text-[10px] outline-none"
         />
       </span>
     {/if}
@@ -68,7 +69,8 @@
               stat.key,
               parseInt((e.target as HTMLInputElement).value) || 0,
             )}
-          class="w-full rounded-md border border-white/10 bg-white/5 px-1 py-1 text-center text-[10px] outline-none"
+          aria-label={`${label} ${stat.label} EVs`}
+          class="focus:border-accent/50 w-full rounded-md border border-white/10 bg-white/5 px-1 py-1 text-center text-[10px] outline-none"
         />
       </label>
     {/each}

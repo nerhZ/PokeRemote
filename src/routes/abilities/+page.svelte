@@ -81,7 +81,10 @@
   {:else if error}
     <EmptyState title="Failed to load abilities" subtitle={error} />
   {:else if filtered.length === 0}
-    <EmptyState title="No abilities match" subtitle="No abilities match." />
+    <EmptyState
+      title="No abilities match"
+      subtitle="Try a different search or generation filter."
+    />
   {:else}
     <div class="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {#each filtered as a}
