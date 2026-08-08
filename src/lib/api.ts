@@ -936,7 +936,7 @@ interface GridCache {
 }
 
 const GRID_CACHE_KEY = "pokeremote:grid-cache";
-const GRID_CACHE_VERSION = 1;
+const GRID_CACHE_VERSION = 2;
 
 export async function getAllPokemonSummaries(
   onProgress?: (done: number, total: number) => void,
@@ -982,7 +982,7 @@ async function buildGridCache(
   async function fetchEntry(s: any): Promise<CachedPokemonSummary> {
     const speciesId = parseIdFromUrl(s.url);
     try {
-      const [speciesData, pokeData] = await Promise.all([
+      const [speciesData, pokeData0] = await Promise.all([
         fetch(`${API_BASE}/pokemon-species/${speciesId}`).then((r) =>
           r.ok ? r.json() : null,
         ),
@@ -994,8 +994,18 @@ async function buildGridCache(
       if (!speciesData) throw new Error("species fetch failed");
 
       const forms = mapVarieties(speciesData.varieties);
-      const types = pokeData ? pokeData.types.map((t: any) => t.type.name) : [];
       const defaultForm = forms.find((f) => f.is_default) || forms[0];
+
+      // Species like basculin/pumpkaboo/minior have no `/pokemon/{speciesName}`
+      // resource — their default variety carries the name (basculin-red-striped)
+      // — so that fetch 404s. Fall back to the default form's resource.
+      const pokeName = defaultForm?.name || s.name;
+      const pokeData =
+        pokeData0 ??
+        (await fetch(`${API_BASE}/pokemon/${pokeName}`).then((r) =>
+          r.ok ? r.json() : null,
+        ));
+      const types = pokeData ? pokeData.types.map((t: any) => t.type.name) : [];
 
       return {
         name: defaultForm?.name || s.name,
@@ -1032,30 +1042,31 @@ async function buildGridCache(
   }
 
   const entries: CachedPokemonSummary[] = [];
-  // Batch so the browser's connection pool isn't exhausted (a full-parallel
-  // burst fails hundreds of fetches, leaving entries with empty types).
-  for (let i = 0; i < results.length; i += 30) {
-    const batch = results.slice(i, i + 30);
-    const batchEntries = await Promise.all(batch.map(fetchEntry));
-    entries.push(...batchEntries);
-  }
+  // Fire the whole catalog in one parallel burst: the browser multiplexes the
+  // requests over the connection, and a single tail wait beats waiting on
+  // each wave's slowest request. Historically a full burst tripped rate
+  // limits and dropped entries — the retry pass below recovers those.
+  entries.push(...(await Promise.all(results.map(fetchEntry))));
 
-  // Retry entries whose fetches failed (e.g. rate-limited) once.
+  // Retry entries whose fetches failed (e.g. rate-limited) once, in waves.
   const failed = entries.filter((e) => e.types.length === 0);
   if (failed.length > 0) {
-    await new Promise((r) => setTimeout(r, 1500));
-    await Promise.all(
-      failed.map(async (e) => {
-        try {
-          const s = results.find((x: any) => parseIdFromUrl(x.url) === e.id);
-          if (!s) return;
-          const fixed = await fetchEntry(s);
-          if (fixed.types.length > 0) {
-            Object.assign(e, fixed);
-          }
-        } catch {}
-      }),
-    );
+    await new Promise((r) => setTimeout(r, 1000));
+    for (let i = 0; i < failed.length; i += 50) {
+      const batch = failed.slice(i, i + 50);
+      await Promise.all(
+        batch.map(async (e) => {
+          try {
+            const s = results.find((x: any) => parseIdFromUrl(x.url) === e.id);
+            if (!s) return;
+            const fixed = await fetchEntry(s);
+            if (fixed.types.length > 0) {
+              Object.assign(e, fixed);
+            }
+          } catch {}
+        }),
+      );
+    }
   }
 
   entries.sort((a, b) => a.id - b.id);

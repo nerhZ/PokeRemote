@@ -54,31 +54,41 @@
     recent = getRecent();
     loadPhase = "loading"; // show the spinner, not the empty state, while waiting
 
-    // Defer the heavy catalog fetch until the header's collapse animation
-    // (running right as we mount, ~1s) finishes — its parse would freeze it.
+    // Kick the catalog fetch off immediately — the network is async, so it
+    // costs the header's collapse animation nothing. Only the apply (parsing
+    // the result and rendering the grid) is deferred until the collapse
+    // finishes, since that synchronous chunk is what would freeze it.
     let started = false;
-    const start = () => {
+    const begin = () => {
       if (started) return;
       started = true;
-      getAllPokemonSummaries((done, total) => {
+      const load = getAllPokemonSummaries((done, total) => {
         loadProgress = { done, total };
-      })
-        .then(({ data }) => {
-          allPokemon = data;
-          loadPhase = "ready";
-        })
-        .catch((e: any) => {
-          error = e.message || "Failed to load Pokémon";
-          loadPhase = "error";
-        });
+      });
+      let applied = false;
+      const apply = () => {
+        if (applied) return;
+        applied = true;
+        load
+          .then(({ data }) => {
+            allPokemon = data;
+            loadPhase = "ready";
+          })
+          .catch((e: any) => {
+            error = e.message || "Failed to load Pokémon";
+            loadPhase = "error";
+          });
+      };
+
+      const unsub = onCollapseFinished(apply);
+      const fallback = setTimeout(apply, 2500); // safety net
+      return () => {
+        unsub();
+        clearTimeout(fallback);
+      };
     };
 
-    const unsub = onCollapseFinished(start);
-    const fallback = setTimeout(start, 2500); // safety net
-    return () => {
-      unsub();
-      clearTimeout(fallback);
-    };
+    return begin();
   });
 
   // Arrival-only reset: wipe in-page-only state (search, favorites mode) when
