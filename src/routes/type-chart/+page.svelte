@@ -73,8 +73,6 @@
       ></div>
       {#each ALL_TYPES as def}
         <Tooltip
-          fixed
-          interactive
           position="bottom"
           width="w-max max-w-[min(24rem,calc(100vw-2rem))]"
           hostClass="flex items-end justify-center pb-1.5"
@@ -83,10 +81,9 @@
           {#snippet popup()}
             <TypePopup type={def} />
           {/snippet}
-          {#snippet trigger(handlers)}
+          {#snippet trigger()}
             <button
               type="button"
-              {...handlers}
               class="cursor-default"
               style="font-size: {labelFont}px"
               title={formatName(def)}
@@ -101,8 +98,6 @@
       {/each}
       {#each ALL_TYPES as att}
         <Tooltip
-          fixed
-          interactive
           position="top"
           width="w-max max-w-[min(24rem,calc(100vw-2rem))]"
           hostClass="sticky left-0 z-10 border-y border-white/4 bg-(--card)"
@@ -111,10 +106,9 @@
           {#snippet popup()}
             <TypePopup type={att} />
           {/snippet}
-          {#snippet trigger(handlers)}
+          {#snippet trigger()}
             <button
               type="button"
-              {...handlers}
               class="flex h-full w-full cursor-default items-center px-2"
               style="font-size: {labelFont}px"
             >
