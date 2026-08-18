@@ -14,16 +14,27 @@
     TYPE_CHART,
     NATURES,
     NATURES_MODIFIERS,
+    NATURE_STAT_MODS,
+    NATURE_OPTIONS,
+    STAT_DEFS,
     formatName,
+    statValue,
     typeColor,
     type MoveDetail,
     type PokemonDetail,
   } from "$lib/pokemon-types";
   import {
+    parseShowdownTeam,
+    formatShowdownSet,
+    showdownNameToApi,
+    moveNameToApi,
+  } from "$lib/showdown";
+  import {
     saveTeam,
     getSavedTeams,
     zeroEvs,
     evTotal,
+    evsLine,
     evsEncode,
     evsDecode,
     setEvValue,
@@ -64,6 +75,12 @@
     { moves: string[]; ability: string; nature: string; evs: EvSpread }[]
   >([]);
   let evWarning = $state("");
+  let showImport = $state(false);
+  let importText = $state("");
+  let importError = $state("");
+  let importLoading = $state(false);
+  let showdownCopied = $state(false);
+  let previewLevel = $state(50);
 
   const sync = pageUrlSync("/team-builder");
 
@@ -312,6 +329,124 @@
     setTimeout(() => (copied = false), 2000);
   }
 
+  /** Pokémon Showdown team text built from the current team + sets. */
+  function exportShowdown() {
+    const text = team
+      .map((p, i) => {
+        const s = sets[i];
+        return formatShowdownSet({
+          name: p.name,
+          moves: s?.moves ?? [],
+          ability: s?.ability ?? "",
+          nature: s?.nature ?? "",
+          evs: s?.evs ?? zeroEvs(),
+        });
+      })
+      .join("\n\n");
+    navigator.clipboard?.writeText(text);
+    showdownCopied = true;
+    setTimeout(() => (showdownCopied = false), 2000);
+  }
+
+  /**
+   * Resolve a Showdown species slug to an API name. Gendered species
+   * (basculegion, indeedee, meowstic…) are not in the /pokemon list under
+   * their base name, and species like basculin have a differently-named
+   * default variety — so fall back to the gendered candidates and finally to
+   * the detail fetch (which resolves default varieties itself).
+   */
+  async function resolveImportSpecies(slug: string): Promise<string | null> {
+    if (allNames.some((n) => n.name === slug)) return slug;
+    const gendered = allNames.find(
+      (n) => n.name === `${slug}-male` || n.name === `${slug}-female`,
+    );
+    if (gendered) return gendered.name;
+    try {
+      const d = await getPokemonDetail(slug);
+      if (d && allNames.some((n) => n.name === d.name)) return d.name;
+    } catch {}
+    return null;
+  }
+
+  /** Parse a Showdown paste, resolve species against the API names, load the team. */
+  async function importShowdown() {
+    const parsed = parseShowdownTeam(importText);
+    if (parsed.length === 0) {
+      importError = "No Pokémon sets found in the pasted text.";
+      return;
+    }
+    importError = "";
+    importLoading = true;
+    try {
+      const resolved: { set: (typeof parsed)[number]; name: string | null }[] =
+        [];
+      for (const set of parsed) {
+        const slug = showdownNameToApi(set.species);
+        resolved.push({ set, name: await resolveImportSpecies(slug) });
+      }
+      const missing = resolved.filter((r) => !r.name).map((r) => r.set.species);
+      if (missing.length > 0) {
+        importError = `Couldn't recognize: ${missing.join(", ")}.`;
+        return;
+      }
+      for (const { name } of resolved) {
+        const n = name!;
+        if (team.length >= 6) break;
+        if (team.some((t) => t.name === n)) continue;
+        try {
+          const d = await getPokemonDetail(n);
+          if (!team.some((t) => t.id === d.id)) {
+            team = [...team, d];
+            while (sets.length < team.length) sets = [...sets, initSet()];
+          }
+        } catch {
+          continue;
+        }
+        if (!metaCache[n]) {
+          try {
+            const meta = await getPokemonMetadata(n);
+            metaCache[n] = {
+              moves: meta.moves,
+              abilities: meta.abilities,
+            };
+          } catch {}
+        }
+      }
+      const bySpecies = new Map(resolved.map((r) => [r.name!, r.set]));
+      sets = sets.map((s, i) => {
+        const name = team[i]?.name;
+        const parsedSet = bySpecies.get(name);
+        if (!parsedSet) return s;
+        const meta = metaCache[name];
+        const moves = parsedSet.moves
+          .map(moveNameToApi)
+          .filter((m) => meta?.moves.some((o) => o.name === m))
+          .slice(0, 4);
+        return {
+          ...s,
+          moves: padMoves(moves),
+          ability: meta?.abilities.some((a) => a.name === parsedSet.ability)
+            ? parsedSet.ability
+            : "",
+          nature: NATURES.includes(parsedSet.nature) ? parsedSet.nature : "",
+          evs: {
+            hp: parsedSet.evs.hp ?? 0,
+            atk: parsedSet.evs.atk ?? 0,
+            def: parsedSet.evs.def ?? 0,
+            spa: parsedSet.evs.spa ?? 0,
+            spd: parsedSet.evs.spd ?? 0,
+            spe: parsedSet.evs.spe ?? 0,
+          },
+        };
+      });
+      syncUrl();
+      showImport = false;
+      importText = "";
+    } finally {
+      importLoading = false;
+    }
+  }
+
   let coverage = $derived.by(() => {
     const result: Record<string, number> = {};
     for (const t of ALL_TYPES) result[t] = 0;
@@ -373,9 +508,7 @@
     if (s.nature) parts.push(s.nature + " nature");
     const evs = s.evs;
     if (evs && evTotal(evs) > 0) {
-      parts.push(
-        `EVs: ${evs.hp}/${evs.atk}/${evs.def}/${evs.spa}/${evs.spd}/${evs.spe}`,
-      );
+      parts.push(`EVs: ${evsLine(evs)}`);
     }
     return parts.join("\n");
   }
@@ -406,6 +539,40 @@
     {#if slotError}<p class="text-pokemon-red mt-2 text-xs" role="alert">
         {slotError}
       </p>{/if}
+    <button
+      onclick={() => {
+        showImport = !showImport;
+        importError = "";
+      }}
+      class="mt-3 cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/60 transition-colors hover:text-white"
+      >{showImport ? "Close import" : "Import from Showdown ⤒"}</button
+    >
+    {#if showImport}
+      <div class="mt-3 space-y-2">
+        <textarea
+          bind:value={importText}
+          rows={6}
+          aria-label="Paste a Pokémon Showdown team"
+          placeholder={"Paste a Showdown team here, e.g.\n\nGarchomp @ Rocky Helmet\nAbility: Rough Skin\nEVs: 252 HP / 4 Atk / 252 Spe\nJolly Nature\n- Earthquake\n- Stealth Rock\n- Dragon Claw\n- Swords Dance"}
+          class="focus:border-accent/50 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-mono text-xs text-white/80 placeholder-white/25 outline-none"
+        ></textarea>
+        {#if importError}<p class="text-pokemon-red text-xs" role="alert">
+            {importError}
+          </p>{/if}
+        <div class="flex items-center gap-2">
+          <button
+            onclick={importShowdown}
+            disabled={importLoading || !importText.trim()}
+            class="bg-accent hover:bg-accent/80 cursor-pointer rounded-xl border-0 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40"
+            >{importLoading ? "Importing…" : "Import"}</button
+          >
+          <span class="text-[10px] text-white/40"
+            >Up to 6 · moves/ability/nature/EVs are applied, items and levels
+            are skipped</span
+          >
+        </div>
+      </div>
+    {/if}
   </div>
 
   <div class="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
@@ -597,10 +764,7 @@
                   onselect={pickNature}
                   onclear={() => pickNature("")}
                   buttonClass="mt-2"
-                  options={NATURES.map((n) => ({
-                    value: n,
-                    meta: NATURES_MODIFIERS[n],
-                  }))}
+                  options={NATURE_OPTIONS}
                 />
               </div>
             </div>
@@ -611,6 +775,56 @@
                 warning={evWarning}
                 cols="grid-cols-3"
               />
+            </div>
+            <div class="mt-4">
+              <div class="flex items-center justify-between">
+                <span
+                  class="text-[10px] font-bold tracking-wider text-white/40 uppercase"
+                >
+                  Final stats
+                </span>
+                <div class="flex gap-1">
+                  {#each [50, 100] as lv}
+                    <button
+                      onclick={() => (previewLevel = lv)}
+                      class="cursor-pointer rounded-full border px-2 py-0.5 text-[10px] font-bold {previewLevel ===
+                      lv
+                        ? 'bg-accent border-accent text-white'
+                        : 'border-white/10 bg-white/5 text-white/50 hover:text-white'}"
+                    >
+                      Lv {lv}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+              <div class="mt-2 grid grid-cols-6 gap-1.5 text-center">
+                {#each STAT_DEFS as def}
+                  {@const base =
+                    p.stats.find((st) => st.name === def.apiName)?.base_stat ??
+                    0}
+                  {@const mods = s.nature ? NATURE_STAT_MODS[s.nature] : null}
+                  {@const val = statValue(base, previewLevel, {
+                    iv: 31,
+                    ev: s.evs[def.evKey] ?? 0,
+                    hp: def.evKey === "hp",
+                    nature: mods,
+                    statKey: def.apiName,
+                  })}
+                  <div class="rounded-lg bg-white/3 px-1 py-1.5">
+                    <div class="text-[9px] text-white/40">{def.shortLabel}</div>
+                    <div class="text-xs font-bold" style="color: var(--text)">
+                      {val}
+                    </div>
+                    <div class="text-[9px] text-white/30">
+                      {mods?.up === def.apiName
+                        ? "▲"
+                        : mods?.down === def.apiName
+                          ? "▼"
+                          : ""}{base}
+                    </div>
+                  </div>
+                {/each}
+              </div>
             </div>
           </div>
         </div>
@@ -744,6 +958,11 @@
             class="bg-accent hover:bg-accent/80 cursor-pointer rounded-xl border-0 px-4 py-2 text-sm font-semibold text-white"
             >{copied ? "Link copied!" : "Save & share"}</button
           >
+          <button
+            onclick={exportShowdown}
+            class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/60 transition-colors hover:text-white"
+            >{showdownCopied ? "Copied!" : "Showdown ⤓"}</button
+          >
         </div>
         {#if saved.length}
           <div>
@@ -868,9 +1087,7 @@
                         >
                           <span class="text-white/40">EVs:</span>
                           <span class="text-white/70">
-                            {s.evs?.hp ?? 0}/{s.evs?.atk ?? 0}/{s.evs?.def ??
-                              0}/{s.evs?.spa ?? 0}/{s.evs?.spd ?? 0}/{s.evs
-                              ?.spe ?? 0}</span
+                            {evsLine(s.evs ?? zeroEvs())}</span
                           >
                         </span>
                       {/snippet}
