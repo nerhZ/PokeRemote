@@ -270,7 +270,45 @@ export interface PokemonDetail {
   type_effectiveness: TypeMatchup;
   locations: { area: string; method: string; chance: number | null }[];
   forms: PokemonFormSummary[];
+  /** Regional dex entries from the species resource, e.g. [{dex: "kanto", number: 25}]. */
+  pokedex_numbers: { dex: string; number: number }[];
 }
+
+// ── Regional dex labels ───────────────────────────────────────────────────────
+/** Order regional dex chips by generation; dexes not listed sort last. */
+export const DEX_ORDER = [
+  "kanto",
+  "johto",
+  "hoenn",
+  "sinnoh",
+  "unova",
+  "kalos",
+  "alola",
+  "galar",
+  "isle-of-armor",
+  "crown-tundra",
+  "hisui",
+  "paldea",
+  "kitakami",
+  "blueberry",
+];
+
+export const REGIONAL_DEX_LABELS: Record<string, string> = {
+  kanto: "Kanto",
+  johto: "Johto",
+  hoenn: "Hoenn",
+  sinnoh: "Sinnoh",
+  unova: "Unova",
+  kalos: "Kalos",
+  alola: "Alola",
+  galar: "Galar",
+  "isle-of-armor": "Isle of Armor",
+  "crown-tundra": "Crown Tundra",
+  hisui: "Hisui",
+  paldea: "Paldea",
+  kitakami: "Kitakami",
+  blueberry: "Blueberry",
+};
 
 export interface MoveDetail {
   name: string;
@@ -280,6 +318,8 @@ export interface MoveDetail {
   pp: number | null;
   damage_class: string;
   effect: string | null;
+  /** Number of Pokémon that learn this move (PokeAPI `learned_by_pokemon`). */
+  learned_by_count?: number;
 }
 
 export interface MoveInfo extends MoveDetail {
@@ -483,6 +523,33 @@ export function computeTypeEffectiveness(
   return result;
 }
 
+/**
+ * Final stat value from base stat, level, IV, EV and nature (gen-5-style).
+ * Shared by the damage calculator and team-builder stat preview.
+ */
+export function statValue(
+  base: number,
+  level: number,
+  opts: {
+    iv?: number;
+    ev?: number;
+    hp?: boolean;
+    nature?: { up: string | null; down: string | null } | null;
+    statKey?: string;
+  } = {},
+) {
+  const { iv = 31, ev = 0, hp = false, nature = null, statKey = "" } = opts;
+  const evQuotient = Math.floor(ev / 4);
+  let value = hp
+    ? Math.floor(((2 * base + iv + evQuotient) * level) / 100) + level + 10
+    : Math.floor(((2 * base + iv + evQuotient) * level) / 100 + 5);
+  if (nature && statKey) {
+    if (nature.up === statKey) value = Math.floor(value * 1.1);
+    else if (nature.down === statKey) value = Math.floor(value * 0.9);
+  }
+  return value;
+}
+
 export function calculateDamage(opts: {
   level: number;
   power: number;
@@ -644,6 +711,11 @@ export const NATURES: string[] = NATURE_DEFS.map((n) => n.name);
 
 export const NATURES_MODIFIERS: Record<string, string> = Object.fromEntries(
   NATURE_DEFS.map((n) => [n.name, n.modifier]),
+);
+
+/** Dropdown-ready nature options (value + modifier meta), shared by team builder and damage calc. */
+export const NATURE_OPTIONS: { value: string; meta: string }[] = NATURES.map(
+  (n) => ({ value: n, meta: NATURES_MODIFIERS[n] }),
 );
 
 export const NATURE_STAT_MODS: Record<

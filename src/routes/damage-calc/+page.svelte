@@ -7,9 +7,11 @@
     TYPE_COLORS,
     TYPE_CHART,
     NATURES,
+    NATURE_OPTIONS,
     NATURES_MODIFIERS,
     NATURE_STAT_MODS,
     calculateDamage,
+    statValue,
     formatName,
     multiplierLabel,
     type MoveInfo,
@@ -60,6 +62,32 @@
   let defIv = $state(31);
   let attEvs = $state<EvSpread>(zeroEvs());
   let defEvs = $state<EvSpread>(zeroEvs());
+
+  let weather = $state("");
+  let terrain = $state("");
+  let crit = $state(false);
+  let defNature = $state("");
+  let roll = $state<"random" | "min" | "max">("random");
+
+  const WEATHER_OPTIONS = [
+    { value: "rain", label: "Rain" },
+    { value: "sun", label: "Sun" },
+    { value: "sand", label: "Sandstorm" },
+    { value: "snow", label: "Snow" },
+  ];
+
+  const TERRAIN_OPTIONS = [
+    { value: "electric", label: "Electric Terrain" },
+    { value: "grassy", label: "Grassy Terrain" },
+    { value: "psychic", label: "Psychic Terrain" },
+    { value: "misty", label: "Misty Terrain" },
+  ];
+
+  const ROLL_OPTIONS = [
+    { value: "random", label: "Random roll (85–100%)" },
+    { value: "min", label: "Min roll (85%)" },
+    { value: "max", label: "Max roll (100%)" },
+  ];
 
   type CalcItem = {
     label: string;
@@ -127,6 +155,11 @@
     const de = page.url.searchParams.get("de");
     const it = page.url.searchParams.get("it");
     const dt = page.url.searchParams.get("dt");
+    const w = page.url.searchParams.get("w");
+    const ter = page.url.searchParams.get("ter");
+    const c = page.url.searchParams.get("c");
+    const dn = page.url.searchParams.get("dn");
+    const r = page.url.searchParams.get("r");
     if (al) attLevel = clampInt(al, 1, 100, 50);
     else attLevel = 50;
     if (dl) defLevel = clampInt(dl, 1, 100, 50);
@@ -143,6 +176,11 @@
     else defEvs = zeroEvs();
     attItem = it ?? "";
     defItem = dt ?? "";
+    weather = w && WEATHER_OPTIONS.some((o) => o.value === w) ? w : "";
+    terrain = ter && TERRAIN_OPTIONS.some((o) => o.value === ter) ? ter : "";
+    crit = c === "1";
+    defNature = dn && dn in NATURE_STAT_MODS ? dn : "";
+    roll = r === "min" || r === "max" ? r : "random";
     if (!att && !def) {
       attacker = null;
       defender = null;
@@ -177,6 +215,11 @@
     if (evTotal(defEvs) > 0) params.set("de", evsEncode(defEvs));
     if (attItem) params.set("it", attItem);
     if (defItem) params.set("dt", defItem);
+    if (weather) params.set("w", weather);
+    if (terrain) params.set("ter", terrain);
+    if (crit) params.set("c", "1");
+    if (defNature) params.set("dn", defNature);
+    if (roll !== "random") params.set("r", roll);
     sync.push(params);
   }
 
@@ -247,29 +290,6 @@
     syncUrl();
   }
 
-  function statValue(
-    base: number,
-    level: number,
-    opts: {
-      iv?: number;
-      ev?: number;
-      hp?: boolean;
-      nature?: { up: string | null; down: string | null } | null;
-      statKey?: string;
-    } = {},
-  ) {
-    const { iv = 31, ev = 0, hp = false, nature = null, statKey = "" } = opts;
-    const evQuotient = Math.floor(ev / 4);
-    let value = hp
-      ? Math.floor(((2 * base + iv + evQuotient) * level) / 100) + level + 10
-      : Math.floor(((2 * base + iv + evQuotient) * level) / 100 + 5);
-    if (nature && statKey) {
-      if (nature.up === statKey) value = Math.floor(value * 1.1);
-      else if (nature.down === statKey) value = Math.floor(value * 0.9);
-    }
-    return value;
-  }
-
   function setAttEv(key: keyof EvSpread, val: number) {
     attEvs = setEvValue(attEvs, key, val);
     syncUrl();
@@ -334,7 +354,25 @@
         def: number;
         hp: number;
         ko: string;
+        critRange: { min: number; max: number } | null;
+        conditions: string[];
       };
+
+  function weatherMult(moveType: string): number {
+    if (weather === "rain")
+      return moveType === "water" ? 1.5 : moveType === "fire" ? 0.5 : 1;
+    if (weather === "sun")
+      return moveType === "fire" ? 1.5 : moveType === "water" ? 0.5 : 1;
+    return 1;
+  }
+
+  function terrainMult(moveType: string): number {
+    if (terrain === "electric" && moveType === "electric") return 1.3;
+    if (terrain === "grassy" && moveType === "grass") return 1.3;
+    if (terrain === "psychic" && moveType === "psychic") return 1.3;
+    if (terrain === "misty" && moveType === "dragon") return 0.5;
+    return 1;
+  }
 
   function computeMove(move: any): DamageResult | null {
     if (!attacker || !defender) return null;
@@ -364,10 +402,12 @@
       nature,
       statKey: atkKey,
     });
+    const defNatureMods = defNature ? NATURE_STAT_MODS[defNature] : null;
     const def = statValue(baseDef, defLevel, {
       iv: defIv,
       ev: defEv,
-      nature: null,
+      nature: defNatureMods,
+      statKey: defKey,
     });
     const hp = statValue(baseHp, defLevel, {
       iv: defIv,
@@ -375,6 +415,16 @@
       hp: true,
       nature: null,
     });
+
+    // Sand boosts Rock SpD, snow boosts Ice Def (defender-typed env bonuses).
+    // Gen VII+ critical hits ignore those boosts, so crits compute against
+    // the base defense (items still apply — crits don't ignore items).
+    const envDefMult =
+      (weather === "sand" && isSpecial && defender.types.includes("rock")) ||
+      (weather === "snow" && !isSpecial && defender.types.includes("ice"))
+        ? 1.5
+        : 1;
+    const baseEffectiveDef = Math.floor(def * defenseItemMult(isSpecial));
 
     let effectiveness = 1;
     for (const dt of defender.types) {
@@ -384,18 +434,43 @@
 
     const stab = attacker.types.includes(move.type);
 
-    let { min, max } = calculateDamage({
-      level: attLevel,
-      power: move.power,
-      attack: atk,
-      defense: Math.floor(def * defenseItemMult(isSpecial)),
-      stab,
-      typeEffectiveness: effectiveness,
-      isCritical: false,
-    });
-    const itemMult = attackItemMult(effectiveness, isSpecial, move.type);
-    min = Math.floor(min * itemMult);
-    max = Math.floor(max * itemMult);
+    const wm = weatherMult(move.type);
+    const tm = terrainMult(move.type);
+
+    function calc(isCritical: boolean) {
+      let { min, max } = calculateDamage({
+        level: attLevel,
+        power: move.power,
+        attack: atk,
+        defense: isCritical
+          ? baseEffectiveDef
+          : Math.floor(baseEffectiveDef * envDefMult),
+        stab,
+        typeEffectiveness: effectiveness,
+        isCritical,
+      });
+      const itemMult = attackItemMult(effectiveness, isSpecial, move.type);
+      min = Math.floor(min * itemMult * wm * tm);
+      max = Math.floor(max * itemMult * wm * tm);
+      return { min, max };
+    }
+
+    const { min, max } = calc(crit);
+    const critRange = crit ? null : calc(true);
+    const ko = estimateKO(min, max, hp);
+
+    const conditions: string[] = [];
+    if (weather)
+      conditions.push(
+        WEATHER_OPTIONS.find((o) => o.value === weather)?.label ?? weather,
+      );
+    if (terrain)
+      conditions.push(
+        TERRAIN_OPTIONS.find((o) => o.value === terrain)?.label ?? terrain,
+      );
+    if (crit) conditions.push("Critical hit");
+    if (roll !== "random")
+      conditions.push(roll === "min" ? "Min roll" : "Max roll");
 
     return {
       min,
@@ -407,9 +482,11 @@
       stab,
       isSpecial,
       atk,
-      def: Math.floor(def * defenseItemMult(isSpecial)),
+      def: Math.floor(baseEffectiveDef * envDefMult),
       hp,
-      ko: estimateKO(min, max, hp),
+      ko,
+      critRange,
+      conditions,
       noDamage: false as const,
     };
   }
@@ -565,10 +642,7 @@
                 syncUrl();
               }}
               placeholder="Neutral nature"
-              options={NATURES.map((n) => ({
-                value: n,
-                meta: NATURES_MODIFIERS[n],
-              }))}
+              options={NATURE_OPTIONS}
             />
             <Dropdown
               selected={attItem}
@@ -687,6 +761,21 @@
             options={DEFENSE_ITEMS.map((i) => ({ value: i.label }))}
           />
         </div>
+        <div class="mb-3 max-w-xs">
+          <Dropdown
+            selected={defNature}
+            onselect={(n) => {
+              defNature = n;
+              syncUrl();
+            }}
+            onclear={() => {
+              defNature = "";
+              syncUrl();
+            }}
+            placeholder="Neutral nature (defender)"
+            options={NATURE_OPTIONS}
+          />
+        </div>
         <div class="mb-3">
           <EVInput
             evs={defEvs}
@@ -734,6 +823,83 @@
       {/if}
     </div>
   </div>
+
+  {#if attacker && defender}
+    <div class="panel mb-6">
+      <h2 class="mb-3 text-xs font-bold tracking-wider text-white/40 uppercase">
+        Conditions
+      </h2>
+      <div class="flex flex-wrap items-end gap-3">
+        <Dropdown
+          selected={weather}
+          onselect={(w) => {
+            weather = w;
+            syncUrl();
+          }}
+          onclear={() => {
+            weather = "";
+            syncUrl();
+          }}
+          placeholder="No weather"
+          options={WEATHER_OPTIONS.map((o) => ({
+            value: o.value,
+            label: o.label,
+          }))}
+        />
+        <Dropdown
+          selected={terrain}
+          onselect={(t) => {
+            terrain = t;
+            syncUrl();
+          }}
+          onclear={() => {
+            terrain = "";
+            syncUrl();
+          }}
+          placeholder="No terrain"
+          options={TERRAIN_OPTIONS.map((o) => ({
+            value: o.value,
+            label: o.label,
+          }))}
+        />
+        <Dropdown
+          selected={roll}
+          onselect={(r) => {
+            roll = r as typeof roll;
+            syncUrl();
+          }}
+          onclear={() => {
+            roll = "random";
+            syncUrl();
+          }}
+          placeholder="Random roll"
+          options={ROLL_OPTIONS.map((o) => ({
+            value: o.value,
+            label: o.label,
+          }))}
+        />
+        <label
+          class="flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/60"
+        >
+          <input
+            type="checkbox"
+            checked={crit}
+            onchange={(e) => {
+              crit = e.currentTarget.checked;
+              syncUrl();
+            }}
+            class="accent-accent h-3.5 w-3.5"
+          />
+          Critical hit (×1.5)
+        </label>
+      </div>
+      {#if damageResult && !damageResult.noDamage && damageResult.conditions.length > 0}
+        <p class="mt-3 text-[11px] text-white/40">
+          Conditions: {damageResult.conditions.join(" · ")}
+        </p>
+      {/if}
+    </div>
+  {/if}
 
   {#if !attacker || !defender}
     <EmptyState
@@ -801,11 +967,21 @@
           ></div>
         </div>
         <div class="mt-3 text-center text-2xl font-black">
-          {damageResult.min} – {damageResult.max}
+          {roll === "max"
+            ? damageResult.max
+            : roll === "min"
+              ? damageResult.min
+              : `${damageResult.min} – ${damageResult.max}`}
           <span class="text-sm font-normal text-white/40"
             >/ {damageResult.hp} HP</span
           >
         </div>
+        {#if damageResult.critRange && !crit}
+          <p class="mt-2 text-center text-xs text-white/40">
+            With a critical hit: {damageResult.critRange.min} – {damageResult
+              .critRange.max}
+          </p>
+        {/if}
       </div>
 
       <div class="grid grid-cols-2 gap-3 md:grid-cols-3">

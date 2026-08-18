@@ -121,6 +121,11 @@ export function evTotal(evs: EvSpread): number {
   return evs.hp + evs.atk + evs.def + evs.spa + evs.spd + evs.spe;
 }
 
+/** "hp/atk/def/spa/spd/spe" display line, e.g. `252/0/4/0/0/252`. */
+export function evsLine(evs: EvSpread): string {
+  return `${evs.hp}/${evs.atk}/${evs.def}/${evs.spa}/${evs.spd}/${evs.spe}`;
+}
+
 /** "hp.atk.def.spa.spd.spe" URL encoding ("0" when all zero). */
 export function evsEncode(evs: EvSpread): string {
   const v = EV_STATS.map((s) => evs[s.key]);

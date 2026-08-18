@@ -5,6 +5,7 @@
   import { getPokemonDetail, getPokemonMoves, getSpeciesIds } from "$lib/api";
   import {
     TYPE_COLORS,
+    REGIONAL_DEX_LABELS,
     formLabel,
     formatName,
     formatId,
@@ -360,6 +361,20 @@
                 class="ml-2 text-sm"
                 style="color: var(--muted)">{pokemon.genus}</span
               >{/if}
+            {#if pokemon.pokedex_numbers.length > 0}
+              <div class="mt-2 flex flex-wrap justify-center gap-1.5">
+                {#each pokemon.pokedex_numbers as entry}
+                  <span
+                    class="rounded-full border px-2 py-0.5 text-[10px] font-bold whitespace-nowrap"
+                    style="border-color: var(--border); color: var(--muted)"
+                    title={`${entry.dex} Pokédex`}
+                    >{REGIONAL_DEX_LABELS[entry.dex] ?? formatName(entry.dex)} #{String(
+                      entry.number,
+                    ).padStart(3, "0")}</span
+                  >
+                {/each}
+              </div>
+            {/if}
             <h1
               class="mt-1 text-4xl font-black md:text-5xl"
               style="color: var(--text)"

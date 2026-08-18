@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getMovesSlice, getMovesTotal } from "$lib/api";
+  import { getMovesSlice, getMovesTotal, getMoveLearners } from "$lib/api";
   import {
     ALL_TYPES,
     TYPE_COLORS,
@@ -12,6 +12,7 @@
   import FilterChip from "$lib/components/FilterChip.svelte";
   import Skeleton from "$lib/components/Skeleton.svelte";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
+  import LearnerList from "$lib/components/LearnerList.svelte";
   import { onMount } from "svelte";
 
   let moves = $state<MoveDetail[]>([]);
@@ -184,6 +185,14 @@
             >
               {m.effect}
             </p>{/if}
+          {#if m.learned_by_count != null && m.learned_by_count > 0}
+            <LearnerList
+              name={m.name}
+              count={m.learned_by_count}
+              label={(n) => `Learned by ${n}`}
+              fetchNames={getMoveLearners}
+            />
+          {/if}
         </div>
       {/each}
       {#if loadingMore}

@@ -45,6 +45,7 @@
   let favorites = $state<FavEntry[]>([]);
   let recent = $state<ReturnType<typeof getRecent>>([]);
   let showFavoritesOnly = $state(false);
+  let special = $state<"legendary" | "mythical" | "">("");
   let expandedId = $state<number | null>(null);
 
   const sync = pageUrlSync("/");
@@ -102,6 +103,7 @@
     if (!isHome) return;
     if (untrack(() => page.url.searchParams.get("type"))) return;
     if (untrack(() => page.url.searchParams.get("gen"))) return;
+    if (untrack(() => page.url.searchParams.get("special"))) return;
     const sq = untrack(() => searchQuery);
     const sf = untrack(() => showFavoritesOnly);
     if (sq || sf) {
@@ -109,6 +111,7 @@
       showFavoritesOnly = false;
     }
     if (untrack(() => activeGens.length > 0)) activeGens = [];
+    if (untrack(() => special)) special = "";
   });
 
   let lastTypeParam = "";
@@ -157,6 +160,23 @@
     sync.pushMerged(params, next.length ? [] : ["gen"]);
   }
 
+  /** Sync the legendary/mythical filter into the URL (`?special=legendary`). */
+  function setSpecial(next: "legendary" | "mythical" | "") {
+    special = next;
+    const params = new URLSearchParams();
+    if (next) params.set("special", next);
+    else sync.clearPageState();
+    sync.pushMerged(params, next ? [] : ["special"]);
+  }
+
+  let lastSpecialParam = "";
+  $effect(() => {
+    const spParam = page.url.searchParams.get("special") ?? "";
+    if (spParam === lastSpecialParam) return;
+    lastSpecialParam = spParam;
+    special = spParam === "legendary" || spParam === "mythical" ? spParam : "";
+  });
+
   function toggleType(t: string) {
     const sel = activeTypes.includes(t);
     setTypes(sel ? activeTypes.filter((x) => x !== t) : [...activeTypes, t]);
@@ -186,13 +206,19 @@
       gens?: string[];
       search?: string;
       favs?: boolean;
+      special?: "legendary" | "mythical" | "";
     },
   ): any[] {
-    const { types, gens, search, favs } = opts;
+    const { types, gens, search, favs, special } = opts;
     let result = list;
     if (favs) {
       const favIds = new Set(favorites.map((f) => f.id));
       result = result.filter((p) => favIds.has(p.id));
+    }
+    if (special === "legendary") {
+      result = result.filter((p) => p.is_legendary);
+    } else if (special === "mythical") {
+      result = result.filter((p) => p.is_mythical);
     }
     if (types && types.length > 0) {
       result = result.filter((p) => types.every((t) => p.types.includes(t)));
@@ -221,6 +247,7 @@
       gens: activeGens,
       search: searchQuery,
       favs: showFavoritesOnly,
+      special,
     })) {
       for (const t of p.types ?? []) avail.add(t);
     }
@@ -234,6 +261,7 @@
       types: activeTypes,
       search: searchQuery,
       favs: showFavoritesOnly,
+      special,
     })) {
       avail.add(p.gen);
     }
@@ -246,6 +274,7 @@
       gens: activeGens,
       search: searchQuery,
       favs: showFavoritesOnly,
+      special,
     });
     const sorted = [...result];
     if (sortBy === "id-asc") sorted.sort((a, b) => a.id - b.id);
@@ -450,6 +479,31 @@
             />
           {/each}
         </div>
+        <div class="flex flex-wrap gap-1.5">
+          <FilterChip
+            label="All"
+            active={special === ""}
+            count={special !== "" ? 1 : undefined}
+            onclick={() => setSpecial("")}
+          />
+          <FilterChip
+            label="Legendary"
+            active={special === "legendary"}
+            count={loadPhase === "ready"
+              ? allPokemon.filter((p) => p.is_legendary).length
+              : undefined}
+            onclick={() =>
+              setSpecial(special === "legendary" ? "" : "legendary")}
+          />
+          <FilterChip
+            label="Mythical"
+            active={special === "mythical"}
+            count={loadPhase === "ready"
+              ? allPokemon.filter((p) => p.is_mythical).length
+              : undefined}
+            onclick={() => setSpecial(special === "mythical" ? "" : "mythical")}
+          />
+        </div>
       </div>
     </div>
 
@@ -487,6 +541,7 @@
           searchQuery = "";
           setTypes([]);
           setGens([]);
+          setSpecial("");
           showFavoritesOnly = false;
         }}
       />

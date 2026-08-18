@@ -1,5 +1,6 @@
 import {
   TOTAL_POKEMON,
+  DEX_ORDER,
   artworkUrl,
   computeTypeEffectiveness,
   getGeneration,
@@ -56,7 +57,21 @@ function parseIdFromUrl(url: string): number {
 }
 
 async function fetchPokemonResource(name: string): Promise<any> {
-  const response = await fetch(`${API_BASE}/pokemon/${name}`);
+  let response = await fetch(`${API_BASE}/pokemon/${name}`);
+  if (!response.ok) {
+    // Some species have no /pokemon/{speciesName} resource — the default
+    // variety carries a different name (basculin → basculin-red-striped,
+    // basculegion → basculegion-male). Fall back to the default variety,
+    // mirroring the grid cache's fetchEntry behavior.
+    try {
+      const species = await fetchJson(`${API_BASE}/pokemon-species/${name}`);
+      const variety = species.varieties?.find((v: any) => v.is_default)?.pokemon
+        ?.name;
+      if (variety) {
+        response = await fetch(`${API_BASE}/pokemon/${variety}`);
+      }
+    } catch {}
+  }
   if (!response.ok) throw new Error("Pokemon not found");
   return response.json();
 }
@@ -294,6 +309,7 @@ async function fetchMoveDetail(name: string): Promise<MoveDetail | null> {
         effect?.effect ??
         flavor?.flavor_text?.replace(/[\n\f\r]/g, " ") ??
         null,
+      learned_by_count: md.learned_by_pokemon?.length ?? 0,
     };
     moveCache()[name] = detail;
     return detail;
@@ -318,7 +334,7 @@ async function fetchMoveDetails(
 // ── Move & ability detail caches (immutable data, validated by version only) ──
 
 const MOVE_CACHE_KEY = "pokeremote:move-cache";
-const MOVE_CACHE_VERSION = 3;
+const MOVE_CACHE_VERSION = 4;
 const ABILITY_CACHE_KEY = "pokeremote:ability-cache";
 const ABILITY_CACHE_VERSION = 2;
 
@@ -385,6 +401,35 @@ let _autocompleteCache: {
   results: { name: string; id: number }[];
 } | null = null;
 let _speciesIdsCache: number[] | null = null;
+
+// ── Reverse lookups (move → learners, ability → Pokémon) ────────────────────
+// The learner name lists are large, so they're cached in memory only — the
+// persisted move/ability caches keep just the counts.
+
+const _moveLearnersCache = new Map<string, string[]>();
+
+/** API names of every Pokémon that learns the move (fetched on demand). Errors propagate so callers can show a failure state. */
+export async function getMoveLearners(name: string): Promise<string[]> {
+  const cached = _moveLearnersCache.get(name);
+  if (cached) return cached;
+  const md = await fetchJson(`${API_BASE}/move/${name}`);
+  const names = md.learned_by_pokemon?.map((p: any) => p.name) ?? [];
+  _moveLearnersCache.set(name, names);
+  return names;
+}
+
+const _abilityPokemonCache = new Map<string, string[]>();
+
+/** API names of every Pokémon that has the ability (fetched on demand). Errors propagate so callers can show a failure state. */
+export async function getAbilityPokemon(name: string): Promise<string[]> {
+  const cached = _abilityPokemonCache.get(name);
+  if (cached) return cached;
+  const ad = await fetchJson(`${API_BASE}/ability/${name}`);
+  const names =
+    ad.pokemon?.map((p: any) => p.pokemon?.name).filter(Boolean) ?? [];
+  _abilityPokemonCache.set(name, names);
+  return names;
+}
 
 const SPECIES_IDS_CACHE_KEY = "pokeremote:species-ids";
 const SPECIES_IDS_CACHE_VERSION = 1;
@@ -515,6 +560,17 @@ const fetchPokemonDetail = async (name: string): Promise<PokemonDetail> => {
             image: artworkUrl(data.id),
           },
         ],
+    pokedex_numbers: ((species?.pokedex_numbers ?? []) as any[])
+      .map((p: any) => ({
+        dex: p.pokedex?.name ?? "",
+        number: p.entry_number,
+      }))
+      .filter((e) => e.dex && e.dex !== "national")
+      .sort((a, b) => {
+        const ia = DEX_ORDER.indexOf(a.dex);
+        const ib = DEX_ORDER.indexOf(b.dex);
+        return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+      }),
   } as PokemonDetail;
 };
 
@@ -927,6 +983,8 @@ interface CachedPokemonSummary {
   form_count: number;
   forms: PokemonFormSummary[];
   gen: string;
+  is_legendary: boolean;
+  is_mythical: boolean;
 }
 
 interface GridCache {
@@ -936,7 +994,7 @@ interface GridCache {
 }
 
 const GRID_CACHE_KEY = "pokeremote:grid-cache";
-const GRID_CACHE_VERSION = 2;
+const GRID_CACHE_VERSION = 3;
 
 export async function getAllPokemonSummaries(
   onProgress?: (done: number, total: number) => void,
@@ -1015,6 +1073,8 @@ async function buildGridCache(
         form_count: forms.length,
         forms,
         gen: getGeneration(speciesId),
+        is_legendary: speciesData.is_legendary ?? false,
+        is_mythical: speciesData.is_mythical ?? false,
       } as CachedPokemonSummary;
     } catch {
       return {
@@ -1032,6 +1092,8 @@ async function buildGridCache(
           },
         ],
         gen: getGeneration(speciesId),
+        is_legendary: false,
+        is_mythical: false,
       } as CachedPokemonSummary;
     } finally {
       done++;

@@ -1,10 +1,15 @@
 <script lang="ts">
-  import { getAllAbilities, type AbilityEntry } from "$lib/api";
+  import {
+    getAllAbilities,
+    getAbilityPokemon,
+    type AbilityEntry,
+  } from "$lib/api";
   import { formatName, generationLabel, GEN_COLORS } from "$lib/pokemon-types";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import SearchInput from "$lib/components/SearchInput.svelte";
   import FilterChip from "$lib/components/FilterChip.svelte";
   import Skeleton from "$lib/components/Skeleton.svelte";
+  import LearnerList from "$lib/components/LearnerList.svelte";
   import { onMount } from "svelte";
 
   let abilities = $state<AbilityEntry[]>([]);
@@ -103,10 +108,12 @@
                   >
                 {/if}
               {/if}
-              <span
-                class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 font-bold text-white/60"
-                >{a.pokemon_count} Pokémon</span
-              >
+              <LearnerList
+                name={a.name}
+                count={a.pokemon_count}
+                label={(n) => `${n} Pokémon`}
+                fetchNames={getAbilityPokemon}
+              />
             </div>
           </div>
           {#if a.effect}

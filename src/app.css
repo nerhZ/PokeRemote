@@ -154,24 +154,6 @@
     color: var(--text);
   }
 
-  .tooltip-content {
-    visibility: hidden;
-    opacity: 0;
-    transition: opacity 0.15s ease;
-  }
-
-  .tooltip-host:hover > .tooltip-content,
-  .tooltip-host:focus-within > .tooltip-content,
-  .tooltip-host.pinned > .tooltip-content {
-    visibility: visible;
-    opacity: 1;
-  }
-
-  .tooltip-host:has(.tooltip-host:hover) > .tooltip-content {
-    visibility: hidden;
-    opacity: 0;
-  }
-
   .nav-link {
     @apply rounded-lg px-3 py-1.5 text-xs font-semibold no-underline transition-all;
     color: var(--muted);
@@ -325,7 +307,8 @@
   border-color: var(--border);
 }
 
-[data-theme="light"] .placeholder-white\/30::placeholder {
+[data-theme="light"] .placeholder-white\/30::placeholder,
+[data-theme="light"] .placeholder-white\/25::placeholder {
   color: var(--muted) !important;
 }
 
