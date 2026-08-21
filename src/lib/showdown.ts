@@ -70,7 +70,7 @@ function slugify(raw: string): string {
 /**
  * Normalize a Showdown species token ("Alolan Raichu", "Ting-Lu", "Nidoran♀",
  * "Indeedee-M", "Zygarde-10%") to the PokeAPI name. Unknown tokens return a
- * best-effort slug — callers must validate against the autocomplete list.
+ * best-effort slug; callers must validate against the autocomplete list.
  */
 export function showdownNameToApi(raw: string): string {
   let s = raw.trim();
@@ -223,7 +223,7 @@ export function formatShowdownSet(opts: {
   const { name, moves, ability, nature, evs } = opts;
   const lines = [name];
   if (ability) lines.push(`Ability: ${ability}`);
-  // EV_STATS follows STAT_DEFS order — the order Showdown writes EV lines in.
+  // EV_STATS follows STAT_DEFS order, which matches Showdown's EV line order.
   const evParts = EV_STATS.filter((s) => (evs[s.key] ?? 0) > 0).map(
     (s) => `${evs[s.key]} ${s.label}`,
   );

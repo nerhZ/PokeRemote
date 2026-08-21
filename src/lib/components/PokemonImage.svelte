@@ -11,7 +11,7 @@
     lazy = true,
   }: {
     src: string;
-    /** Pokemon id — when provided, the component honors global sprite mode
+    /** Pokemon id. When provided, the component honors global sprite mode
         internally (animated → classic sprite → artwork fallback). */
     id?: number;
     alt?: string;

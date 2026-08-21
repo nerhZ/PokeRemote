@@ -70,7 +70,7 @@ function memoizedNameList(
 async function fetchPokemonResource(name: string): Promise<any> {
   let response = await fetch(`${API_BASE}/pokemon/${name}`);
   if (!response.ok) {
-    // Some species have no /pokemon/{speciesName} resource — the default
+    // Some species have no /pokemon/{speciesName} resource; the default
     // variety carries a different name (basculin → basculin-red-striped,
     // basculegion → basculegion-male). Fall back to the default variety,
     // mirroring the grid cache's fetchEntry behavior.
@@ -427,7 +427,7 @@ let _autocompleteCache: {
 let _speciesIdsCache: number[] | null = null;
 
 // ── Reverse lookups (move → learners, ability → Pokémon) ────────────────────
-// The learner name lists are large, so they're cached in memory only — the
+// The learner name lists are large, so they're cached in memory only; the
 // persisted move/ability caches keep just the counts.
 
 /** Memoized name-list lookup keyed by resource name (memory only). */
@@ -530,7 +530,7 @@ const fetchPokemonDetail = async (name: string): Promise<PokemonDetail> => {
 
   // Mirror the evolution chain to the viewed form's region (e.g. alolan rattata
   // shows rattata-alola → raticate-alola) where those variants exist. The region
-  // is detected from the pokemon resource name — regional forms point at the
+  // is detected from the pokemon resource name. Regional forms point at the
   // base species, so speciesName alone never carries the suffix. Region names
   // can appear in any segment (e.g. tauros-paldea-combat-breed).
   const region =
@@ -777,7 +777,7 @@ export const getStatRankings = async (
       cached.pokemonCount,
       async (pokemonCount) => {
         const fresh = await rebuildRankings(pokemonCount, onProgress);
-        // Never persist an empty result, which would otherwise serve as a
+        // Never persist an empty result; it would otherwise come back as a
         // permanent "No data" cache.
         if (Object.values(fresh).every((list) => list.length === 0))
           return null;
@@ -791,7 +791,7 @@ export const getStatRankings = async (
   const count = pokemonCount || TOTAL_POKEMON;
   const fresh = await rebuildRankings(count, onProgress);
 
-  // Never persist an empty result, which would otherwise serve as a
+  // Never persist an empty result; it would otherwise come back as a
   // permanent "No data" cache.
   const rebuildEmpty = Object.values(fresh).every((list) => list.length === 0);
   if (!rebuildEmpty) {
@@ -930,7 +930,7 @@ export const getAutocompleteList = async (): Promise<{
   if (data.results.length > 0) {
     _autocompleteCache = data;
   } else {
-    // transient failure — don't cache the empty result; allow a retry next call
+    // transient failure, so don't cache the empty result; allow a retry next call
     _autocompletePromise = null;
   }
   return data;
@@ -1006,7 +1006,7 @@ export const getItemsList = async ({
   };
 };
 
-// ── Grid cache — full species preload ─────────────────────────────────────────
+// ── Grid cache (full species preload) ────────────────────────────────────────
 
 interface CachedPokemonSummary {
   name: string;
@@ -1036,7 +1036,7 @@ export async function getAllPokemonSummaries(
   if (cached) {
     // Serve the cached grid immediately (no network round-trip before the
     // grid paints). Validate the species count in the background and rebuild
-    // the cache only when it changed — or when offline, keep what we have.
+    // the cache only when it changed; when offline, keep what we have.
     validateInBackground(
       GRID_CACHE_KEY,
       GRID_CACHE_VERSION,
@@ -1087,8 +1087,8 @@ async function buildGridCache(
       const defaultForm = forms.find((f) => f.is_default) || forms[0];
 
       // Species like basculin/pumpkaboo/minior have no `/pokemon/{speciesName}`
-      // resource — their default variety carries the name (basculin-red-striped)
-      // — so that fetch 404s. Fall back to the default form's resource.
+      // resource; their default variety carries the name (basculin-red-striped),
+      // so that fetch 404s. Fall back to the default form's resource.
       const pokeName = defaultForm?.name || s.name;
       const pokeData =
         pokeData0 ??
@@ -1122,7 +1122,7 @@ async function buildGridCache(
       } as CachedPokemonSummary;
     } finally {
       done++;
-      // Retried entries can push `done` past `total` — cap it so the
+      // Retried entries can push `done` past `total`; cap it so the
       // progress bar never exceeds 100%.
       onProgress?.(Math.min(done, total), total);
     }
@@ -1132,7 +1132,7 @@ async function buildGridCache(
   // Fire the whole catalog in one parallel burst: the browser multiplexes the
   // requests over the connection, and a single tail wait beats waiting on
   // each wave's slowest request. Historically a full burst tripped rate
-  // limits and dropped entries — the retry pass below recovers those.
+  // limits and dropped entries; the retry pass below recovers those.
   entries.push(...(await Promise.all(results.map(fetchEntry))));
 
   // Retry entries whose fetches failed (e.g. rate-limited) once, in waves.

@@ -29,7 +29,7 @@
   let destroyed = false;
 
   function measure() {
-    // fonts.ready can resolve after unmount — a stale measure must not
+    // fonts.ready can resolve after unmount; a stale measure must not
     // schedule another overflow check.
     if (destroyed) return;
     const header =
@@ -38,7 +38,7 @@
       document.querySelector("footer")?.getBoundingClientRect().height ?? 0;
     pageH = window.innerHeight - header - footer;
     onMeasure(pageH);
-    // Only the latest layout's overflow check may run — stale checks from a
+    // Only the latest layout's overflow check may run; stale checks from a
     // previous size would shrink the newly-fitted layout.
     cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(() => {

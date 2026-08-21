@@ -17,7 +17,7 @@
     rows?: number;
     class?: string;
     grid?: boolean;
-    /** Bare tiles without a wrapper grid — drop them into an existing grid so
+    /** Bare tiles without a wrapper grid; drop them into an existing grid so
         they flow into its partial last row instead of leaving holes. */
     tiles?: boolean;
     cols?: string;
@@ -44,7 +44,7 @@
   let activeCols = $state(1);
 
   // Track the column count for the current viewport so a partial final row can
-  // be filled in — loading grids never show holes (nor over-fill), matching
+  // be filled in; loading grids never show holes (nor over-fill), matching
   // the content grid's height exactly at every breakpoint.
   $effect(() => {
     if (!grid || tiles) {
@@ -59,7 +59,7 @@
       return;
     }
     // Ascending by breakpoint width: all queries are cumulative min-widths, so
-    // the last match is the widest tier — independent of cols string order.
+    // the last match is the widest tier, independent of cols string order.
     const mqls = colTiers.tiers
       .filter((t) => t.bp !== null)
       .sort((a, b) => BP_WIDTHS[a.bp!] - BP_WIDTHS[b.bp!])

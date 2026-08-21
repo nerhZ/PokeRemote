@@ -2,7 +2,7 @@
  * One-shot notification when the header's mobile search-bar collapse
  * animation finishes, so pages can defer heavy main-thread work (e.g. the
  * Pokédex catalog parse) until it has. The rAF loop is frame-count based,
- * so its real duration varies with refresh rate — a fixed delay would not.
+ * so its real duration varies with refresh rate; a fixed delay would not.
  */
 
 let running = false;

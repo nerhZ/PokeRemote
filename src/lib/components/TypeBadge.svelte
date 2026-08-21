@@ -15,7 +15,7 @@
     tooltip?: boolean;
     position?: "top" | "bottom";
     /** Make the badge a tab stop (tooltip opens on focus). Dense grids opt
-        out — thousands of tab stops would bury keyboard navigation. */
+        out; thousands of tab stops would bury keyboard navigation. */
     focusable?: boolean;
   } = $props();
 </script>
