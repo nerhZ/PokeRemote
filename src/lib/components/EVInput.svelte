@@ -1,5 +1,6 @@
 <script lang="ts">
   import { EV_STATS, evTotal, type EvSpread } from "$lib/storage";
+  import { clamp } from "$lib/utils";
 
   let {
     evs,
@@ -25,8 +26,7 @@
 
   function clampIv(raw: string, fallback: number): number {
     const v = parseInt(raw, 10);
-    if (Number.isNaN(v)) return fallback;
-    return Math.min(31, Math.max(0, v));
+    return Number.isNaN(v) ? fallback : clamp(v, 0, 31);
   }
 </script>
 

@@ -22,6 +22,7 @@
   } from "$lib/storage";
   import { backTarget } from "$lib/navigation";
   import { pageLoading } from "$lib/loading-state.svelte";
+  import { flash } from "$lib/utils";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import PokemonImage from "$lib/components/PokemonImage.svelte";
   import MoveTooltip from "$lib/components/MoveTooltip.svelte";
@@ -184,8 +185,7 @@
   let linkCopied = $state(false);
   function copyLink() {
     navigator.clipboard?.writeText(window.location.href);
-    linkCopied = true;
-    setTimeout(() => (linkCopied = false), 2000);
+    flash((v) => (linkCopied = v));
   }
 
   async function setTab(t: typeof tab) {

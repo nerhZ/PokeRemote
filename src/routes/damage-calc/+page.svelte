@@ -36,6 +36,7 @@
   import EVInput from "$lib/components/EVInput.svelte";
   import PokemonImage from "$lib/components/PokemonImage.svelte";
   import ClearButton from "$lib/components/ClearButton.svelte";
+  import { clamp } from "$lib/utils";
   import { onMount, untrack } from "svelte";
 
   let allNames: { name: string; id: number }[] = $state([]);
@@ -131,8 +132,7 @@
 
   function clampInt(raw: string, min: number, max: number, fallback: number) {
     const v = parseInt(raw, 10);
-    if (Number.isNaN(v)) return fallback;
-    return Math.min(max, Math.max(min, v));
+    return Number.isNaN(v) ? fallback : clamp(v, min, max);
   }
 
   const sync = pageUrlSync("/damage-calc");

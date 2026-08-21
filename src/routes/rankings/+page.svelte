@@ -11,7 +11,7 @@
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PokemonImage from "$lib/components/PokemonImage.svelte";
-  import Pokeball from "$lib/components/Pokeball.svelte";
+  import LoadProgress from "$lib/components/LoadProgress.svelte";
   import Skeleton from "$lib/components/Skeleton.svelte";
   import { onMount } from "svelte";
 
@@ -90,19 +90,11 @@
 
   {#if loading}
     {#if loadProgress.total > 0}
-      <div class="flex flex-col items-center justify-center py-20">
-        <Pokeball class="mb-8 h-24 w-24" spinning />
-        <p class="text-sm font-semibold" style="color: var(--text)">
-          Loading {loadProgress.done} / {loadProgress.total} Pokémon...
-        </p>
-        <div class="mt-4 h-1.5 w-64 overflow-hidden rounded-full bg-white/6">
-          <div
-            class="bg-accent h-full rounded-full transition-all duration-300"
-            style="width: {(loadProgress.done / (loadProgress.total || 1)) *
-              100}%"
-          ></div>
-        </div>
-      </div>
+      <LoadProgress
+        done={loadProgress.done}
+        total={loadProgress.total}
+        noun="Pokémon"
+      />
     {:else}
       <Skeleton rows={10} class="h-16" grid={false} />
     {/if}

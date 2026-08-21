@@ -1,5 +1,6 @@
 import { browser } from "$app/environment";
 import { STAT_DEFS } from "$lib/pokemon-types";
+import { clamp } from "$lib/utils";
 
 const FAV_KEY = "pokeremote:favorites";
 const RECENT_KEY = "pokeremote:recent";
@@ -137,7 +138,7 @@ export function evsDecode(raw: string): EvSpread {
   const v = raw.split(".").map(Number);
   const evs = zeroEvs();
   EV_STATS.forEach((s, i) => {
-    evs[s.key] = Math.min(252, Math.max(0, v[i] || 0));
+    evs[s.key] = clamp(v[i] || 0, 0, 252);
   });
   if (evTotal(evs) > 510) return zeroEvs();
   return evs;
@@ -149,7 +150,7 @@ export function setEvValue(
   key: keyof EvSpread,
   val: number,
 ): EvSpread {
-  const clamped = Math.min(252, Math.max(0, val));
+  const clamped = clamp(val, 0, 252);
   const otherTotal = evTotal(evs) - evs[key];
   const finalValue = Math.min(clamped, 510 - otherTotal);
   return { ...evs, [key]: Math.max(0, finalValue) };

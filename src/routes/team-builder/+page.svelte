@@ -51,6 +51,7 @@
   import Pokeball from "$lib/components/Pokeball.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import ClearButton from "$lib/components/ClearButton.svelte";
+  import { clamp, flash } from "$lib/utils";
   import { onMount } from "svelte";
 
   let allNames: { name: string; id: number }[] = $state([]);
@@ -71,9 +72,13 @@
   let metaCache = $state<
     Record<string, { moves: MoveDetail[]; abilities: AbilitySummary[] }>
   >({});
-  let sets = $state<
-    { moves: string[]; ability: string; nature: string; evs: EvSpread }[]
-  >([]);
+  type TeamSet = {
+    moves: string[];
+    ability: string;
+    nature: string;
+    evs: EvSpread;
+  };
+  let sets = $state<TeamSet[]>([]);
   let evWarning = $state("");
   let showImport = $state(false);
   let importText = $state("");
@@ -115,10 +120,36 @@
     if (editingIndex == null) return;
     const i = editingIndex;
     const s = sets[i] ?? initSet();
-    const clamped = Math.min(252, Math.max(0, val));
+    const clamped = clamp(val, 0, 252);
     const evs = setEvValue(s.evs, stat, val);
     evWarning = evs[stat] !== clamped ? "Total EVs cannot exceed 510" : "";
-    sets = sets.map((set, idx) => (idx === i ? { ...set, evs } : set));
+    updateSetAt(i, { evs });
+  }
+
+  /** Patch one team member's set immutably. */
+  function updateSetAt(i: number, patch: Partial<TeamSet>) {
+    sets = sets.map((set, idx) => (idx === i ? { ...set, ...patch } : set));
+  }
+
+  /** Fetch a species into the team (deduped by id), pad its set, and preload
+      its move/ability metadata. False when the detail fetch failed. */
+  async function addTeamMember(name: string): Promise<boolean> {
+    try {
+      const d = await getPokemonDetail(name);
+      if (!team.some((t) => t.id === d.id)) {
+        team = [...team, d];
+        while (sets.length < team.length) sets = [...sets, initSet()];
+      }
+    } catch {
+      return false;
+    }
+    if (!metaCache[name]) {
+      try {
+        const meta = await getPokemonMetadata(name);
+        metaCache[name] = { moves: meta.moves, abilities: meta.abilities };
+      } catch {}
+    }
+    return true;
   }
 
   async function editPokemon(i: number) {
@@ -149,26 +180,21 @@
 
   function pickMove(slot: number, name: string) {
     if (editingIndex == null) return;
-    const i = editingIndex;
-    sets = sets.map((set, idx) =>
-      idx === i
-        ? { ...set, moves: set.moves.map((m, j) => (j === slot ? name : m)) }
-        : set,
-    );
+    const s = sets[editingIndex];
+    if (!s) return;
+    updateSetAt(editingIndex, {
+      moves: s.moves.map((m, j) => (j === slot ? name : m)),
+    });
   }
 
   function pickAbility(name: string) {
     if (editingIndex == null) return;
-    sets = sets.map((set, idx) =>
-      idx === editingIndex ? { ...set, ability: name } : set,
-    );
+    updateSetAt(editingIndex, { ability: name });
   }
 
   function pickNature(name: string) {
     if (editingIndex == null) return;
-    sets = sets.map((set, idx) =>
-      idx === editingIndex ? { ...set, nature: name } : set,
-    );
+    updateSetAt(editingIndex, { nature: name });
   }
 
   function saveSet() {
@@ -188,19 +214,7 @@
     try {
       for (const n of names) {
         if (team.some((t) => t.name === n)) continue;
-        try {
-          const d = await getPokemonDetail(n);
-          if (!team.some((t) => t.id === d.id)) {
-            team = [...team, d];
-            while (sets.length < team.length) sets = [...sets, initSet()];
-          }
-        } catch {}
-        if (!metaCache[n]) {
-          try {
-            const meta = await getPokemonMetadata(n);
-            metaCache[n] = { moves: meta.moves, abilities: meta.abilities };
-          } catch {}
-        }
+        await addTeamMember(n);
       }
       while (sets.length < decoded.length)
         sets = [
@@ -250,12 +264,7 @@
 
   function decodeSets(raw: string) {
     const parts = raw.split(",");
-    const decoded: {
-      moves: string[];
-      ability: string;
-      nature: string;
-      evs: EvSpread;
-    }[] = [];
+    const decoded: TeamSet[] = [];
     for (const part of parts) {
       const [movesRaw, ability, nature, evsRaw] = part.split("~");
       decoded.push({
@@ -268,20 +277,31 @@
     return decoded;
   }
 
-  function hasSets() {
-    return sets.some(
-      (s) =>
-        s.moves.some((m) => m) || s.ability || s.nature || evTotal(s.evs) > 0,
+  /** Does a single set carry any user-chosen content? */
+  function setHasContent(s: TeamSet | undefined): boolean {
+    return (
+      !!s &&
+      (s.moves.some((m) => m) ||
+        !!s.ability ||
+        !!s.nature ||
+        evTotal(s.evs) > 0)
     );
   }
 
-  function syncUrl() {
+  function hasSets() {
+    return sets.some(setHasContent);
+  }
+
+  /** Current team + sets as share/query params. */
+  function buildParams(): URLSearchParams {
     const params = new URLSearchParams();
     if (team.length) params.set("p", team.map((t) => t.name).join(","));
-    if (hasSets()) {
-      params.set("s", encodeSets());
-    }
-    sync.push(params);
+    if (hasSets()) params.set("s", encodeSets());
+    return params;
+  }
+
+  function syncUrl() {
+    sync.push(buildParams());
   }
 
   async function addToTeam(name: string) {
@@ -320,13 +340,9 @@
     );
     syncUrl();
     const url = new URL(resolve("/team-builder"), window.location.origin);
-    url.searchParams.set("p", team.map((t) => t.name).join(","));
-    if (hasSets()) {
-      url.searchParams.set("s", encodeSets());
-    }
+    for (const [key, value] of buildParams()) url.searchParams.set(key, value);
     navigator.clipboard?.writeText(url.toString());
-    copied = true;
-    setTimeout(() => (copied = false), 2000);
+    flash((v) => (copied = v));
   }
 
   /** Pokémon Showdown team text built from the current team + sets. */
@@ -344,8 +360,7 @@
       })
       .join("\n\n");
     navigator.clipboard?.writeText(text);
-    showdownCopied = true;
-    setTimeout(() => (showdownCopied = false), 2000);
+    flash((v) => (showdownCopied = v));
   }
 
   /**
@@ -393,24 +408,7 @@
         const n = name!;
         if (team.length >= 6) break;
         if (team.some((t) => t.name === n)) continue;
-        try {
-          const d = await getPokemonDetail(n);
-          if (!team.some((t) => t.id === d.id)) {
-            team = [...team, d];
-            while (sets.length < team.length) sets = [...sets, initSet()];
-          }
-        } catch {
-          continue;
-        }
-        if (!metaCache[n]) {
-          try {
-            const meta = await getPokemonMetadata(n);
-            metaCache[n] = {
-              moves: meta.moves,
-              abilities: meta.abilities,
-            };
-          } catch {}
-        }
+        if (!(await addTeamMember(n))) continue;
       }
       const bySpecies = new Map(resolved.map((r) => [r.name!, r.set]));
       sets = sets.map((s, i) => {
@@ -580,12 +578,7 @@
       {#if team[i]}
         {@const p = team[i]}
         {@const color = typeColor(p.types)}
-        {@const hasSet =
-          sets[i] &&
-          (sets[i].moves.some((m) => m) ||
-            sets[i].ability ||
-            sets[i].nature ||
-            (sets[i].evs && evTotal(sets[i].evs) > 0))}
+        {@const hasSet = setHasContent(sets[i])}
         <div class="relative transition-all hover:-translate-y-1">
           <button
             type="button"

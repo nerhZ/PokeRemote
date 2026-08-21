@@ -2,7 +2,8 @@
 // Parses and formats the standard Showdown teambuilder text format
 // ("Name @ Item / Ability: / EVs: / Nature / - Move").
 
-import { STAT_DEFS } from "$lib/pokemon-types";
+import { NATURES } from "$lib/pokemon-types";
+import { EV_STATS } from "$lib/storage";
 
 export type ShowdownEvs = {
   hp?: number;
@@ -46,38 +47,10 @@ const SHOWDOWN_SPECIALS: Record<string, string> = {
 
 /** Showdown's EV line labels ("HP", "Atk", "SpA"…) → EvSpread keys. */
 const EV_LABELS: Record<string, keyof ShowdownEvs> = Object.fromEntries(
-  STAT_DEFS.map((s) => [s.shortLabel.toLowerCase(), s.evKey]),
+  EV_STATS.map((s) => [s.label.toLowerCase(), s.key]),
 ) as Record<string, keyof ShowdownEvs>;
 
-const NATURE_NAMES = new Set(
-  [
-    "Adamant",
-    "Bashful",
-    "Bold",
-    "Brave",
-    "Calm",
-    "Careful",
-    "Docile",
-    "Gentle",
-    "Hardy",
-    "Hasty",
-    "Impish",
-    "Jolly",
-    "Lax",
-    "Lonely",
-    "Mild",
-    "Modest",
-    "Naive",
-    "Naughty",
-    "Quiet",
-    "Quirky",
-    "Rash",
-    "Relaxed",
-    "Sassy",
-    "Serious",
-    "Timid",
-  ].map((n) => n.toLowerCase()),
-);
+const NATURE_NAMES = new Set(NATURES.map((n) => n.toLowerCase()));
 
 /** Strip accents, apostrophes, periods, colon and collapse whitespace. */
 function slugify(raw: string): string {
@@ -236,11 +209,6 @@ export function parseShowdownTeam(text: string): ShowdownSet[] {
   return sets.filter((s) => s.species.length > 0);
 }
 
-/** Showdown EV line labels in the order Showdown writes them. */
-const EV_LINE: { key: keyof ShowdownEvs; label: string }[] = STAT_DEFS.map(
-  (s) => ({ key: s.evKey, label: s.shortLabel }),
-);
-
 /**
  * Format one set as Showdown text. `name` is the PokeAPI name (importable as-is
  * by Showdown, whose IDs strip hyphens and case).
@@ -255,7 +223,8 @@ export function formatShowdownSet(opts: {
   const { name, moves, ability, nature, evs } = opts;
   const lines = [name];
   if (ability) lines.push(`Ability: ${ability}`);
-  const evParts = EV_LINE.filter((s) => (evs[s.key] ?? 0) > 0).map(
+  // EV_STATS follows STAT_DEFS order — the order Showdown writes EV lines in.
+  const evParts = EV_STATS.filter((s) => (evs[s.key] ?? 0) > 0).map(
     (s) => `${evs[s.key]} ${s.label}`,
   );
   if (evParts.length > 0) lines.push(`EVs: ${evParts.join(" / ")}`);

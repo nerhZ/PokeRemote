@@ -56,6 +56,17 @@ function parseIdFromUrl(url: string): number {
   return parseInt(url.split("/").filter(Boolean).pop() || "0", 10);
 }
 
+/** Memoized full name/id listing of an endpoint (fetched once per session). */
+function memoizedNameList(
+  endpoint: string,
+): () => Promise<{ name: string; id: number }[]> {
+  let cache: { name: string; id: number }[] | null = null;
+  return async () => {
+    cache ??= (await fetchNameIdList(endpoint)).results;
+    return cache;
+  };
+}
+
 async function fetchPokemonResource(name: string): Promise<any> {
   let response = await fetch(`${API_BASE}/pokemon/${name}`);
   if (!response.ok) {
@@ -76,16 +87,22 @@ async function fetchPokemonResource(name: string): Promise<any> {
   return response.json();
 }
 
+/** First English entry of a PokeAPI localized list. */
+function findEnglish(entries: any[] | undefined): any | undefined {
+  return entries?.find((e: any) => e.language.name === "en");
+}
+
+/** Strip the line breaks the API embeds in flavor/effect text. */
+function stripLineBreaks(text: string | null | undefined): string | null {
+  if (text == null) return null;
+  return text.replace(/[\n\f\r]/g, " ");
+}
+
 function extractFlavorText(species: any): string | null {
-  if (!species?.flavor_text_entries) return null;
-  const entry = species.flavor_text_entries.find(
-    (e: any) => e.language.name === "en",
+  const raw = stripLineBreaks(
+    findEnglish(species?.flavor_text_entries)?.flavor_text,
   );
-  if (!entry) return null;
-  return entry.flavor_text
-    .replace(/[\n\f\r]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return raw !== null ? raw.replace(/\s+/g, " ").trim() : null;
 }
 
 function extractGenus(species: any): string | null {
@@ -181,17 +198,12 @@ function applyRegionalForms(
 }
 
 function extractEnglishAbilityEffect(data: any): string | null {
-  const primary = data.effect_entries?.find(
-    (e: any) => e.language.name === "en",
-  );
-  const fallback = data.flavor_text_entries?.find(
-    (e: any) => e.language.name === "en",
-  );
-  const entry = primary || fallback;
+  const entry =
+    findEnglish(data.effect_entries) ?? findEnglish(data.flavor_text_entries);
   return (
     entry?.short_effect ||
     entry?.effect ||
-    entry?.flavor_text?.replace(/[\n\f\r]/g, " ") ||
+    stripLineBreaks(entry?.flavor_text) ||
     null
   );
 }
@@ -258,6 +270,11 @@ function mapVarieties(varieties: any[] | undefined): PokemonFormSummary[] {
   });
 }
 
+/** Stand-in form summary when no varieties are known for a species. */
+function defaultFormSummary(name: string, id: number): PokemonFormSummary {
+  return { name, id, is_default: true, image: artworkUrl(id) };
+}
+
 async function fetchItemDetail(url: string): Promise<ItemSummary | null> {
   try {
     const d = await fetchJson(url);
@@ -290,12 +307,8 @@ async function fetchMoveDetail(name: string): Promise<MoveDetail | null> {
   if (cached) return cached;
   try {
     const md = await fetchJson(`${API_BASE}/move/${name}`);
-    const effect = md.effect_entries?.find(
-      (e: any) => e.language.name === "en",
-    );
-    const flavor = md.flavor_text_entries?.find(
-      (e: any) => e.language.name === "en",
-    );
+    const effectEntry = findEnglish(md.effect_entries);
+    const flavorEntry = findEnglish(md.flavor_text_entries);
     const detail: MoveDetail = {
       name: md.name,
       type: md.type?.name ?? "???",
@@ -305,9 +318,9 @@ async function fetchMoveDetail(name: string): Promise<MoveDetail | null> {
       damage_class: md.damage_class?.name ?? "physical",
       effect:
         MOVE_EFFECT_FALLBACKS[name] ??
-        effect?.short_effect ??
-        effect?.effect ??
-        flavor?.flavor_text?.replace(/[\n\f\r]/g, " ") ??
+        effectEntry?.short_effect ??
+        effectEntry?.effect ??
+        stripLineBreaks(flavorEntry?.flavor_text) ??
         null,
       learned_by_count: md.learned_by_pokemon?.length ?? 0,
     };
@@ -318,15 +331,26 @@ async function fetchMoveDetail(name: string): Promise<MoveDetail | null> {
   }
 }
 
+/** Run an async mapper over items in sequential waves of `size` concurrent requests. */
+async function inBatches<T, R>(
+  items: T[],
+  size: number,
+  fn: (item: T) => Promise<R>,
+  onBatch?: (done: number, total: number) => void,
+): Promise<R[]> {
+  const out: R[] = [];
+  for (let i = 0; i < items.length; i += size) {
+    const batch = items.slice(i, i + size);
+    out.push(...(await Promise.all(batch.map(fn))));
+    onBatch?.(Math.min(i + batch.length, items.length), items.length);
+  }
+  return out;
+}
+
 async function fetchMoveDetails(
   names: string[],
 ): Promise<(MoveDetail | null)[]> {
-  const results: (MoveDetail | null)[] = [];
-  for (let i = 0; i < names.length; i += 20) {
-    const batch = names.slice(i, i + 20);
-    const fetched = await Promise.all(batch.map(fetchMoveDetail));
-    results.push(...fetched);
-  }
+  const results = await inBatches(names, 20, fetchMoveDetail);
   persistMoveCache();
   return results;
 }
@@ -406,30 +430,31 @@ let _speciesIdsCache: number[] | null = null;
 // The learner name lists are large, so they're cached in memory only — the
 // persisted move/ability caches keep just the counts.
 
-const _moveLearnersCache = new Map<string, string[]>();
+/** Memoized name-list lookup keyed by resource name (memory only). */
+function memoizedNameLookup(
+  fetchNames: (name: string) => Promise<string[]>,
+): (name: string) => Promise<string[]> {
+  const cache = new Map<string, string[]>();
+  return async (name) => {
+    const cached = cache.get(name);
+    if (cached) return cached;
+    const names = await fetchNames(name);
+    cache.set(name, names);
+    return names;
+  };
+}
 
 /** API names of every Pokémon that learns the move (fetched on demand). Errors propagate so callers can show a failure state. */
-export async function getMoveLearners(name: string): Promise<string[]> {
-  const cached = _moveLearnersCache.get(name);
-  if (cached) return cached;
+export const getMoveLearners = memoizedNameLookup(async (name) => {
   const md = await fetchJson(`${API_BASE}/move/${name}`);
-  const names = md.learned_by_pokemon?.map((p: any) => p.name) ?? [];
-  _moveLearnersCache.set(name, names);
-  return names;
-}
-
-const _abilityPokemonCache = new Map<string, string[]>();
+  return md.learned_by_pokemon?.map((p: any) => p.name) ?? [];
+});
 
 /** API names of every Pokémon that has the ability (fetched on demand). Errors propagate so callers can show a failure state. */
-export async function getAbilityPokemon(name: string): Promise<string[]> {
-  const cached = _abilityPokemonCache.get(name);
-  if (cached) return cached;
+export const getAbilityPokemon = memoizedNameLookup(async (name) => {
   const ad = await fetchJson(`${API_BASE}/ability/${name}`);
-  const names =
-    ad.pokemon?.map((p: any) => p.pokemon?.name).filter(Boolean) ?? [];
-  _abilityPokemonCache.set(name, names);
-  return names;
-}
+  return ad.pokemon?.map((p: any) => p.pokemon?.name).filter(Boolean) ?? [];
+});
 
 const SPECIES_IDS_CACHE_KEY = "pokeremote:species-ids";
 const SPECIES_IDS_CACHE_VERSION = 1;
@@ -550,16 +575,7 @@ const fetchPokemonDetail = async (name: string): Promise<PokemonDetail> => {
     evolution,
     type_effectiveness: computeTypeEffectiveness(types),
     locations,
-    forms: forms.length
-      ? forms
-      : [
-          {
-            name: data.name,
-            id: data.id,
-            is_default: true,
-            image: artworkUrl(data.id),
-          },
-        ],
+    forms: forms.length ? forms : [defaultFormSummary(data.name, data.id)],
     pokedex_numbers: ((species?.pokedex_numbers ?? []) as any[])
       .map((p: any) => ({
         dex: p.pokedex?.name ?? "",
@@ -718,6 +734,29 @@ function writeCache(
   } catch {}
 }
 
+/**
+ * Background validation for a serve-from-cache payload: compare the count
+ * recorded with the cache against the live resource count and let `refresh`
+ * rebuild + rewrite the cache when it changed. Offline (null count) or an
+ * unchanged count leaves the cache untouched.
+ */
+function validateInBackground(
+  key: string,
+  version: number,
+  endpoint: string,
+  cachedCount: number,
+  refresh: (liveCount: number) => Promise<Record<string, unknown> | null>,
+) {
+  void (async () => {
+    const count = await fetchResourceCount(endpoint);
+    if (count === null || cachedCount === count) return;
+    try {
+      const payload = await refresh(count);
+      if (payload) writeCache(key, version, payload);
+    } catch {}
+  })();
+}
+
 export const getStatRankings = async (
   onProgress?: (done: number, total: number) => void,
 ): Promise<{
@@ -731,19 +770,20 @@ export const getStatRankings = async (
   if (cached) {
     // Serve the cached rankings instantly; validate the live count in the
     // background and rebuild only when it changed (offline keeps the cache).
-    void (async () => {
-      const pokemonCount = await fetchResourceCount(`${API_BASE}/pokemon`);
-      if (pokemonCount === null || cached.pokemonCount === pokemonCount) return;
-      try {
+    validateInBackground(
+      RANKINGS_CACHE_KEY,
+      RANKINGS_CACHE_VERSION,
+      `${API_BASE}/pokemon`,
+      cached.pokemonCount,
+      async (pokemonCount) => {
         const fresh = await rebuildRankings(pokemonCount, onProgress);
-        if (!Object.values(fresh).every((list) => list.length === 0)) {
-          writeCache(RANKINGS_CACHE_KEY, RANKINGS_CACHE_VERSION, {
-            data: fresh,
-            pokemonCount,
-          });
-        }
-      } catch {}
-    })();
+        // Never persist an empty result, which would otherwise serve as a
+        // permanent "No data" cache.
+        if (Object.values(fresh).every((list) => list.length === 0))
+          return null;
+        return { data: fresh, pokemonCount };
+      },
+    );
     return { data: cached.data, fromCache: true };
   }
 
@@ -779,47 +819,43 @@ async function rebuildRankings(
     stats: Record<string, number>;
   }[] = [];
 
-  for (let i = 0; i < listData.results.length; i += 25) {
-    const batch = listData.results.slice(i, i + 25);
-    const results = await Promise.all(
-      batch.map(async (p: any) => {
-        const id = parseIdFromUrl(p.url);
-        try {
-          const d = await fetchJson(`${API_BASE}/pokemon/${id}`);
-          const stats: Record<string, number> = {};
-          let total = 0;
-          for (const s of d.stats) {
-            const key = s.stat.name.replace("-", "_");
-            stats[key] = s.base_stat;
-            total += s.base_stat;
-          }
-          stats.total = total;
-          stats.base_experience = d.base_experience ?? 0;
-          stats.height = d.height ?? 0;
-          stats.weight = d.weight ?? 0;
-          stats.moves_count = d.moves?.length ?? 0;
-          return {
-            name: p.name,
-            id,
-            image: artworkUrl(id),
-            types: d.types.map((t: any) => t.type.name),
-            stats,
-          };
-        } catch {
-          return null;
+  const results = await inBatches(
+    listData.results,
+    25,
+    async (p: any) => {
+      const id = parseIdFromUrl(p.url);
+      try {
+        const d = await fetchJson(`${API_BASE}/pokemon/${id}`);
+        const stats: Record<string, number> = {};
+        let total = 0;
+        for (const s of d.stats) {
+          const key = s.stat.name.replace("-", "_");
+          stats[key] = s.base_stat;
+          total += s.base_stat;
         }
-      }),
-    );
-    allStats.push(
-      ...results.filter(
-        (r): r is NonNullable<(typeof results)[number]> => r != null,
-      ),
-    );
-    onProgress?.(
-      Math.min(i + batch.length, listData.results.length),
-      listData.results.length,
-    );
-  }
+        stats.total = total;
+        stats.base_experience = d.base_experience ?? 0;
+        stats.height = d.height ?? 0;
+        stats.weight = d.weight ?? 0;
+        stats.moves_count = d.moves?.length ?? 0;
+        return {
+          name: p.name,
+          id,
+          image: artworkUrl(id),
+          types: d.types.map((t: any) => t.type.name),
+          stats,
+        };
+      } catch {
+        return null;
+      }
+    },
+    onProgress,
+  );
+  allStats.push(
+    ...results.filter(
+      (r): r is NonNullable<(typeof results)[number]> => r != null,
+    ),
+  );
 
   function top10(key: string): RankingEntry[] {
     return allStats
@@ -865,16 +901,13 @@ async function loadAutocompleteList() {
   if (cached) {
     // Serve the cached list immediately; refresh it in the background when
     // the live count changed (and keep it when offline).
-    void (async () => {
-      const count = await fetchResourceCount(`${API_BASE}/pokemon`);
-      if (count === null || cached.data.total === count) return;
-      try {
-        const data = await fetchNameIdList(`${API_BASE}/pokemon`);
-        writeCache(AUTOCOMPLETE_CACHE_KEY, AUTOCOMPLETE_CACHE_VERSION, {
-          data,
-        });
-      } catch {}
-    })();
+    validateInBackground(
+      AUTOCOMPLETE_CACHE_KEY,
+      AUTOCOMPLETE_CACHE_VERSION,
+      `${API_BASE}/pokemon`,
+      cached.data.total,
+      async () => ({ data: await fetchNameIdList(`${API_BASE}/pokemon`) }),
+    );
     return cached.data;
   }
   try {
@@ -1004,17 +1037,16 @@ export async function getAllPokemonSummaries(
     // Serve the cached grid immediately (no network round-trip before the
     // grid paints). Validate the species count in the background and rebuild
     // the cache only when it changed — or when offline, keep what we have.
-    void (async () => {
-      const count = await fetchResourceCount(`${API_BASE}/pokemon-species`);
-      if (count === null || cached.speciesCount === count) return;
-      try {
+    validateInBackground(
+      GRID_CACHE_KEY,
+      GRID_CACHE_VERSION,
+      `${API_BASE}/pokemon-species`,
+      cached.speciesCount,
+      async () => {
         const fresh = await buildGridCache(onProgress);
-        writeCache(GRID_CACHE_KEY, GRID_CACHE_VERSION, {
-          speciesCount: fresh.count,
-          data: fresh.entries,
-        });
-      } catch {}
-    })();
+        return { speciesCount: fresh.count, data: fresh.entries };
+      },
+    );
     return { data: cached.data, fromCache: true };
   }
 
@@ -1083,14 +1115,7 @@ async function buildGridCache(
         image: artworkUrl(speciesId),
         types: [],
         form_count: 1,
-        forms: [
-          {
-            name: s.name,
-            id: speciesId,
-            is_default: true,
-            image: artworkUrl(speciesId),
-          },
-        ],
+        forms: [defaultFormSummary(s.name, speciesId)],
         gen: getGeneration(speciesId),
         is_legendary: false,
         is_mythical: false,
@@ -1114,21 +1139,16 @@ async function buildGridCache(
   const failed = entries.filter((e) => e.types.length === 0);
   if (failed.length > 0) {
     await new Promise((r) => setTimeout(r, 1000));
-    for (let i = 0; i < failed.length; i += 50) {
-      const batch = failed.slice(i, i + 50);
-      await Promise.all(
-        batch.map(async (e) => {
-          try {
-            const s = results.find((x: any) => parseIdFromUrl(x.url) === e.id);
-            if (!s) return;
-            const fixed = await fetchEntry(s);
-            if (fixed.types.length > 0) {
-              Object.assign(e, fixed);
-            }
-          } catch {}
-        }),
-      );
-    }
+    await inBatches(failed, 50, async (e) => {
+      try {
+        const s = results.find((x: any) => parseIdFromUrl(x.url) === e.id);
+        if (!s) return;
+        const fixed = await fetchEntry(s);
+        if (fixed.types.length > 0) {
+          Object.assign(e, fixed);
+        }
+      } catch {}
+    });
   }
 
   entries.sort((a, b) => a.id - b.id);
@@ -1138,13 +1158,7 @@ async function buildGridCache(
 
 // ── Item search ──────────────────────────────────────────────────────────────
 
-let _itemNamesCache: { name: string; id: number }[] | null = null;
-
-async function getAllItemNames(): Promise<{ name: string; id: number }[]> {
-  if (_itemNamesCache) return _itemNamesCache;
-  _itemNamesCache = (await fetchNameIdList(`${API_BASE}/item`)).results;
-  return _itemNamesCache;
-}
+const getAllItemNames = memoizedNameList(`${API_BASE}/item`);
 
 export async function searchItems(query: string): Promise<ItemSummary[]> {
   const q = query.toLowerCase();
@@ -1227,14 +1241,10 @@ export async function getAllAbilities(): Promise<AbilityEntry[]> {
     if (count !== null && cached.total === count) return cached.data;
   }
   const { results } = await fetchNameIdList(`${API_BASE}/ability`);
-  const entries: AbilityEntry[] = [];
-  for (let i = 0; i < results.length; i += 20) {
-    const batch = results.slice(i, i + 20);
-    const fetched = await Promise.all(
-      batch.map((a) => fetchAbilityEntry(a.name)),
-    );
-    entries.push(...fetched.filter((e): e is AbilityEntry => e !== null));
-  }
+  const fetched = await inBatches(results, 20, (a) =>
+    fetchAbilityEntry(a.name),
+  );
+  const entries = fetched.filter((e): e is AbilityEntry => e !== null);
   persistAbilityCache();
   entries.sort((a, b) => a.name.localeCompare(b.name));
   writeCache(ABILITIES_CACHE_KEY, ABILITIES_CACHE_VERSION, {
@@ -1246,14 +1256,8 @@ export async function getAllAbilities(): Promise<AbilityEntry[]> {
 
 // ── Moves dex ────────────────────────────────────────────────────────────────
 
-let _moveNamesCache: { name: string; id: number }[] | null = null;
+const getAllMoveNames = memoizedNameList(`${API_BASE}/move`);
 let _sortedMoveNames: string[] | null = null;
-
-async function getAllMoveNames(): Promise<{ name: string; id: number }[]> {
-  if (_moveNamesCache) return _moveNamesCache;
-  _moveNamesCache = (await fetchNameIdList(`${API_BASE}/move`)).results;
-  return _moveNamesCache;
-}
 
 export async function getMovesTotal(): Promise<number> {
   return (await getAllMoveNames()).length;

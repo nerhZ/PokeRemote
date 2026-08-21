@@ -28,7 +28,7 @@
   } from "$lib/storage";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
-  import Pokeball from "$lib/components/Pokeball.svelte";
+  import LoadProgress from "$lib/components/LoadProgress.svelte";
   import PokemonImage from "$lib/components/PokemonImage.svelte";
   import FilterChip from "$lib/components/FilterChip.svelte";
   import { onCollapseFinished } from "$lib/search-anim";
@@ -508,23 +508,13 @@
     </div>
 
     {#if loadPhase === "loading"}
-      <div class="flex flex-col items-center justify-center py-20">
-        <Pokeball class="mb-8 h-24 w-24" spinning />
-        {#if loadProgress.total > 0}
-          <p class="text-sm font-semibold" style="color: var(--text)">
-            Loading {loadProgress.done} / {loadProgress.total} species...
-          </p>
-          <div class="mt-4 h-1.5 w-64 overflow-hidden rounded-full bg-white/6">
-            <div
-              class="bg-accent h-full rounded-full transition-all duration-300"
-              style="width: {(loadProgress.done / (loadProgress.total || 1)) *
-                100}%"
-            ></div>
-          </div>
-        {:else}
-          <p class="text-sm" style="color: var(--muted)">Loading Pokédex...</p>
-        {/if}
-      </div>
+      <LoadProgress
+        done={loadProgress.done}
+        total={loadProgress.total}
+        noun="species"
+      >
+        <p class="text-sm" style="color: var(--muted)">Loading Pokédex...</p>
+      </LoadProgress>
     {:else if loadPhase === "error"}
       <EmptyState
         title="Failed to load Pokémon"
