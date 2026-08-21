@@ -367,7 +367,7 @@
    * Resolve a Showdown species slug to an API name. Gendered species
    * (basculegion, indeedee, meowstic…) are not in the /pokemon list under
    * their base name, and species like basculin have a differently-named
-   * default variety — so fall back to the gendered candidates and finally to
+   * default variety, so fall back to the gendered candidates and finally to
    * the detail fetch (which resolves default varieties itself).
    */
   async function resolveImportSpecies(slug: string): Promise<string | null> {
@@ -490,6 +490,38 @@
   let teamBlind = $derived(
     teamHasMoves ? ALL_TYPES.filter((t) => offense[t] < 1) : [],
   );
+
+  /** The four coverage summary sections rendered beside the heat map. */
+  let coverageSections = $derived([
+    {
+      title: "Shared weaknesses",
+      color: "text-pokemon-red",
+      types: teamWeak,
+      empty: "None — nice!",
+    },
+    {
+      title: "Resistances",
+      color: "text-pokemon-green",
+      types: teamSafe,
+      empty: "None",
+    },
+    {
+      title: "Strong coverage",
+      color: "text-pokemon-red",
+      types: teamStrong,
+      empty: teamHasMoves
+        ? "Nothing hits super effectively"
+        : "Pick moves to see coverage",
+    },
+    {
+      title: "Blind spots",
+      color: "text-pokemon-green",
+      types: teamBlind,
+      empty: teamHasMoves
+        ? "None — great coverage!"
+        : "Pick moves to see coverage",
+    },
+  ]);
 
   function hoverTitle(i: number) {
     const s = sets[i];
@@ -867,76 +899,25 @@
         </div>
       </div>
       <div class="panel space-y-4">
-        <div>
-          <h3
-            class="text-pokemon-red mb-2 text-xs font-bold tracking-wider uppercase"
-          >
-            Shared weaknesses
-          </h3>
-          <div class="flex flex-wrap gap-1.5">
-            {#if teamWeak.length === 0}<span class="text-xs text-white/40"
-                >None — nice!</span
-              >
-            {:else}{#each teamWeak as t}<TypeBadge
-                  type={t}
-                  size="sm"
-                />{/each}{/if}
+        {#each coverageSections as section}
+          <div>
+            <h3
+              class="{section.color} mb-2 text-xs font-bold tracking-wider uppercase"
+            >
+              {section.title}
+            </h3>
+            <div class="flex flex-wrap gap-1.5">
+              {#if section.types.length === 0}
+                <span class="text-xs text-white/40">{section.empty}</span>
+              {:else}
+                {#each section.types as t}<TypeBadge
+                    type={t}
+                    size="sm"
+                  />{/each}
+              {/if}
+            </div>
           </div>
-        </div>
-        <div>
-          <h3
-            class="text-pokemon-green mb-2 text-xs font-bold tracking-wider uppercase"
-          >
-            Resistances
-          </h3>
-          <div class="flex flex-wrap gap-1.5">
-            {#if teamSafe.length === 0}<span class="text-xs text-white/40"
-                >None</span
-              >
-            {:else}{#each teamSafe as t}<TypeBadge
-                  type={t}
-                  size="sm"
-                />{/each}{/if}
-          </div>
-        </div>
-        <div>
-          <h3
-            class="text-pokemon-red mb-2 text-xs font-bold tracking-wider uppercase"
-          >
-            Strong coverage
-          </h3>
-          <div class="flex flex-wrap gap-1.5">
-            {#if teamStrong.length === 0}
-              <span class="text-xs text-white/40"
-                >{teamHasMoves
-                  ? "Nothing hits super effectively"
-                  : "Pick moves to see coverage"}</span
-              >
-            {:else}{#each teamStrong as t}<TypeBadge
-                  type={t}
-                  size="sm"
-                />{/each}{/if}
-          </div>
-        </div>
-        <div>
-          <h3
-            class="text-pokemon-green mb-2 text-xs font-bold tracking-wider uppercase"
-          >
-            Blind spots
-          </h3>
-          <div class="flex flex-wrap gap-1.5">
-            {#if teamBlind.length === 0}
-              <span class="text-xs text-white/40"
-                >{teamHasMoves
-                  ? "None — great coverage!"
-                  : "Pick moves to see coverage"}</span
-              >
-            {:else}{#each teamBlind as t}<TypeBadge
-                  type={t}
-                  size="sm"
-                />{/each}{/if}
-          </div>
-        </div>
+        {/each}
         <div
           class="flex flex-wrap items-center gap-2 border-t border-white/6 pt-3"
         >

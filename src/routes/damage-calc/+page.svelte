@@ -135,6 +135,11 @@
     return Number.isNaN(v) ? fallback : clamp(v, min, max);
   }
 
+  /** A Pokémon's base stat by API name, 0 when absent. */
+  function baseStat(p: PokemonDetail, name: string): number {
+    return p.stats.find((s) => s.name === name)?.base_stat ?? 0;
+  }
+
   const sync = pageUrlSync("/damage-calc");
 
   onMount(async () => {
@@ -385,11 +390,9 @@
     const isSpecial = move.damage_class === "special";
     const atkKey = isSpecial ? "special-attack" : "attack";
     const defKey = isSpecial ? "special-defense" : "defense";
-    const baseAtk =
-      attacker.stats.find((s) => s.name === atkKey)?.base_stat ?? 0;
-    const baseDef =
-      defender.stats.find((s) => s.name === defKey)?.base_stat ?? 0;
-    const baseHp = defender.stats.find((s) => s.name === "hp")?.base_stat ?? 0;
+    const baseAtk = baseStat(attacker, atkKey);
+    const baseDef = baseStat(defender, defKey);
+    const baseHp = baseStat(defender, "hp");
 
     const nature = attNature ? NATURE_STAT_MODS[attNature] : null;
     const atkEv = attEvs[isSpecial ? "spa" : "atk"];
@@ -418,7 +421,7 @@
 
     // Sand boosts Rock SpD, snow boosts Ice Def (defender-typed env bonuses).
     // Gen VII+ critical hits ignore those boosts, so crits compute against
-    // the base defense (items still apply — crits don't ignore items).
+    // the base defense (items still apply; crits don't ignore items).
     const envDefMult =
       (weather === "sand" && isSpecial && defender.types.includes("rock")) ||
       (weather === "snow" && !isSpecial && defender.types.includes("ice"))
@@ -515,7 +518,7 @@
           !!x.result &&
           !x.result.noDamage &&
           // Moves that compute to zero damage (type immunity, or floor
-          // rounding at extreme level gaps) — exclude them, and keep the bar
+          // rounding at extreme level gaps); exclude them and keep the bar
           // denominator > 0.
           x.result.max > 0,
       )
@@ -566,6 +569,28 @@
   {/if}
 {/snippet}
 
+{#snippet selectedCard(p: PokemonDetail)}
+  <a
+    href={resolve(`/pokemon/${p.name}`)}
+    class="mt-4 flex items-center gap-3 rounded-xl bg-white/2 p-3 no-underline transition-colors hover:bg-white/5"
+  >
+    <PokemonImage
+      src={p.sprites.other["official-artwork"].front_default}
+      id={p.id}
+      alt={p.name}
+      class="h-14 w-14 object-contain"
+    />
+    <div>
+      <div class="text-sm font-bold" style="color: var(--text)">
+        {formatName(p.name)}
+      </div>
+      <div class="mt-1 flex gap-1">
+        {#each p.types as t}<TypeBadge type={t} size="xs" />{/each}
+      </div>
+    </div>
+  </a>
+{/snippet}
+
 <div class="tool-shell max-w-5xl">
   <div class="tool-hero">
     <div class="flex items-start justify-between gap-4">
@@ -598,25 +623,7 @@
           {attError}
         </p>{/if}
       {#if attacker}
-        <a
-          href={resolve(`/pokemon/${attacker.name}`)}
-          class="mt-4 flex items-center gap-3 rounded-xl bg-white/2 p-3 no-underline transition-colors hover:bg-white/5"
-        >
-          <PokemonImage
-            src={attacker.sprites.other["official-artwork"].front_default}
-            id={attacker.id}
-            alt={attacker.name}
-            class="h-14 w-14 object-contain"
-          />
-          <div>
-            <div class="text-sm font-bold" style="color: var(--text)">
-              {formatName(attacker.name)}
-            </div>
-            <div class="mt-1 flex gap-1">
-              {#each attacker.types as t}<TypeBadge type={t} size="xs" />{/each}
-            </div>
-          </div>
-        </a>
+        {@render selectedCard(attacker)}
         {#if moveList}
           <div class="mt-4 mb-2 flex items-center gap-2">
             <span class="text-xs text-white/40">Level</span>
@@ -715,25 +722,7 @@
           {defError}
         </p>{/if}
       {#if defender}
-        <a
-          href={resolve(`/pokemon/${defender.name}`)}
-          class="mt-4 flex items-center gap-3 rounded-xl bg-white/2 p-3 no-underline transition-colors hover:bg-white/5"
-        >
-          <PokemonImage
-            src={defender.sprites.other["official-artwork"].front_default}
-            id={defender.id}
-            alt={defender.name}
-            class="h-14 w-14 object-contain"
-          />
-          <div>
-            <div class="text-sm font-bold" style="color: var(--text)">
-              {formatName(defender.name)}
-            </div>
-            <div class="mt-1 flex gap-1">
-              {#each defender.types as t}<TypeBadge type={t} size="xs" />{/each}
-            </div>
-          </div>
-        </a>
+        {@render selectedCard(defender)}
         <div class="mt-3 flex items-center gap-2">
           <span class="text-xs text-white/40">Level</span>
           <input
@@ -790,19 +779,17 @@
             cols="grid-cols-3"
           />
         </div>
-        {@const defHp = statValue(
-          defender.stats.find((s) => s.name === "hp")?.base_stat ?? 0,
-          defLevel,
-          { iv: defIv, ev: defEvs.hp, hp: true },
-        )}
-        {@const defDef = statValue(
-          defender.stats.find((s) => s.name === "defense")?.base_stat ?? 0,
-          defLevel,
-          { iv: defIv, ev: defEvs.def },
-        )}
+        {@const defHp = statValue(baseStat(defender, "hp"), defLevel, {
+          iv: defIv,
+          ev: defEvs.hp,
+          hp: true,
+        })}
+        {@const defDef = statValue(baseStat(defender, "defense"), defLevel, {
+          iv: defIv,
+          ev: defEvs.def,
+        })}
         {@const defSpd = statValue(
-          defender.stats.find((s) => s.name === "special-defense")?.base_stat ??
-            0,
+          baseStat(defender, "special-defense"),
           defLevel,
           { iv: defIv, ev: defEvs.spd },
         )}
@@ -841,10 +828,7 @@
             syncUrl();
           }}
           placeholder="No weather"
-          options={WEATHER_OPTIONS.map((o) => ({
-            value: o.value,
-            label: o.label,
-          }))}
+          options={WEATHER_OPTIONS}
         />
         <Dropdown
           selected={terrain}
@@ -857,10 +841,7 @@
             syncUrl();
           }}
           placeholder="No terrain"
-          options={TERRAIN_OPTIONS.map((o) => ({
-            value: o.value,
-            label: o.label,
-          }))}
+          options={TERRAIN_OPTIONS}
         />
         <Dropdown
           selected={roll}
@@ -873,10 +854,7 @@
             syncUrl();
           }}
           placeholder="Random roll"
-          options={ROLL_OPTIONS.map((o) => ({
-            value: o.value,
-            label: o.label,
-          }))}
+          options={ROLL_OPTIONS}
         />
         <label
           class="flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/60"

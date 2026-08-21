@@ -96,25 +96,17 @@
         <div class="panel flex flex-col gap-2 p-4!">
           <div class="flex items-center justify-between gap-2">
             <span class="truncate text-sm font-bold">{formatName(a.name)}</span>
-            <div class="flex shrink-0 gap-1.5 text-[10px]">
-              {#if a.generation}
-                {@const gen = generationLabel(a.generation)}
-                {#if gen}
-                  {@const color = GEN_COLORS[gen.split(" ")[1]] ?? "#777"}
-                  <span
-                    class="rounded-full border px-2 py-0.5 font-bold"
-                    style="color: {color}; border-color: {color}40; background: {color}18"
-                    >{gen}</span
-                  >
-                {/if}
+            {#if a.generation}
+              {@const gen = generationLabel(a.generation)}
+              {#if gen}
+                {@const color = GEN_COLORS[gen.split(" ")[1]] ?? "#777"}
+                <span
+                  class="rounded-full border px-2 py-0.5 text-[10px] font-bold"
+                  style="color: {color}; border-color: {color}40; background: {color}18"
+                  >{gen}</span
+                >
               {/if}
-              <LearnerList
-                name={a.name}
-                count={a.pokemon_count}
-                label={(n) => `${n} Pokémon`}
-                fetchNames={getAbilityPokemon}
-              />
-            </div>
+            {/if}
           </div>
           {#if a.effect}
             <p class="line-clamp-3 text-xs leading-relaxed text-white/50">
@@ -124,6 +116,14 @@
             <p class="text-xs leading-relaxed text-white/40 italic">
               No ability description provided.
             </p>
+          {/if}
+          {#if a.pokemon_count > 0}
+            <LearnerList
+              name={a.name}
+              count={a.pokemon_count}
+              label={(n) => `${n} Pokémon`}
+              fetchNames={getAbilityPokemon}
+            />
           {/if}
         </div>
       {/each}

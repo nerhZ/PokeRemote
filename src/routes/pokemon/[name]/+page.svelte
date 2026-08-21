@@ -51,7 +51,7 @@
   let speciesIds = $state<number[]>([]);
   /** Raw URL key whose content is currently displayed. The URL may use ids or
       names (PokeAPI normalizes `/pokemon/26` → raticate), so identity can't be
-      compared to `pokemon.name` — the requested key itself is tracked. */
+      compared to `pokemon.name`; the requested key itself is tracked. */
   let loadedName = "";
 
   $effect(() => {
@@ -130,24 +130,15 @@
     }
   }
 
-  let prevId = $derived(
-    speciesIds.length > 0 && pokemon
-      ? (() => {
-          const idx = speciesIds.indexOf(pokemon.species_id);
-          if (idx < 0) return null;
-          return speciesIds[(idx - 1 + speciesIds.length) % speciesIds.length];
-        })()
-      : null,
-  );
-  let nextId = $derived(
-    speciesIds.length > 0 && pokemon
-      ? (() => {
-          const idx = speciesIds.indexOf(pokemon.species_id);
-          if (idx < 0) return null;
-          return speciesIds[(idx + 1) % speciesIds.length];
-        })()
-      : null,
-  );
+  /** Neighboring species id in national-dex order (wraps at both ends). */
+  function siblingSpeciesId(offset: number): number | null {
+    if (!pokemon || speciesIds.length === 0) return null;
+    const idx = speciesIds.indexOf(pokemon.species_id);
+    if (idx < 0) return null;
+    return speciesIds[(idx + offset + speciesIds.length) % speciesIds.length];
+  }
+  let prevId = $derived(siblingSpeciesId(-1));
+  let nextId = $derived(siblingSpeciesId(1));
   let primaryType = $derived(pokemon?.types[0] ?? "normal");
   let primaryColor = $derived(TYPE_COLORS[primaryType] || "#777");
   let totalStats = $derived(pokemon ? statTotal(pokemon.stats) : 0);
@@ -206,6 +197,66 @@
     machine: moves?.machine?.length ?? 0,
     egg: moves?.egg?.length ?? 0,
     tutor: moves?.tutor?.length ?? 0,
+  });
+
+  const MOVE_TAB_LABELS: Record<string, string> = {
+    level_up: "Level",
+    machine: "TM",
+    egg: "Egg",
+    tutor: "Tutor",
+  };
+
+  /** Height / weight / base exp / moves cells of the hero panel. */
+  let quickStats = $derived(
+    pokemon
+      ? [
+          { value: `${pokemon.height / 10}m`, label: "Height" },
+          { value: `${pokemon.weight / 10}kg`, label: "Weight" },
+          { value: String(pokemon.base_experience), label: "Base Exp" },
+          { value: String(pokemon.moves_count), label: "Moves" },
+        ]
+      : [],
+  );
+
+  /** Pokédex data tab entries; only non-null fields render. */
+  let dexData = $derived.by(() => {
+    if (!pokemon) return [];
+    const entries: { label: string; value: string; capitalize?: boolean }[] =
+      [];
+    if (pokemon.capture_rate != null)
+      entries.push({
+        label: "Catch Rate",
+        value: `${pokemon.capture_rate}/255`,
+      });
+    if (pokemon.base_happiness != null)
+      entries.push({
+        label: "Happiness",
+        value: String(pokemon.base_happiness),
+      });
+    if (pokemon.growth_rate)
+      entries.push({
+        label: "Growth",
+        value: pokemon.growth_rate.replace(/-/g, " "),
+        capitalize: true,
+      });
+    if (pokemon.habitat)
+      entries.push({
+        label: "Habitat",
+        value: pokemon.habitat,
+        capitalize: true,
+      });
+    if (pokemon.color)
+      entries.push({ label: "Color", value: pokemon.color, capitalize: true });
+    if (pokemon.shape)
+      entries.push({ label: "Shape", value: pokemon.shape, capitalize: true });
+    if (pokemon.egg_groups.length)
+      entries.push({
+        label: "Egg Groups",
+        value: pokemon.egg_groups.map((g) => g.replace(/-/g, " ")).join(", "),
+        capitalize: true,
+      });
+    if (genderInfo) entries.push({ label: "Gender", value: genderInfo });
+    return entries;
   });
 
   const tabs = [
@@ -409,30 +460,18 @@
           </div>
 
           <div class="panel mt-5 grid grid-cols-2 gap-2 p-3!">
-            <div class="py-2 text-center">
-              <div class="text-lg font-bold">{pokemon.height / 10}m</div>
-              <div class="text-[10px] tracking-wider text-white/40 uppercase">
-                Height
+            {#each quickStats as stat, i}
+              <div
+                class="{i % 2 === 1 ? 'border-l ' : ''}{i >= 2
+                  ? 'border-t '
+                  : ''}{i > 0 ? 'border-white/6 ' : ''}py-2 text-center"
+              >
+                <div class="text-lg font-bold">{stat.value}</div>
+                <div class="text-[10px] tracking-wider text-white/40 uppercase">
+                  {stat.label}
+                </div>
               </div>
-            </div>
-            <div class="border-l border-white/6 py-2 text-center">
-              <div class="text-lg font-bold">{pokemon.weight / 10}kg</div>
-              <div class="text-[10px] tracking-wider text-white/40 uppercase">
-                Weight
-              </div>
-            </div>
-            <div class="border-t border-white/6 py-2 text-center">
-              <div class="text-lg font-bold">{pokemon.base_experience}</div>
-              <div class="text-[10px] tracking-wider text-white/40 uppercase">
-                Base Exp
-              </div>
-            </div>
-            <div class="border-t border-l border-white/6 py-2 text-center">
-              <div class="text-lg font-bold">{pokemon.moves_count}</div>
-              <div class="text-[10px] tracking-wider text-white/40 uppercase">
-                Moves
-              </div>
-            </div>
+            {/each}
           </div>
 
           {#if pokemon.forms?.length > 1}
@@ -588,13 +627,7 @@
                           ? `background-color: ${primaryColor}33`
                           : ""}
                       >
-                        {t === "level_up"
-                          ? "Level"
-                          : t === "machine"
-                            ? "TM"
-                            : t === "egg"
-                              ? "Egg"
-                              : "Tutor"} ({moveTabCounts[
+                        {MOVE_TAB_LABELS[t]} ({moveTabCounts[
                           t as keyof typeof moveTabCounts
                         ]})
                       </button>
@@ -639,76 +672,20 @@
             <div class="panel">
               <h2 class="mb-5 text-lg font-bold">Pokédex Data</h2>
               <div class="grid grid-cols-2 gap-4 md:grid-cols-3">
-                {#if pokemon.capture_rate != null}<div>
+                {#each dexData as entry}
+                  <div>
                     <div
                       class="text-[10px] tracking-wider text-white/40 uppercase"
                     >
-                      Catch Rate
+                      {entry.label}
                     </div>
-                    <div class="font-bold">{pokemon.capture_rate}/255</div>
-                  </div>{/if}
-                {#if pokemon.base_happiness != null}<div>
                     <div
-                      class="text-[10px] tracking-wider text-white/40 uppercase"
+                      class="font-bold {entry.capitalize ? 'capitalize' : ''}"
                     >
-                      Happiness
+                      {entry.value}
                     </div>
-                    <div class="font-bold">{pokemon.base_happiness}</div>
-                  </div>{/if}
-                {#if pokemon.growth_rate}<div>
-                    <div
-                      class="text-[10px] tracking-wider text-white/40 uppercase"
-                    >
-                      Growth
-                    </div>
-                    <div class="font-bold capitalize">
-                      {pokemon.growth_rate.replace(/-/g, " ")}
-                    </div>
-                  </div>{/if}
-                {#if pokemon.habitat}<div>
-                    <div
-                      class="text-[10px] tracking-wider text-white/40 uppercase"
-                    >
-                      Habitat
-                    </div>
-                    <div class="font-bold capitalize">{pokemon.habitat}</div>
-                  </div>{/if}
-                {#if pokemon.color}<div>
-                    <div
-                      class="text-[10px] tracking-wider text-white/40 uppercase"
-                    >
-                      Color
-                    </div>
-                    <div class="font-bold capitalize">{pokemon.color}</div>
-                  </div>{/if}
-                {#if pokemon.shape}<div>
-                    <div
-                      class="text-[10px] tracking-wider text-white/40 uppercase"
-                    >
-                      Shape
-                    </div>
-                    <div class="font-bold capitalize">{pokemon.shape}</div>
-                  </div>{/if}
-                {#if pokemon.egg_groups.length}<div>
-                    <div
-                      class="text-[10px] tracking-wider text-white/40 uppercase"
-                    >
-                      Egg Groups
-                    </div>
-                    <div class="font-bold capitalize">
-                      {pokemon.egg_groups
-                        .map((g) => g.replace(/-/g, " "))
-                        .join(", ")}
-                    </div>
-                  </div>{/if}
-                {#if genderInfo}<div>
-                    <div
-                      class="text-[10px] tracking-wider text-white/40 uppercase"
-                    >
-                      Gender
-                    </div>
-                    <div class="font-bold">{genderInfo}</div>
-                  </div>{/if}
+                  </div>
+                {/each}
               </div>
             </div>
           {/if}

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { formatName } from "$lib/pokemon-types";
+  import { onDismiss } from "$lib/popup";
   import type { Snippet } from "svelte";
   import TypeBadge from "./TypeBadge.svelte";
 
@@ -37,7 +38,7 @@
   let host: HTMLElement | undefined = $state();
   let filter = $state("");
   let highlight = $state(0);
-  const uid = Math.random().toString(36).slice(2, 8);
+  const uid = $props.id();
 
   const filteredOptions = $derived(
     searchable && filter.trim()
@@ -100,18 +101,7 @@
 
   $effect(() => {
     if (!open) return;
-    function onKeydownDoc(e: KeyboardEvent) {
-      if (e.key === "Escape") open = false;
-    }
-    function onPointerDown(e: PointerEvent) {
-      if (host && !host.contains(e.target as Node)) open = false;
-    }
-    document.addEventListener("keydown", onKeydownDoc);
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => {
-      document.removeEventListener("keydown", onKeydownDoc);
-      document.removeEventListener("pointerdown", onPointerDown);
-    };
+    return onDismiss(host, () => (open = false));
   });
 </script>
 

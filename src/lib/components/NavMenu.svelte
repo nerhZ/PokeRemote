@@ -1,6 +1,6 @@
 <script lang="ts">
   import { isActive } from "$lib/navigation";
-  import { popupAlign } from "$lib/popup";
+  import { onDismiss, popupAlign } from "$lib/popup";
 
   let {
     label,
@@ -28,18 +28,7 @@
 
   $effect(() => {
     if (!open) return;
-    function onKeydown(e: KeyboardEvent) {
-      if (e.key === "Escape") open = false;
-    }
-    function onPointerDown(e: PointerEvent) {
-      if (host && !host.contains(e.target as Node)) open = false;
-    }
-    document.addEventListener("keydown", onKeydown);
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => {
-      document.removeEventListener("keydown", onKeydown);
-      document.removeEventListener("pointerdown", onPointerDown);
-    };
+    return onDismiss(host, () => (open = false));
   });
 </script>
 

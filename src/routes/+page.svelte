@@ -31,6 +31,7 @@
   import LoadProgress from "$lib/components/LoadProgress.svelte";
   import PokemonImage from "$lib/components/PokemonImage.svelte";
   import FilterChip from "$lib/components/FilterChip.svelte";
+  import Popover from "$lib/components/Popover.svelte";
   import { onCollapseFinished } from "$lib/search-anim";
 
   let allPokemon = $state<any[]>([]);
@@ -55,7 +56,7 @@
     recent = getRecent();
     loadPhase = "loading"; // show the spinner, not the empty state, while waiting
 
-    // Kick the catalog fetch off immediately — the network is async, so it
+    // Kick the catalog fetch off immediately. The network is async, so it
     // costs the header's collapse animation nothing. Only the apply (parsing
     // the result and rendering the grid) is deferred until the collapse
     // finishes, since that synchronous chunk is what would freeze it.
@@ -94,7 +95,7 @@
 
   // Arrival-only reset: wipe in-page-only state (search, favorites mode) when
   // arriving at a bare home URL. `isHome` is a derived boolean so this effect
-  // only re-runs when the pathname crosses the home boundary — `page.url` is
+  // only re-runs when the pathname crosses the home boundary. `page.url` is
   // replaced on *every* navigation (including search-param-only changes), so
   // reading it directly here would wipe the search whenever the query params
   // change in-page (e.g. clearing a type chip).
@@ -183,8 +184,8 @@
   }
 
   function toggleForms(e: MouseEvent, id: number) {
+    // The toggle sits inside the card link; don't navigate.
     e.preventDefault();
-    e.stopPropagation();
     expandedId = expandedId === id ? null : id;
   }
 
@@ -544,103 +545,104 @@
           {@const fav = favorites.some((f) => f.id === p.id)}
           {@const forms = p.forms || []}
           {@const hasForms = (p.form_count ?? forms.length) > 1}
-          <div class="flex flex-col gap-1.5">
-            <a
-              href={resolve(`/pokemon/${p.name}`)}
-              class="poke-card card-enter group"
-              style="animation-delay: {Math.min(i, 15) * 35}ms"
-            >
-              <div
-                class="relative flex aspect-square items-center justify-center overflow-hidden p-5"
+          <Popover
+            open={hasForms && expandedId === p.id}
+            onClose={() => (expandedId = null)}
+            panelClass="right-0 max-h-64 rounded-xl p-1.5"
+          >
+            {#snippet trigger()}
+              <a
+                href={resolve(`/pokemon/${p.name}`)}
+                class="poke-card card-enter group"
+                style="animation-delay: {Math.min(i, 15) * 35}ms"
               >
                 <div
-                  class="absolute inset-0 opacity-40"
-                  style="background: radial-gradient(circle at 50% 70%, {primaryColor}22 0%, transparent 65%)"
-                ></div>
-                <PokemonImage
-                  src={p.image}
-                  id={p.id}
-                  alt={p.name}
-                  class="relative z-10 object-contain drop-shadow-2xl transition-transform duration-500 group-hover:-translate-y-1 group-hover:scale-110 {spriteMode.active
-                    ? 'h-full w-full'
-                    : 'max-h-full max-w-full'}"
-                />
-                <span
-                  class="absolute top-2.5 left-2.5 rounded-md bg-black/35 px-2 py-0.5 text-[10px] font-black tracking-wider backdrop-blur-sm"
-                  style="color: {primaryColor}">{formatId(p.id)}</span
+                  class="relative flex aspect-square items-center justify-center overflow-hidden p-5"
                 >
-                <button
-                  onclick={(e) => onFav(e, p)}
-                  class="absolute top-2.5 right-2.5 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-black/35 text-sm backdrop-blur-sm {fav
-                    ? 'text-pokemon-yellow'
-                    : 'text-white/40 hover:text-white'}"
-                  aria-label={fav ? "Remove favorite" : "Add favorite"}
-                  >★</button
-                >
-                {#if hasForms}
-                  <button
-                    onclick={(e) => toggleForms(e, p.id)}
-                    class="absolute right-2.5 bottom-2.5 z-20 cursor-pointer rounded-md border border-white/10 bg-black/40 px-2 py-0.5 text-[10px] font-bold text-white/80 backdrop-blur-sm hover:text-white"
-                    >{forms.length} forms {expandedId === p.id
-                      ? "▴"
-                      : "▾"}</button
-                  >
-                {/if}
-              </div>
-              <div class="border-t border-white/4 p-3 pt-2">
-                <h3
-                  class="text-sm font-bold text-white/85 transition-colors group-hover:text-white"
-                >
-                  {formatName(p.name)}
-                </h3>
-                <div class="mt-1.5 flex flex-wrap items-center gap-1">
-                  {#each p.types || [] as type}
-                    <TypeBadge {type} size="xs" focusable={false} />
-                  {/each}
+                  <div
+                    class="absolute inset-0 opacity-40"
+                    style="background: radial-gradient(circle at 50% 70%, {primaryColor}22 0%, transparent 65%)"
+                  ></div>
+                  <PokemonImage
+                    src={p.image}
+                    id={p.id}
+                    alt={p.name}
+                    class="relative z-10 object-contain drop-shadow-2xl transition-transform duration-500 group-hover:-translate-y-1 group-hover:scale-110 {spriteMode.active
+                      ? 'h-full w-full'
+                      : 'max-h-full max-w-full'}"
+                  />
                   <span
-                    class="ml-auto rounded-full px-1.5 py-0.5 text-[9px] font-bold text-white/80"
-                    style="background: {primaryColor}33"
-                    >{generationShortLabel(getGeneration(p.id))}</span
+                    class="absolute top-2.5 left-2.5 rounded-md bg-black/35 px-2 py-0.5 text-[10px] font-black tracking-wider backdrop-blur-sm"
+                    style="color: {primaryColor}">{formatId(p.id)}</span
                   >
+                  <button
+                    onclick={(e) => onFav(e, p)}
+                    class="absolute top-2.5 right-2.5 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-black/35 text-sm backdrop-blur-sm {fav
+                      ? 'text-pokemon-yellow'
+                      : 'text-white/40 hover:text-white'}"
+                    aria-label={fav ? "Remove favorite" : "Add favorite"}
+                    >★</button
+                  >
+                  {#if hasForms}
+                    <button
+                      onclick={(e) => toggleForms(e, p.id)}
+                      class="absolute right-2.5 bottom-2.5 z-20 cursor-pointer rounded-md border border-white/10 bg-black/40 px-2 py-0.5 text-[10px] font-bold text-white/80 backdrop-blur-sm hover:text-white"
+                      >{forms.length} forms {expandedId === p.id
+                        ? "▴"
+                        : "▾"}</button
+                    >
+                  {/if}
                 </div>
-              </div>
-              <div
-                class="type-edge"
-                style="background: linear-gradient(90deg, {primaryColor}, {TYPE_COLORS[
-                  p.types?.[1]
-                ] || primaryColor})"
-              ></div>
-            </a>
-            {#if hasForms && expandedId === p.id}
-              <div
-                class="space-y-1 rounded-xl border p-2"
-                style="background: var(--surface); border-color: var(--border)"
-              >
-                {#each forms as form}
-                  <a
-                    href={resolve(`/pokemon/${form.name}`)}
-                    class="flex items-center gap-2 rounded-lg px-2 py-1.5 no-underline transition-colors hover:bg-white/5"
-                    style="color: var(--text)"
+                <div class="border-t border-white/4 p-3 pt-2">
+                  <h3
+                    class="text-sm font-bold text-white/85 transition-colors group-hover:text-white"
                   >
-                    <PokemonImage
-                      src={form.image}
-                      id={form.id}
-                      alt={form.name}
-                      class="h-8 w-8 object-contain"
-                    />
-                    <div class="min-w-0 flex-1">
-                      <div class="truncate text-[11px] font-semibold">
-                        {formLabel(form.name, p.name)}
-                      </div>
-                      <div class="text-[9px]" style="color: var(--muted)">
-                        #{form.id}{form.is_default ? " · default" : ""}
-                      </div>
+                    {formatName(p.name)}
+                  </h3>
+                  <div class="mt-1.5 flex flex-wrap items-center gap-1">
+                    {#each p.types || [] as type}
+                      <TypeBadge {type} size="xs" focusable={false} />
+                    {/each}
+                    <span
+                      class="ml-auto rounded-full px-1.5 py-0.5 text-[9px] font-bold text-white/80"
+                      style="background: {primaryColor}33"
+                      >{generationShortLabel(getGeneration(p.id))}</span
+                    >
+                  </div>
+                </div>
+                <div
+                  class="type-edge"
+                  style="background: linear-gradient(90deg, {primaryColor}, {TYPE_COLORS[
+                    p.types?.[1]
+                  ] || primaryColor})"
+                ></div>
+              </a>
+            {/snippet}
+            {#snippet panel()}
+              {#each forms as form}
+                <a
+                  href={resolve(`/pokemon/${form.name}`)}
+                  class="flex items-center gap-2 rounded-lg px-2 py-1.5 no-underline transition-colors hover:bg-white/5"
+                  style="color: var(--text)"
+                >
+                  <PokemonImage
+                    src={form.image}
+                    id={form.id}
+                    alt={form.name}
+                    class="h-8 w-8 shrink-0 object-contain"
+                  />
+                  <div class="min-w-0 flex-1">
+                    <div class="truncate text-[11px] font-semibold">
+                      {formLabel(form.name, p.name)}
                     </div>
-                  </a>
-                {/each}
-              </div>
-            {/if}
-          </div>
+                    <div class="text-[9px]" style="color: var(--muted)">
+                      {formatId(form.id)}{form.is_default ? " · default" : ""}
+                    </div>
+                  </div>
+                </a>
+              {/each}
+            {/snippet}
+          </Popover>
         {/each}
       </div>
     {/if}

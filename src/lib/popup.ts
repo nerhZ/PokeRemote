@@ -41,3 +41,27 @@ export function popupPosition(
   }
   return { left, translateX: align === "center" ? "-50%" : "0" };
 }
+
+/**
+ * Document listeners that close an open popup on Escape or outside
+ * pointer-down. Returns a cleanup, so it can be returned from an effect
+ * guarded on the open state, keeping the listeners registered only while
+ * the popup is visible.
+ */
+export function onDismiss(
+  host: HTMLElement | undefined,
+  close: () => void,
+): () => void {
+  function onKeydown(e: KeyboardEvent) {
+    if (e.key === "Escape") close();
+  }
+  function onPointerDown(e: PointerEvent) {
+    if (host && !host.contains(e.target as Node)) close();
+  }
+  document.addEventListener("keydown", onKeydown);
+  document.addEventListener("pointerdown", onPointerDown);
+  return () => {
+    document.removeEventListener("keydown", onKeydown);
+    document.removeEventListener("pointerdown", onPointerDown);
+  };
+}

@@ -29,7 +29,7 @@
   let open = $state(false);
   let highlight = $state(0);
   let internalOptions = $state<{ name: string; id: number }[]>([]);
-  const uid = Math.random().toString(36).slice(2, 8);
+  const uid = $props.id();
   const listboxId = `ps-${uid}-listbox`;
 
   const selfLoading = $derived(options === undefined);

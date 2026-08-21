@@ -65,22 +65,24 @@
     }
   });
 
-  let filtered = $derived.by(() => {
+  /** Moves matching the search box. Filtering and facet availability both build on this. */
+  let searched = $derived.by(() => {
     const q = search.trim().toLowerCase();
-    return moves.filter((m) => {
-      if (q && !m.name.includes(q)) return false;
-      if (typeFilter && m.type !== typeFilter) return false;
-      if (classFilter && m.damage_class !== classFilter) return false;
-      return true;
-    });
+    return q ? moves.filter((m) => m.name.includes(q)) : moves;
   });
+
+  let filtered = $derived(
+    searched.filter(
+      (m) =>
+        (!typeFilter || m.type === typeFilter) &&
+        (!classFilter || m.damage_class === classFilter),
+    ),
+  );
 
   /** Types still present in the loaded set given the current search + class filter. */
   let possibleTypes = $derived.by(() => {
-    const q = search.trim().toLowerCase();
     const avail = new Set<string>();
-    for (const m of moves) {
-      if (q && !m.name.includes(q)) continue;
+    for (const m of searched) {
       if (classFilter && m.damage_class !== classFilter) continue;
       avail.add(m.type);
     }
@@ -89,10 +91,8 @@
 
   /** Damage classes still present in the loaded set given the current search + type filter. */
   let possibleClasses = $derived.by(() => {
-    const q = search.trim().toLowerCase();
     const avail = new Set<string>();
-    for (const m of moves) {
-      if (q && !m.name.includes(q)) continue;
+    for (const m of searched) {
       if (typeFilter && m.type !== typeFilter) continue;
       avail.add(m.damage_class);
     }

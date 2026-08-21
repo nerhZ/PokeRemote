@@ -1,6 +1,7 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import { formatName } from "$lib/pokemon-types";
+  import Popover from "./Popover.svelte";
 
   let {
     name,
@@ -40,21 +41,25 @@
   }
 </script>
 
-<button
-  onclick={toggle}
-  class="cursor-pointer self-start rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-bold text-white/60 transition-colors hover:text-white"
-  >{label(count)} {open ? "▴" : "▾"}</button
+<Popover
+  {open}
+  onClose={() => (open = false)}
+  panelClass="w-72 max-h-40 rounded-lg p-2"
 >
-{#if open}
-  <div
-    class="max-h-40 overflow-y-auto rounded-lg border border-white/6 bg-white/2 p-2"
-  >
+  {#snippet trigger()}
+    <button
+      onclick={toggle}
+      class="cursor-pointer self-start rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-bold text-white/60 transition-colors hover:text-white"
+      >{label(count)} {open ? "▴" : "▾"}</button
+    >
+  {/snippet}
+  {#snippet panel()}
     {#if loading}
       <span class="text-xs text-white/40">Loading…</span>
     {:else if error}
       <span class="text-xs text-white/40">Couldn't load names.</span>
     {:else}
-      <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 sm:grid-cols-3">
+      <div class="grid grid-cols-2 gap-x-3 gap-y-0.5">
         {#each names as learner}
           <a
             href={resolve(`/pokemon/${learner}`)}
@@ -64,5 +69,5 @@
         {/each}
       </div>
     {/if}
-  </div>
-{/if}
+  {/snippet}
+</Popover>
