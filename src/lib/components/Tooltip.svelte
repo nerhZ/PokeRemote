@@ -1,6 +1,18 @@
+<script module lang="ts">
+  // A single tooltip may be visible at a time across the whole app: opening
+  // one (hover, focus, or pin) releases whichever tooltip held the claim
+  // before it. Holds the owning tooltip's release callback.
+  let activeRelease: (() => void) | null = null;
+
+  // Second guard rail, at the DOM level: popups are teleported to <body>, so
+  // before mounting a new one, drop any stray popup node a leaked tooltip
+  // left behind. Duplicates are then impossible even if a state path fails.
+  let activePopupEl: HTMLElement | null = null;
+</script>
+
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import { popupPosition } from "$lib/popup";
+  import { onDismiss, popupPosition } from "$lib/popup";
 
   let {
     popup,
@@ -36,7 +48,7 @@
   /**
    * Anchor the popup to the host's current viewport rect, clamped to the
    * viewport. Called on interaction and while visible (scroll/resize/size
-   * changes) — the popup lives in `position: fixed` space, so it must track
+   * changes). The popup lives in `position: fixed` space, so it must track
    * the host manually.
    */
   function place() {
@@ -60,6 +72,26 @@
     popupTranslate = pos.translateX;
   }
 
+  /** Close this tooltip fully and give up the global visibility claim. */
+  function release() {
+    hovered = false;
+    focused = false;
+    pinned = false;
+    if (activeRelease === release) activeRelease = null;
+  }
+
+  /** Opening this tooltip closes whichever other tooltip is visible. */
+  function claimVisible() {
+    if (activeRelease === release) return;
+    activeRelease?.();
+    activeRelease = release;
+  }
+
+  /** Give up the claim when this tooltip is no longer visible. */
+  function dropClaimIfHidden() {
+    if (!visible && activeRelease === release) activeRelease = null;
+  }
+
   // All triggers funnel through the host (events bubble up from the trigger
   // element), so the trigger snippet needs no handlers of its own.
   $effect(() => {
@@ -67,21 +99,31 @@
     if (!el) return;
     function onPointerEnter() {
       hovered = true;
+      claimVisible();
       place();
     }
     function onPointerLeave() {
       hovered = false;
+      dropClaimIfHidden();
     }
     function onFocusIn() {
       focused = true;
+      claimVisible();
       place();
     }
     function onFocusOut() {
       focused = false;
+      dropClaimIfHidden();
     }
     function onClick() {
-      pinned = !pinned;
-      if (pinned) place();
+      if (pinned) {
+        // Toggle off, but stay open under the cursor via hover/focus.
+        pinned = false;
+      } else {
+        pinned = true;
+        claimVisible();
+        place();
+      }
     }
     el.addEventListener("pointerenter", onPointerEnter);
     el.addEventListener("pointerleave", onPointerLeave);
@@ -94,20 +136,31 @@
       el.removeEventListener("focusin", onFocusIn);
       el.removeEventListener("focusout", onFocusOut);
       el.removeEventListener("click", onClick);
+      // Unmounting must not leave a stale claim behind.
+      if (activeRelease === release) activeRelease = null;
     };
   });
 
   // Teleport the popup to <body>: no ancestor stacking context (transformed
   // cards, sticky columns) or overflow clip can trap or clip it, and its
   // z-index then competes globally instead of inside some local context.
+  // The cleanup matters: navigating away while pinned (e.g. clicking a type
+  // badge inside a card link) unmounts the component, and without explicit
+  // removal the teleported node would stay behind as a visible orphan.
   $effect(() => {
     const el = popupEl;
     if (!el) return;
+    activePopupEl?.remove();
+    activePopupEl = el;
     document.body.appendChild(el);
+    return () => {
+      if (activePopupEl === el) activePopupEl = null;
+      el.remove();
+    };
   });
 
   // Re-anchor while visible: the popup is fixed-positioned, so it must track
-  // the host's rect on scroll/resize — and when its own size settles after
+  // the host's rect on scroll/resize and when its own size settles after
   // mount. Listeners exist only while visible, so the dense grids never pay
   // for them until a tooltip actually opens.
   $effect(() => {
@@ -123,21 +176,10 @@
     };
   });
 
-  // Close the pin on outside click or Escape.
+  // Close on outside click or Escape while visible (not just when pinned).
   $effect(() => {
-    if (!pinned) return;
-    function onPointerDown(e: PointerEvent) {
-      if (host && !host.contains(e.target as Node)) pinned = false;
-    }
-    function onKeydown(e: KeyboardEvent) {
-      if (e.key === "Escape") pinned = false;
-    }
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeydown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeydown);
-    };
+    if (!host || !visible) return;
+    return onDismiss(host, release);
   });
 </script>
 

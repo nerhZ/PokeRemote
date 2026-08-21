@@ -20,7 +20,7 @@
   let showTop = $state(false);
   let searchCollapse = $state<HTMLDivElement | null>(null);
 
-  /** The Pokédex page has its own filter search — hide the global one there. */
+  /** The Pokédex page has its own filter search, so hide the global one there. */
   const onHome = $derived(page.url.pathname === resolve("/"));
 
   /** Mobile search open state. Flips in beforeNavigate so the fly-out starts
@@ -30,12 +30,32 @@
   let searchRow = $state<HTMLDivElement | null>(null);
   let searchH = $state(50);
 
+  // Track the search row's real open height (input + padding). A one-shot
+  // mount measure goes stale: the UI webfont swaps in after load (and
+  // document.fonts.ready can resolve before it does), leaving the open row
+  // shorter than its content so the panel rendered below paints over the
+  // input's bottom edge. Observe the row instead and keep both the CSS var
+  // and an open row's inline height current as its size changes.
+  $effect(() => {
+    const row = searchRow;
+    const outer = searchCollapse;
+    if (!row || !outer) return;
+    const applyHeight = () => {
+      searchH = Math.max(Math.ceil(row.getBoundingClientRect().height), 40);
+      if (searchOpen) outer.style.height = `${searchH}px`;
+    };
+    applyHeight();
+    const observer = new ResizeObserver(applyHeight);
+    observer.observe(row);
+    return () => observer.disconnect();
+  });
+
   // The row never unmounts (a nav-torn-down node can't animate), so fly-out
   // is hand-rolled: a frame-count rAF loop for height (stalls pause it
   // instead of time-based animations skipping to the end) + a compositor
   // opacity transition (keeps fading while the main thread is busy). The
-  // open height is read from the --search-h CSS var (set once from the real
-  // content, so the animation matches even if input sizing changes).
+  // open height comes from the --search-h CSS var, which the ResizeObserver
+  // above keeps matched to the real content.
   $effect(() => {
     const outer = searchCollapse;
     if (!outer) return;
@@ -47,7 +67,7 @@
     const prev = prevOpen;
     prevOpen = open;
 
-    // The row must only clip while animating — idle, its overflow must stay
+    // The row must only clip while animating. Idle, its overflow must stay
     // visible or the absolute suggestion dropdown (top-full) gets cut off.
     // On desktop the row is display:none (lg:hidden), so skip the animation
     // entirely there (an invisible 1s loop would also block the home page's
@@ -126,10 +146,6 @@
 
   onMount(() => {
     setTimeout(dismissAppLoader, 300);
-
-    // Measure the row's real open height (input + padding) once, so the
-    // animation matches content even if input sizing changes.
-    if (searchRow) searchH = Math.max(searchRow.offsetHeight, 40);
 
     theme = getTheme();
     applyTheme();
@@ -228,14 +244,14 @@
 </svelte:head>
 
 <div class="flex min-h-screen flex-col">
-  {#snippet githubLink()}
+  {#snippet githubLink(showTitle: boolean)}
     <a
       href="https://github.com/nerhZ/PokeRemote"
       target="_blank"
       rel="noopener noreferrer"
       class="nav-link border-0 focus:outline-none"
       aria-label="GitHub"
-      title="GitHub"
+      title={showTitle ? "GitHub" : undefined}
     >
       <svg viewBox="0 0 24 24" class="size-5 fill-current">
         <path
@@ -245,12 +261,12 @@
     </a>
   {/snippet}
 
-  {#snippet themeToggle()}
+  {#snippet themeToggle(showTitle: boolean)}
     <button
       onclick={toggleTheme}
       class="nav-link cursor-pointer border-0"
       aria-label="Toggle theme"
-      title="Toggle theme"
+      title={showTitle ? "Toggle theme" : undefined}
     >
       {theme === "dark" ? "☀" : "☾"}
     </button>
@@ -311,13 +327,13 @@
           >{quiz.icon} {quiz.label}</a
         >
         <SpriteToggle />
-        {@render themeToggle()}
-        {@render githubLink()}
+        {@render themeToggle(true)}
+        {@render githubLink(true)}
       </div>
 
       <div class="flex items-center gap-2 lg:hidden">
-        {@render themeToggle()}
-        {@render githubLink()}
+        {@render themeToggle(false)}
+        {@render githubLink(false)}
         <button
           onclick={() => (mobileOpen = !mobileOpen)}
           class="nav-link cursor-pointer border-0"
@@ -344,7 +360,7 @@
 
     {#if mobileOpen}
       <div
-        class="flex flex-col gap-1 border-t px-4 py-3 lg:hidden"
+        class="mt-2 flex flex-col gap-1 border-t px-4 py-3 lg:hidden"
         style="border-color: var(--border); background: var(--bg)"
       >
         {#each primary as link}
