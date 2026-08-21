@@ -36,14 +36,23 @@
 
   const source = $derived(options ?? internalOptions);
 
+  /** Exact name matches first, then prefix matches, then the remaining
+      token matches (id, substring); dex order breaks ties. Keeps short
+      queries from putting an earlier-dex partial match ahead of the entry
+      the user typed (e.g. "mew" must not land on Mewtwo). */
   let suggestions = $derived.by(() => {
-    const q = value.trim();
-    const list = q
-      ? source.filter((o) => tokenMatch(q, o.name, o.id))
-      : selfLoading
-        ? []
-        : source;
-    return list.slice(0, 10);
+    const q = value.trim().toLowerCase();
+    if (!q) return selfLoading ? [] : source.slice(0, 10);
+    const exact: { name: string; id: number }[] = [];
+    const prefix: { name: string; id: number }[] = [];
+    const rest: { name: string; id: number }[] = [];
+    for (const o of source) {
+      const name = o.name.toLowerCase();
+      if (name === q) exact.push(o);
+      else if (name.startsWith(q)) prefix.push(o);
+      else if (tokenMatch(q, o.name, o.id)) rest.push(o);
+    }
+    return [...exact, ...prefix, ...rest].slice(0, 10);
   });
 
   /** Show the display name once the value is a full catalog entry (e.g. after

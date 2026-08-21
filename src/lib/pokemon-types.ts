@@ -558,6 +558,9 @@ export function calculateDamage(opts: {
   stab: boolean;
   typeEffectiveness: number;
   isCritical: boolean;
+  /** Extra multipliers (items, weather, terrain) folded into the single
+      pre-floor modifier chain, matching the games' rounding order. */
+  modifiers?: number[];
 }): { min: number; max: number } {
   const { level, power, attack, defense, stab, typeEffectiveness, isCritical } =
     opts;
@@ -569,6 +572,7 @@ export function calculateDamage(opts: {
   let modifier = typeEffectiveness;
   if (stab) modifier *= 1.5;
   if (isCritical) modifier *= 1.5;
+  for (const m of opts.modifiers ?? []) modifier *= m;
   const min = Math.floor(base * modifier * 0.85);
   const max = Math.floor(base * modifier * 1.0);
   return { min, max };

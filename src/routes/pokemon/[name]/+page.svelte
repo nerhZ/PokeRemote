@@ -74,9 +74,13 @@
     isShiny = false;
     pageLoading.active = true;
     const id = ++requestId;
-    getSpeciesIds().then((ids) => {
-      speciesIds = ids;
-    });
+    getSpeciesIds()
+      .then((ids) => {
+        speciesIds = ids;
+      })
+      // Prev/next are optional chrome; a failure (e.g. offline) must not
+      // surface as an unhandled rejection.
+      .catch(() => {});
     getPokemonDetail(name)
       .then((p) => {
         if (id !== requestId) return;
@@ -174,9 +178,12 @@
   }
 
   let linkCopied = $state(false);
-  function copyLink() {
-    navigator.clipboard?.writeText(window.location.href);
-    flash((v) => (linkCopied = v));
+  async function copyLink() {
+    if (!navigator.clipboard) return;
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      flash((v) => (linkCopied = v));
+    } catch {}
   }
 
   async function setTab(t: typeof tab) {

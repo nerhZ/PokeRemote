@@ -1,7 +1,11 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
-  import { getPokemonMoves, getAutocompleteList } from "$lib/api";
+  import {
+    getPokemonMoves,
+    getAutocompleteList,
+    baseSpeciesName,
+  } from "$lib/api";
   import { pageUrlSync, selectPokemonSlot } from "$lib/url-state";
   import {
     TYPE_COLORS,
@@ -14,6 +18,7 @@
     statValue,
     formatName,
     multiplierLabel,
+    type EvolutionStage,
     type MoveInfo,
     type PokemonDetail,
     type PokemonMoves,
@@ -138,6 +143,20 @@
   /** A Pokémon's base stat by API name, 0 when absent. */
   function baseStat(p: PokemonDetail, name: string): number {
     return p.stats.find((s) => s.name === name)?.base_stat ?? 0;
+  }
+
+  /** Not fully evolved: its species sits in its own evolution chain with at
+      least one further stage (Eviolite only works on such Pokémon). Chain
+      nodes are compared as base species names because regional-form views
+      mirror node names to their variants ("rattata-alola"). */
+  function isNfe(p: PokemonDetail): boolean {
+    const target = baseSpeciesName(p.species_name);
+    function hasChildren(stage: EvolutionStage): boolean {
+      if (baseSpeciesName(stage.name) === target)
+        return stage.children.length > 0;
+      return stage.children.some(hasChildren);
+    }
+    return p.evolution ? hasChildren(p.evolution) : false;
   }
 
   const sync = pageUrlSync("/damage-calc");
@@ -338,7 +357,9 @@
 
   function defenseItemMult(isSpecial: boolean): number {
     const item = DEFENSE_ITEMS.find((i) => i.label === defItem);
-    if (!item) return 1;
+    if (!item || !defender) return 1;
+    // Eviolite only boosts Pokémon that can still evolve.
+    if (item.label === "Eviolite" && !isNfe(defender)) return 1;
     if (item.stat && (item.stat === "special") !== isSpecial) return 1;
     return item.mult;
   }
@@ -419,9 +440,10 @@
       nature: null,
     });
 
-    // Sand boosts Rock SpD, snow boosts Ice Def (defender-typed env bonuses).
-    // Gen VII+ critical hits ignore those boosts, so crits compute against
-    // the base defense (items still apply; crits don't ignore items).
+    // Defender-typed environment bonuses: sand boosts Rock SpD (Gen IV+,
+    // still active in Gen IX), snow boosts Ice Def (Gen IX). Gen VII+
+    // critical hits ignore those boosts, so crits compute against the base
+    // defense (items still apply; crits don't ignore items).
     const envDefMult =
       (weather === "sand" && isSpecial && defender.types.includes("rock")) ||
       (weather === "snow" && !isSpecial && defender.types.includes("ice"))
@@ -435,13 +457,22 @@
       if (mult !== undefined) effectiveness *= mult;
     }
 
+    // Immunity: no damage is dealt at all, so report it like a status move
+    // instead of a 0-damage roll.
+    if (effectiveness === 0)
+      return {
+        noDamage: true as const,
+        label: `${formatName(defender.name)} is immune to ${formatName(move.type)} moves - no effect.`,
+      };
+
     const stab = attacker.types.includes(move.type);
 
     const wm = weatherMult(move.type);
     const tm = terrainMult(move.type);
 
     function calc(isCritical: boolean) {
-      let { min, max } = calculateDamage({
+      const itemMult = attackItemMult(effectiveness, isSpecial, move.type);
+      return calculateDamage({
         level: attLevel,
         power: move.power,
         attack: atk,
@@ -451,11 +482,8 @@
         stab,
         typeEffectiveness: effectiveness,
         isCritical,
+        modifiers: [itemMult, wm, tm],
       });
-      const itemMult = attackItemMult(effectiveness, isSpecial, move.type);
-      min = Math.floor(min * itemMult * wm * tm);
-      max = Math.floor(max * itemMult * wm * tm);
-      return { min, max };
     }
 
     const { min, max } = calc(crit);
@@ -517,9 +545,8 @@
         } =>
           !!x.result &&
           !x.result.noDamage &&
-          // Moves that compute to zero damage (type immunity, or floor
-          // rounding at extreme level gaps); exclude them and keep the bar
-          // denominator > 0.
+          // Moves that compute to zero damage (floor rounding at extreme
+          // level gaps); exclude them and keep the bar denominator > 0.
           x.result.max > 0,
       )
       .sort((a, b) => b.result.max - a.result.max)
@@ -818,6 +845,7 @@
       </h2>
       <div class="flex flex-wrap items-end gap-3">
         <Dropdown
+          class="w-36"
           selected={weather}
           onselect={(w) => {
             weather = w;
@@ -831,6 +859,7 @@
           options={WEATHER_OPTIONS}
         />
         <Dropdown
+          class="w-44"
           selected={terrain}
           onselect={(t) => {
             terrain = t;
@@ -844,6 +873,7 @@
           options={TERRAIN_OPTIONS}
         />
         <Dropdown
+          class="w-52"
           selected={roll}
           onselect={(r) => {
             roll = r as typeof roll;

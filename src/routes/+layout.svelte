@@ -7,6 +7,7 @@
   import { isActive, gotoRandomPokemon } from "$lib/navigation";
   import { dismissAppLoader } from "$lib/loader";
   import { collapseStarted, collapseFinished } from "$lib/search-anim";
+  import { onDismiss } from "$lib/popup";
   import PokemonSearch from "$lib/components/PokemonSearch.svelte";
   import LoadingBar from "$lib/components/LoadingBar.svelte";
   import NavMenu from "$lib/components/NavMenu.svelte";
@@ -19,6 +20,21 @@
   let theme = $state<ThemeMode>("dark");
   let showTop = $state(false);
   let searchCollapse = $state<HTMLDivElement | null>(null);
+  let mobileMenu = $state<HTMLElement | null>(null);
+  let menuButton = $state<HTMLButtonElement | null>(null);
+
+  // Outside-click/Escape closes the fly-out menu. The hamburger lives outside
+  // the panel, so it's excluded here - its own click handler does the toggle
+  // (a plain dismissal would close on pointerdown and the click would reopen).
+  $effect(() => {
+    if (!mobileOpen || !mobileMenu) return;
+    return onDismiss(mobileMenu, () => (mobileOpen = false), {
+      except: (target) =>
+        menuButton != null &&
+        target instanceof Node &&
+        menuButton.contains(target),
+    });
+  });
 
   /** The Pokédex page has its own filter search, so hide the global one there. */
   const onHome = $derived(page.url.pathname === resolve("/"));
@@ -335,9 +351,11 @@
         {@render themeToggle(false)}
         {@render githubLink(false)}
         <button
+          bind:this={menuButton}
           onclick={() => (mobileOpen = !mobileOpen)}
           class="nav-link cursor-pointer border-0"
-          aria-label="Menu">☰</button
+          aria-label="Menu"
+          aria-expanded={mobileOpen}>☰</button
         >
       </div>
     </nav>
@@ -360,6 +378,7 @@
 
     {#if mobileOpen}
       <div
+        bind:this={mobileMenu}
         class="mt-2 flex flex-col gap-1 border-t px-4 py-3 lg:hidden"
         style="border-color: var(--border); background: var(--bg)"
       >

@@ -46,17 +46,21 @@ export function popupPosition(
  * Document listeners that close an open popup on Escape or outside
  * pointer-down. Returns a cleanup, so it can be returned from an effect
  * guarded on the open state, keeping the listeners registered only while
- * the popup is visible.
+ * the popup is visible. `opts.except` lets a toggle trigger that lives
+ * outside `host` opt out (its own click handler does the toggling).
  */
 export function onDismiss(
   host: HTMLElement | undefined,
   close: () => void,
+  opts: { except?: (target: EventTarget | null) => boolean } = {},
 ): () => void {
   function onKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") close();
   }
   function onPointerDown(e: PointerEvent) {
-    if (host && !host.contains(e.target as Node)) close();
+    if (!host || host.contains(e.target as Node)) return;
+    if (opts.except?.(e.target)) return;
+    close();
   }
   document.addEventListener("keydown", onKeydown);
   document.addEventListener("pointerdown", onPointerDown);

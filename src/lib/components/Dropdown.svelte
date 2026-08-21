@@ -22,6 +22,9 @@
     buttonClass = "",
     searchable = false,
     button,
+    /** Sizing for the host (button + panel share its width); e.g. `w-44` to
+        keep a shrink-wrapped flex item from collapsing around short labels. */
+    class: klass = "",
   }: {
     open?: boolean;
     options: DropdownOption[];
@@ -33,6 +36,7 @@
     /** Show a filter input above the options (for long lists like moves). */
     searchable?: boolean;
     button?: Snippet<[string]>;
+    class?: string;
   } = $props();
 
   let host: HTMLElement | undefined = $state();
@@ -105,7 +109,7 @@
   });
 </script>
 
-<div bind:this={host} class="relative">
+<div bind:this={host} class="relative {klass}">
   <button
     type="button"
     onclick={toggle}

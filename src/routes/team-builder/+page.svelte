@@ -207,8 +207,14 @@
     if (!p) return;
     const names = p.split(",").filter(Boolean).slice(0, 6);
     const currentNames = new Set(team.map((t) => t.name));
-    if (names.every((n) => currentNames.has(n))) return;
     const rawSets = page.url.searchParams.get("s");
+    if (names.every((n) => currentNames.has(n))) {
+      // Same members. Only URL-carried set data that differs from the board
+      // still needs applying (a shared link whose movesets differ); when the
+      // encoded sets match - e.g. after our own syncUrl() - there's nothing
+      // to load.
+      if (!rawSets || rawSets === encodeSets()) return;
+    }
     const decoded = rawSets ? decodeSets(rawSets) : [];
     loadingTeam = true;
     try {

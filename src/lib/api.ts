@@ -159,6 +159,20 @@ function findAliasRegion(name: string): string | null {
   return null;
 }
 
+/** Strip regional-form naming back to its base species name
+    ("rattata-alola" → "rattata"), including alias forms whose names carry no
+    region suffix ("basculin-white-striped" → "basculin"). */
+export function baseSpeciesName(name: string): string {
+  for (const aliases of Object.values(REGIONAL_ALIASES)) {
+    for (const [base, alias] of Object.entries(aliases)) {
+      if (name === alias) return base;
+    }
+  }
+  const segs = name.split("-");
+  if (REGIONAL_SUFFIXES.includes(segs[segs.length - 1])) segs.pop();
+  return segs.join("-");
+}
+
 /** Regional variant entries keyed by base name, from the cached form catalog. */
 async function getRegionalVariantMap(
   region: string,
@@ -430,17 +444,23 @@ let _speciesIdsCache: number[] | null = null;
 // The learner name lists are large, so they're cached in memory only; the
 // persisted move/ability caches keep just the counts.
 
-/** Memoized name-list lookup keyed by resource name (memory only). */
+/** Memoized name-list lookup keyed by resource name (memory only). Caches the
+    in-flight promise so concurrent first calls share one request; failures are
+    evicted so a later call can retry. */
 function memoizedNameLookup(
   fetchNames: (name: string) => Promise<string[]>,
 ): (name: string) => Promise<string[]> {
-  const cache = new Map<string, string[]>();
-  return async (name) => {
-    const cached = cache.get(name);
-    if (cached) return cached;
-    const names = await fetchNames(name);
-    cache.set(name, names);
-    return names;
+  const cache = new Map<string, Promise<string[]>>();
+  return (name) => {
+    let pending = cache.get(name);
+    if (!pending) {
+      pending = fetchNames(name).catch((err) => {
+        cache.delete(name);
+        throw err;
+      });
+      cache.set(name, pending);
+    }
+    return pending;
   };
 }
 
@@ -465,12 +485,28 @@ export async function getSpeciesIds(): Promise<number[]> {
     SPECIES_IDS_CACHE_KEY,
     SPECIES_IDS_CACHE_VERSION,
   );
-  if (cached) {
-    const count = await fetchResourceCount(`${API_BASE}/pokemon-species`);
-    if (count !== null && cached.total === count) {
-      _speciesIdsCache = cached.ids;
-      return _speciesIdsCache;
-    }
+  if (cached?.ids.length) {
+    // Serve the cached ids immediately (offline-safe); validate the live
+    // count in the background and rebuild only when it changed.
+    _speciesIdsCache = cached.ids;
+    validateInBackground(
+      SPECIES_IDS_CACHE_KEY,
+      SPECIES_IDS_CACHE_VERSION,
+      `${API_BASE}/pokemon-species`,
+      cached.total,
+      async () => {
+        const data = await fetchJson(
+          `${API_BASE}/pokemon-species?limit=1025&offset=0`,
+        );
+        const ids = data.results.map((s: any) => parseIdFromUrl(s.url));
+        // Never persist an empty result; it would otherwise come back as a
+        // permanent "no species" cache.
+        if (ids.length === 0) return null;
+        _speciesIdsCache = ids;
+        return { ids, total: ids.length };
+      },
+    );
+    return _speciesIdsCache;
   }
   const data = await fetchJson(
     `${API_BASE}/pokemon-species?limit=1025&offset=0`,
@@ -961,6 +997,22 @@ interface ItemsCache {
   results: ItemSummary[];
 }
 
+/** Fetch one item-list page and hydrate each entry's details, dropping failures. */
+async function fetchItemPage(
+  limit: number,
+  offset: number,
+): Promise<{ count: number; results: ItemSummary[] }> {
+  const data = await fetchJson(
+    `${API_BASE}/item?limit=${limit}&offset=${offset}`,
+  );
+  const results = (
+    await Promise.all(
+      data.results.map((item: any) => fetchItemDetail(item.url)),
+    )
+  ).filter((r): r is ItemSummary => r !== null);
+  return { count: data.count, results };
+}
+
 export const getItemsList = async ({
   limit = 60,
   offset = 0,
@@ -971,37 +1023,39 @@ export const getItemsList = async ({
 }> => {
   if (offset === 0) {
     const cached = readCache<ItemsCache>(ITEMS_CACHE_KEY, ITEMS_CACHE_VERSION);
-    if (cached) {
-      const count = await fetchResourceCount(`${API_BASE}/item`);
-      if (count !== null && cached.count === count) {
-        return {
-          results: cached.results.slice(0, limit),
-          count: cached.count,
-          next_offset: Math.min(limit, cached.results.length),
-        };
-      }
+    if (cached?.results.length) {
+      // Serve the cached first page immediately (offline-safe); validate the
+      // live count in the background and rebuild only when it changed.
+      validateInBackground(
+        ITEMS_CACHE_KEY,
+        ITEMS_CACHE_VERSION,
+        `${API_BASE}/item`,
+        cached.count,
+        async (count) => {
+          const page = await fetchItemPage(limit, 0);
+          // Never persist an empty result; it would otherwise come back as a
+          // permanent "no items" cache.
+          if (page.results.length === 0) return null;
+          return { count, results: page.results };
+        },
+      );
+      return {
+        results: cached.results.slice(0, limit),
+        count: cached.count,
+        next_offset: Math.min(limit, cached.results.length),
+      };
     }
   }
 
-  const data = await fetchJson(
-    `${API_BASE}/item?limit=${limit}&offset=${offset}`,
-  );
-  const results = (
-    await Promise.all(
-      data.results.map((item: any) => fetchItemDetail(item.url)),
-    )
-  ).filter((r): r is ItemSummary => r !== null);
+  const { count, results } = await fetchItemPage(limit, offset);
 
-  if (offset === 0) {
-    writeCache(ITEMS_CACHE_KEY, ITEMS_CACHE_VERSION, {
-      count: data.count,
-      results,
-    });
+  if (offset === 0 && results.length > 0) {
+    writeCache(ITEMS_CACHE_KEY, ITEMS_CACHE_VERSION, { count, results });
   }
 
   return {
     results,
-    count: data.count,
+    count,
     next_offset: offset + limit,
   };
 };
@@ -1230,16 +1284,12 @@ async function fetchAbilityEntry(name: string): Promise<AbilityEntry | null> {
   }
 }
 
-/** Full ability dex with details, cached in localStorage (validated by live count). */
-export async function getAllAbilities(): Promise<AbilityEntry[]> {
-  const cached = readCache<{ data: AbilityEntry[]; total: number }>(
-    ABILITIES_CACHE_KEY,
-    ABILITIES_CACHE_VERSION,
-  );
-  if (cached) {
-    const count = await fetchResourceCount(`${API_BASE}/ability`);
-    if (count !== null && cached.total === count) return cached.data;
-  }
+/** Full ability dex from the live API; keeps the raw list length for cache
+    validation even when individual detail fetches fail. */
+async function buildAbilityEntries(): Promise<{
+  entries: AbilityEntry[];
+  total: number;
+}> {
   const { results } = await fetchNameIdList(`${API_BASE}/ability`);
   const fetched = await inBatches(results, 20, (a) =>
     fetchAbilityEntry(a.name),
@@ -1247,10 +1297,40 @@ export async function getAllAbilities(): Promise<AbilityEntry[]> {
   const entries = fetched.filter((e): e is AbilityEntry => e !== null);
   persistAbilityCache();
   entries.sort((a, b) => a.name.localeCompare(b.name));
-  writeCache(ABILITIES_CACHE_KEY, ABILITIES_CACHE_VERSION, {
-    data: entries,
-    total: results.length,
-  });
+  return { entries, total: results.length };
+}
+
+/** Full ability dex with details, cached in localStorage (validated by live count). */
+export async function getAllAbilities(): Promise<AbilityEntry[]> {
+  const cached = readCache<{ data: AbilityEntry[]; total: number }>(
+    ABILITIES_CACHE_KEY,
+    ABILITIES_CACHE_VERSION,
+  );
+  if (cached?.data.length) {
+    // Serve the cached dex immediately (offline-safe); validate the live
+    // count in the background and rebuild only when it changed.
+    validateInBackground(
+      ABILITIES_CACHE_KEY,
+      ABILITIES_CACHE_VERSION,
+      `${API_BASE}/ability`,
+      cached.total,
+      async () => {
+        const { entries, total } = await buildAbilityEntries();
+        // Never persist an empty result; it would otherwise come back as a
+        // permanent "no abilities" cache.
+        if (entries.length === 0) return null;
+        return { data: entries, total };
+      },
+    );
+    return cached.data;
+  }
+  const { entries, total } = await buildAbilityEntries();
+  if (entries.length > 0) {
+    writeCache(ABILITIES_CACHE_KEY, ABILITIES_CACHE_VERSION, {
+      data: entries,
+      total,
+    });
+  }
   return entries;
 }
 
@@ -1263,13 +1343,19 @@ export async function getMovesTotal(): Promise<number> {
   return (await getAllMoveNames()).length;
 }
 
-/** A name-sorted slice of move details; already-fetched moves come from cache. */
+/** A name-sorted slice of move details; already-fetched moves come from cache.
+    Returns the offset to resume from: every name in the requested range counts
+    as consumed even if its fetch failed, so paging never re-requests (and
+    duplicate) the tail of a partially-failed slice. */
 export async function getMovesSlice(
   offset: number,
   limit: number,
-): Promise<MoveDetail[]> {
+): Promise<{ moves: MoveDetail[]; nextOffset: number }> {
   _sortedMoveNames ??= (await getAllMoveNames()).map((r) => r.name).sort();
-  return (
-    await fetchMoveDetails(_sortedMoveNames.slice(offset, offset + limit))
-  ).filter((m): m is MoveDetail => m !== null);
+  const names = _sortedMoveNames.slice(offset, offset + limit);
+  const fetched = await fetchMoveDetails(names);
+  return {
+    moves: fetched.filter((m): m is MoveDetail => m !== null),
+    nextOffset: offset + names.length,
+  };
 }

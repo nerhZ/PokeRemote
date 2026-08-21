@@ -35,7 +35,7 @@
     loadingMore = true;
     stalled = false;
     try {
-      const slice = await getMovesSlice(offset, PAGE);
+      const { moves: slice, nextOffset } = await getMovesSlice(offset, PAGE);
       if (slice.length === 0) {
         // Every fetch in this slice failed (offline/rate-limited): stop paging
         // instead of re-requesting the same empty range forever.
@@ -44,7 +44,7 @@
         else stalled = true;
       } else {
         moves = [...moves, ...slice];
-        offset += slice.length;
+        offset = nextOffset;
       }
     } catch (e: any) {
       if (moves.length === 0) error = e.message;
@@ -105,7 +105,7 @@
     <h1>Move Dex</h1>
     <p>
       Browse all moves with power, accuracy, PP, and effects. {total
-        ? `${offset} / ${total} loaded`
+        ? `${moves.length} / ${total} loaded`
         : ""}
     </p>
   </div>

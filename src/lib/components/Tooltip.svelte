@@ -41,6 +41,7 @@
   let pinned = $state(false);
   let popupPos = $state({ left: 0, top: 0 });
   let popupTranslate = $state("0");
+  let popupSide = $state<"top" | "bottom">("top");
 
   /** Hover, keyboard focus, or an explicit pin all keep the popup open. */
   let visible = $derived(hovered || focused || pinned);
@@ -59,17 +60,30 @@
       rect.right,
       tooltipWidth || popupEl?.clientWidth || 0,
     );
-    const top = position === "bottom" ? rect.bottom + 10 : rect.top - 10;
     const minTop = 8;
+    // A "top" popup renders above its anchor (translate -100%); when the host
+    // sits too close to the viewport top for that, flip it below instead if
+    // there is room (before the height is known, keep the requested side).
+    let side = position;
+    if (
+      side === "top" &&
+      popupHeight > 0 &&
+      rect.top - 10 - popupHeight < minTop &&
+      rect.bottom + 10 + popupHeight <= window.innerHeight - minTop
+    ) {
+      side = "bottom";
+    }
+    const top = side === "bottom" ? rect.bottom + 10 : rect.top - 10;
     const maxTop =
-      position === "bottom"
-        ? window.innerHeight - 8 - popupHeight
-        : window.innerHeight - 8;
+      side === "bottom"
+        ? window.innerHeight - minTop - popupHeight
+        : window.innerHeight - minTop;
     popupPos = {
       left: pos.left,
       top: Math.max(minTop, Math.min(top, maxTop)),
     };
     popupTranslate = pos.translateX;
+    popupSide = side;
   }
 
   /** Close this tooltip fully and give up the global visibility claim. */
@@ -197,7 +211,7 @@
       class="pointer-events-none fixed z-[9999] rounded-xl border p-3 text-left text-[11px] leading-relaxed shadow-2xl {width} {nowrap
         ? 'whitespace-nowrap'
         : 'whitespace-normal'}"
-      style="left: {popupPos.left}px; top: {popupPos.top}px; transform: translate({popupTranslate}, {position ===
+      style="left: {popupPos.left}px; top: {popupPos.top}px; transform: translate({popupTranslate}, {popupSide ===
       'top'
         ? '-100%'
         : '0'}); background: var(--card); border-color: var(--border); color: var(--muted-strong);"

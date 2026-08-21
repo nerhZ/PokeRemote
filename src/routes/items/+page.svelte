@@ -18,6 +18,7 @@
   let searchResults = $state<ItemSummary[]>([]);
   let searchLoading = $state(false);
   let searchGen = 0;
+  let stalled = $state(false);
 
   async function load(append = false) {
     const data = await getItemsList({
@@ -32,16 +33,24 @@
   async function loadMore() {
     if (loadingMore) return;
     loadingMore = true;
+    stalled = false;
     try {
       await load(true);
-    } catch (e: any) {
-      error = e.message;
+    } catch {
+      // Keep the already-loaded grid; offer an inline retry below.
+      stalled = true;
     } finally {
       loadingMore = false;
     }
   }
 
   onMount(async () => {
+    await retryInitial();
+  });
+
+  async function retryInitial() {
+    loading = true;
+    error = null;
     try {
       await load(false);
     } catch (e: any) {
@@ -49,7 +58,7 @@
     } finally {
       loading = false;
     }
-  });
+  }
 
   $effect(() => {
     const q = search.trim().toLowerCase();
@@ -98,8 +107,13 @@
 
   {#if loading}
     <Skeleton rows={12} />
-  {:else if error}
-    <EmptyState title="Failed to load items" subtitle={error} />
+  {:else if error && items.length === 0}
+    <EmptyState
+      title="Failed to load items"
+      subtitle={error}
+      actionLabel="Try again"
+      onaction={retryInitial}
+    />
   {:else if search && searchLoading}
     <div class="flex justify-center py-16">
       <Pokeball spinning class="h-16 w-16" />
@@ -143,7 +157,17 @@
       {/if}
     </div>
     {#if !search}
-      <InfiniteScroll {loadMore} hasMore={nextOffset < total} />
+      {#if stalled}
+        <div class="mb-4 flex justify-center">
+          <button
+            onclick={loadMore}
+            class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/60 hover:text-white"
+            >Couldn't load more items - retry</button
+          >
+        </div>
+      {:else}
+        <InfiniteScroll {loadMore} hasMore={nextOffset < total} />
+      {/if}
     {/if}
   {/if}
 </div>
