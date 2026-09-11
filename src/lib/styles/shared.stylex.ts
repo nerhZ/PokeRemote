@@ -1,5 +1,6 @@
 ﻿import * as stylex from "@stylexjs/stylex";
 import { tokens } from "./tokens.stylex";
+import { motion } from "./motion.stylex";
 
 const cardEnterKeyframes = stylex.keyframes({
   from: { opacity: 0, transform: "translateY(16px) scale(0.97)" },
@@ -41,12 +42,12 @@ export const shared = stylex.create({
     },
   },
   panel: {
-    borderRadius: "1.5rem",
+    borderRadius: motion.radiusPanel,
     borderWidth: 1,
     borderStyle: "solid",
     backgroundColor: tokens.surface,
     borderColor: tokens.border,
-    boxShadow: tokens.shadow,
+    boxShadow: tokens.shadow1,
     color: tokens.text,
     padding: {
       default: "1.5rem",
@@ -62,9 +63,17 @@ export const shared = stylex.create({
     fontWeight: 600,
     textDecorationLine: "none",
     transitionProperty: "all",
-    transitionDuration: "150ms",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
+    transitionDuration: motion.durFast,
+    transitionTimingFunction: motion.easeStandard,
     color: tokens.muted,
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
+    },
     ":hover": {
       backgroundColor: tokens.surface2,
       color: tokens.accent,
@@ -81,20 +90,21 @@ export const shared = stylex.create({
   pokeCard: {
     position: "relative",
     display: "block",
-    borderRadius: "1rem",
+    borderRadius: motion.radiusCard,
     borderWidth: 1,
     borderStyle: "solid",
     textDecorationLine: "none",
     transitionProperty: "all",
-    transitionDuration: "300ms",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
+    transitionDuration: motion.durBase,
+    transitionTimingFunction: motion.easeStandard,
     backgroundColor: tokens.surface,
     borderColor: tokens.border,
     color: tokens.text,
-    boxShadow: tokens.shadow,
+    boxShadow: tokens.shadow1,
     ":hover": {
       top: "-0.375rem",
       borderColor: `color-mix(in srgb, ${tokens.accent} 35%, ${tokens.border})`,
+      boxShadow: tokens.shadow2,
     },
   },
   typeEdge: {
@@ -111,7 +121,7 @@ export const shared = stylex.create({
     borderStyle: "solid",
     borderColor: tokens.border,
     color: tokens.text,
-    borderRadius: "0.75rem",
+    borderRadius: motion.radiusControl,
     ":focus": {
       outlineStyle: "none",
       borderColor: `color-mix(in srgb, ${tokens.accent} 55%, ${tokens.border})`,
@@ -136,7 +146,7 @@ export const shared = stylex.create({
     animationTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
     animationFillMode: "backwards",
     "@media (prefers-reduced-motion: reduce)": {
-      animationName: null,
+      animationName: "none",
     },
   },
 });

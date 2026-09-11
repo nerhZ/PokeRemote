@@ -1,4 +1,5 @@
 ﻿import * as stylex from "@stylexjs/stylex";
+import { motion } from "../styles/motion.stylex";
 import { tokens } from "../styles/tokens.stylex";
 
 export const styles = stylex.create({
@@ -33,7 +34,7 @@ export const styles = stylex.create({
     borderRadius: "9999px",
     backgroundColor: tokens.accent,
     transitionProperty: "all",
-    transitionDuration: "300ms",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
+    transitionDuration: motion.durBase,
+    transitionTimingFunction: motion.easeStandard,
   },
 });

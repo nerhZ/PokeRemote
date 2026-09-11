@@ -28,7 +28,7 @@
   <!-- svelte-ignore a11y_no_noninteractive_tabindex: tooltip trigger; focus reveals the popup -->
   <span tabindex="0" {...stylex.attrs(styles.trigger)}>
     {#if move.type}
-      <TypeBadge type={move.type} size="xs" tooltip={false} />
+      <TypeBadge type={move.type} size="xs" tooltip={false} link={false} />
     {/if}
     {formatName(move.name)}
   </span>

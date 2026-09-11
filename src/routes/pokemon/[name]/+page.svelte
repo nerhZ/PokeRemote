@@ -412,13 +412,21 @@
               >
             </div>
             <div {...stylex.attrs(styles.badgeCol)}>
-              {#if pokemon.is_legendary}<span
-                  {...stylex.attrs(styles.rankBadge, styles.legendaryBadge)}
-                  >Legendary</span
+              {#if pokemon.is_legendary}<a
+                  href={resolve("/") + "?special=legendary"}
+                  {...stylex.attrs(
+                    styles.rankBadge,
+                    styles.legendaryBadge,
+                    styles.rankBadgeLink,
+                  )}>Legendary</a
                 >{/if}
-              {#if pokemon.is_mythical}<span
-                  {...stylex.attrs(styles.rankBadge, styles.mythicalBadge)}
-                  >Mythical</span
+              {#if pokemon.is_mythical}<a
+                  href={resolve("/") + "?special=mythical"}
+                  {...stylex.attrs(
+                    styles.rankBadge,
+                    styles.mythicalBadge,
+                    styles.rankBadgeLink,
+                  )}>Mythical</a
                 >{/if}
             </div>
           </div>
@@ -459,12 +467,7 @@
             {/if}
             <div {...stylex.attrs(styles.typeRow)}>
               {#each pokemon.types as type}
-                <a
-                  href={resolve("/") + `?type=${type}`}
-                  {...stylex.attrs(styles.typeLink)}
-                  title={`Show ${formatName(type)}-type Pokémon`}
-                  ><TypeBadge {type} size="md" /></a
-                >
+                <TypeBadge {type} size="md" />
               {/each}
             </div>
             {#if pokemon.flavor_text}

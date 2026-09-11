@@ -1,4 +1,5 @@
 ﻿import * as stylex from "@stylexjs/stylex";
+import { motion } from "../../lib/styles/motion.stylex";
 import { tokens } from "../../lib/styles/tokens.stylex";
 
 export const styles = stylex.create({
@@ -269,6 +270,14 @@ export const styles = stylex.create({
     ":hover": {
       backgroundColor: `color-mix(in srgb, ${tokens.accent} 80%, transparent)`,
     },
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
+    },
   },
   prompt: {
     marginBottom: "1rem",
@@ -437,8 +446,8 @@ export const styles = stylex.create({
     lineHeight: "calc(1.25 / 0.875)",
     transitionProperty:
       "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-    transitionDuration: "150ms",
+    transitionTimingFunction: motion.easeStandard,
+    transitionDuration: motion.durFast,
   },
   bestMoveSelected: {
     borderColor: tokens.accent,
@@ -517,8 +526,8 @@ export const styles = stylex.create({
     textDecorationLine: "none",
     transitionProperty:
       "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-    transitionDuration: "150ms",
+    transitionTimingFunction: motion.easeStandard,
+    transitionDuration: motion.durFast,
     ":hover": {
       backgroundColor: tokens.surf5,
     },

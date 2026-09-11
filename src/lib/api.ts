@@ -444,17 +444,19 @@ let _speciesIdsCache: number[] | null = null;
 // The learner name lists are large, so they're cached in memory only; the
 // persisted move/ability caches keep just the counts.
 
-/** Memoized name-list lookup keyed by resource name (memory only). Caches the
+export type Learner = { name: string; id: number };
+
+/** Memoized learner lookup keyed by resource name (memory only). Caches the
     in-flight promise so concurrent first calls share one request; failures are
     evicted so a later call can retry. */
-function memoizedNameLookup(
-  fetchNames: (name: string) => Promise<string[]>,
-): (name: string) => Promise<string[]> {
-  const cache = new Map<string, Promise<string[]>>();
+function memoizedLearnerLookup(
+  fetchLearners: (name: string) => Promise<Learner[]>,
+): (name: string) => Promise<Learner[]> {
+  const cache = new Map<string, Promise<Learner[]>>();
   return (name) => {
     let pending = cache.get(name);
     if (!pending) {
-      pending = fetchNames(name).catch((err) => {
+      pending = fetchLearners(name).catch((err) => {
         cache.delete(name);
         throw err;
       });
@@ -464,16 +466,27 @@ function memoizedNameLookup(
   };
 }
 
-/** API names of every Pokémon that learns the move (fetched on demand). Errors propagate so callers can show a failure state. */
-export const getMoveLearners = memoizedNameLookup(async (name) => {
+/** API names of every Pokémon that learns the move, with ids for sprites. Fetched on demand; errors propagate so callers can show a failure state. */
+export const getMoveLearners = memoizedLearnerLookup(async (name) => {
   const md = await fetchJson(`${API_BASE}/move/${name}`);
-  return md.learned_by_pokemon?.map((p: any) => p.name) ?? [];
+  return (
+    md.learned_by_pokemon
+      ?.map((p: any) => ({ name: p.name, id: parseIdFromUrl(p.url) }))
+      .filter((p: Learner) => p.name && p.id > 0) ?? []
+  );
 });
 
-/** API names of every Pokémon that has the ability (fetched on demand). Errors propagate so callers can show a failure state. */
-export const getAbilityPokemon = memoizedNameLookup(async (name) => {
+/** API names of every Pokémon that has the ability, with ids for sprites. Fetched on demand; errors propagate so callers can show a failure state. */
+export const getAbilityPokemon = memoizedLearnerLookup(async (name) => {
   const ad = await fetchJson(`${API_BASE}/ability/${name}`);
-  return ad.pokemon?.map((p: any) => p.pokemon?.name).filter(Boolean) ?? [];
+  return (
+    ad.pokemon
+      ?.map((p: any) => ({
+        name: p.pokemon?.name,
+        id: parseIdFromUrl(p.pokemon?.url ?? ""),
+      }))
+      .filter((p: Learner) => p.name && p.id > 0) ?? []
+  );
 });
 
 const SPECIES_IDS_CACHE_KEY = "pokeremote:species-ids";

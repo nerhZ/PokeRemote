@@ -1,4 +1,5 @@
-import * as stylex from "@stylexjs/stylex";
+﻿import * as stylex from "@stylexjs/stylex";
+import { motion } from "../styles/motion.stylex";
 import { tokens } from "../styles/tokens.stylex";
 
 export const styles = stylex.create({
@@ -13,8 +14,8 @@ export const styles = stylex.create({
     fontSize: "0.875rem",
     lineHeight: "calc(1.25 / 0.875)",
     transitionProperty: "all",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-    transitionDuration: "150ms",
+    transitionTimingFunction: motion.easeStandard,
+    transitionDuration: motion.durFast,
     outlineStyle: "none",
     "::placeholder": {
       color: tokens.muted,
@@ -36,13 +37,13 @@ export const styles = stylex.create({
     maxHeight: "18rem",
     width: "100%",
     overflowY: "auto",
-    borderRadius: "0.75rem",
+    borderRadius: motion.radiusControl,
     borderWidth: 1,
     borderStyle: "solid",
     borderColor: tokens.border,
     backgroundColor: tokens.card,
     paddingBlock: "0.25rem",
-    boxShadow: "0 25px 50px -12px rgb(0 0 0 / 0.25)",
+    boxShadow: tokens.shadow3,
   },
   option: {
     display: "flex",
@@ -58,8 +59,8 @@ export const styles = stylex.create({
     color: tokens.mutedStrong,
     transitionProperty:
       "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-    transitionDuration: "150ms",
+    transitionTimingFunction: motion.easeStandard,
+    transitionDuration: motion.durFast,
   },
   optionActive: {
     backgroundColor: tokens.surface2,

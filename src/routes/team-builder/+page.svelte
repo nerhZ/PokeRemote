@@ -646,7 +646,11 @@
               {formatName(p.name)}
             </span>
             <span {...stylex.attrs(styles.slotTypes)}>
-              {#each p.types as t}<TypeBadge type={t} size="xs" />{/each}
+              {#each p.types as t}<TypeBadge
+                  type={t}
+                  size="xs"
+                  link={false}
+                />{/each}
             </span>
             {#if hasSet}
               <span {...stylex.attrs(styles.setBadge)}> set </span>
@@ -739,6 +743,7 @@
                             type={move.type}
                             size="xs"
                             tooltip={false}
+                            link={false}
                           />
                         {/if}
                         <span>{formatName(selected)}</span>

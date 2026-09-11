@@ -173,6 +173,7 @@
                 type={o.badge}
                 size="xs"
                 tooltip={false}
+                link={false}
               />{/if}
             <span {...stylex.attrs(styles.optionLabel)}
               >{o.label ?? formatName(o.value)}</span

@@ -1,4 +1,5 @@
 ﻿import * as stylex from "@stylexjs/stylex";
+import { motion } from "../styles/motion.stylex";
 import { tokens } from "../styles/tokens.stylex";
 
 export const chipStyles = stylex.create({
@@ -13,6 +14,14 @@ export const chipStyles = stylex.create({
     fontWeight: 700,
     letterSpacing: "0.025em",
     textTransform: "uppercase",
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
+    },
   },
   disabled: {
     borderColor: tokens.bd5,

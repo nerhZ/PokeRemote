@@ -1,10 +1,19 @@
 ﻿import * as stylex from "@stylexjs/stylex";
+import { motion } from "../styles/motion.stylex";
 import { tokens } from "../styles/tokens.stylex";
 
 export const styles = stylex.create({
   toggle: {
     cursor: "pointer",
     borderWidth: 0,
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
+    },
   },
   toggleMobile: {
     marginTop: "0.5rem",
@@ -20,8 +29,8 @@ export const styles = stylex.create({
     letterSpacing: "0.05em",
     textTransform: "uppercase",
     transitionProperty: "all",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-    transitionDuration: "150ms",
+    transitionTimingFunction: motion.easeStandard,
+    transitionDuration: motion.durFast,
     opacity: 0.55,
     [stylex.when.ancestor(":hover")]: {
       opacity: 1,

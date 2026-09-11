@@ -1,5 +1,6 @@
-import * as stylex from "@stylexjs/stylex";
+﻿import * as stylex from "@stylexjs/stylex";
 import { tokens } from "../styles/tokens.stylex";
+import { motion } from "../styles/motion.stylex";
 
 export const styles = stylex.create({
   host: {
@@ -22,13 +23,13 @@ export const styles = stylex.create({
     zIndex: 50,
     marginTop: "0.25rem",
     minWidth: "11rem",
-    borderRadius: "0.75rem",
+    borderRadius: motion.radiusControl,
     borderWidth: 1,
     borderStyle: "solid",
     borderColor: tokens.border,
     backgroundColor: tokens.card,
     padding: "0.25rem",
-    boxShadow: "0 25px 50px -12px rgb(0 0 0 / 0.25)",
+    boxShadow: tokens.shadow3,
   },
   menuLeft: {
     left: 0,

@@ -198,7 +198,11 @@
                   {formatId(p.id)}
                 </div>
                 <div {...stylex.attrs(styles.typeRow)}>
-                  {#each p.types as t}<TypeBadge type={t} size="xs" />{/each}
+                  {#each p.types as t}<TypeBadge
+                      type={t}
+                      size="xs"
+                      link={false}
+                    />{/each}
                 </div>
               </div>
             </a>

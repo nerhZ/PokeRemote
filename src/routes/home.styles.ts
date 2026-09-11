@@ -1,4 +1,5 @@
 ﻿import * as stylex from "@stylexjs/stylex";
+import { motion } from "../lib/styles/motion.stylex";
 import { tokens } from "../lib/styles/tokens.stylex";
 
 const pulse = stylex.keyframes({
@@ -147,8 +148,16 @@ export const styles = stylex.create({
     lineHeight: "calc(1.25 / 0.875)",
     fontWeight: 600,
     transitionProperty: "all",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-    transitionDuration: "150ms",
+    transitionTimingFunction: motion.easeStandard,
+    transitionDuration: motion.durFast,
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
+    },
   },
   heroBtnMuted: {
     borderColor: tokens.bd10,
@@ -204,8 +213,8 @@ export const styles = stylex.create({
     paddingBlock: "0.5rem",
     textDecorationLine: "none",
     transitionProperty: "all",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-    transitionDuration: "150ms",
+    transitionTimingFunction: motion.easeStandard,
+    transitionDuration: motion.durFast,
     ":hover": {
       borderColor: tokens.bd20,
     },
@@ -316,6 +325,14 @@ export const styles = stylex.create({
     lineHeight: "calc(1 / 0.75)",
     fontWeight: 600,
     color: tokens.tx70,
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
+    },
   },
   resultCount: {
     fontSize: "0.75rem",
@@ -409,7 +426,7 @@ export const styles = stylex.create({
     objectFit: "contain",
     filter: "drop-shadow(0 25px 25px rgb(0 0 0 / 0.15))",
     transitionProperty: "transform, translate, scale, rotate",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
+    transitionTimingFunction: motion.easeStandard,
     transitionDuration: "500ms",
     translate: "0 0",
     [stylex.when.ancestor(":hover")]: {
@@ -455,6 +472,14 @@ export const styles = stylex.create({
     fontSize: "0.875rem",
     lineHeight: "calc(1.25 / 0.875)",
     backdropFilter: "blur(8px)",
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
+    },
   },
   favActive: {
     color: tokens.yellowText,
@@ -485,6 +510,14 @@ export const styles = stylex.create({
     ":hover": {
       color: tokens.txStrong,
     },
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
+    },
   },
   cardBody: {
     borderTopWidth: 1,
@@ -500,8 +533,8 @@ export const styles = stylex.create({
     color: tokens.tx85,
     transitionProperty:
       "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-    transitionDuration: "150ms",
+    transitionTimingFunction: motion.easeStandard,
+    transitionDuration: motion.durFast,
     [stylex.when.ancestor(":hover")]: {
       color: tokens.txStrong,
     },
@@ -532,8 +565,8 @@ export const styles = stylex.create({
     textDecorationLine: "none",
     transitionProperty:
       "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-    transitionDuration: "150ms",
+    transitionTimingFunction: motion.easeStandard,
+    transitionDuration: motion.durFast,
     color: tokens.text,
     ":hover": {
       backgroundColor: tokens.surf5,

@@ -1,4 +1,5 @@
 ﻿import * as stylex from "@stylexjs/stylex";
+import { motion } from "../styles/motion.stylex";
 import { tokens } from "../styles/tokens.stylex";
 
 export const styles = stylex.create({
@@ -8,8 +9,8 @@ export const styles = stylex.create({
   },
   img: {
     transitionProperty: "opacity",
-    transitionDuration: "300ms",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
+    transitionDuration: motion.durBase,
+    transitionTimingFunction: motion.easeStandard,
   },
   loaded: {
     opacity: 1,

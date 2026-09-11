@@ -1,4 +1,5 @@
 ﻿import * as stylex from "@stylexjs/stylex";
+import { motion } from "../../lib/styles/motion.stylex";
 import { tokens } from "../../lib/styles/tokens.stylex";
 
 export const styles = stylex.create({
@@ -52,10 +53,18 @@ export const styles = stylex.create({
     color: tokens.tx60,
     transitionProperty:
       "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-    transitionDuration: "150ms",
+    transitionTimingFunction: motion.easeStandard,
+    transitionDuration: motion.durFast,
     ":hover": {
       color: tokens.txStrong,
+    },
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
     },
   },
   importToggle: {
@@ -110,6 +119,14 @@ export const styles = stylex.create({
     ":disabled": {
       opacity: 0.4,
     },
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
+    },
   },
   importButton: {
     paddingInline: "1rem",
@@ -148,8 +165,8 @@ export const styles = stylex.create({
   slotWrap: {
     position: "relative",
     transitionProperty: "all",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-    transitionDuration: "150ms",
+    transitionTimingFunction: motion.easeStandard,
+    transitionDuration: motion.durFast,
     ":hover": {
       translate: "0 -0.25rem",
     },
@@ -239,10 +256,18 @@ export const styles = stylex.create({
     fontWeight: 700,
     transitionProperty:
       "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-    transitionDuration: "150ms",
+    transitionTimingFunction: motion.easeStandard,
+    transitionDuration: motion.durFast,
     ":hover": {
       backgroundColor: `color-mix(in srgb, ${tokens.pokemonRed} 40%, transparent)`,
+    },
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
     },
   },
   emptySlot: {
@@ -351,6 +376,14 @@ export const styles = stylex.create({
     paddingBlock: "0.125rem",
     fontSize: "10px",
     fontWeight: 700,
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
+    },
   },
   levelButtonActive: {
     backgroundColor: tokens.accent,

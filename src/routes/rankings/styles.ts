@@ -1,4 +1,5 @@
 ﻿import * as stylex from "@stylexjs/stylex";
+import { motion } from "../../lib/styles/motion.stylex";
 import { tokens } from "../../lib/styles/tokens.stylex";
 
 export const styles = stylex.create({
@@ -23,6 +24,14 @@ export const styles = stylex.create({
     fontWeight: 700,
     letterSpacing: "0.025em",
     textTransform: "uppercase",
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
+    },
   },
   statTabActive: {
     backgroundColor: tokens.accent,
@@ -57,8 +66,8 @@ export const styles = stylex.create({
     padding: "0.875rem",
     textDecorationLine: "none",
     transitionProperty: "all",
-    transitionDuration: "150ms",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
+    transitionDuration: motion.durFast,
+    transitionTimingFunction: motion.easeStandard,
     ":hover": {
       borderColor: tokens.bd20,
       backgroundColor: tokens.surf5,
@@ -88,8 +97,8 @@ export const styles = stylex.create({
     width: "3rem",
     objectFit: "contain",
     transitionProperty: "transform, translate, scale, rotate",
-    transitionDuration: "150ms",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
+    transitionDuration: motion.durFast,
+    transitionTimingFunction: motion.easeStandard,
     [stylex.when.ancestor(":hover")]: {
       scale: 1.1,
     },

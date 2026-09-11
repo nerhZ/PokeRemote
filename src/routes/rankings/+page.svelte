@@ -136,6 +136,7 @@
               {#if entry.types}{#each entry.types as t}<TypeBadge
                     type={t}
                     size="xs"
+                    link={false}
                   />{/each}{/if}
             </div>
           </div>

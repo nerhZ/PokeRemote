@@ -1,10 +1,11 @@
 ﻿import * as stylex from "@stylexjs/stylex";
 import { tokens } from "../styles/tokens.stylex";
+import { motion } from "../styles/motion.stylex";
 
 export const styles = stylex.create({
   input: {
     width: "100%",
-    borderRadius: "0.75rem",
+    borderRadius: motion.radiusControl,
     borderWidth: 1,
     borderStyle: "solid",
     borderColor: tokens.bd10,

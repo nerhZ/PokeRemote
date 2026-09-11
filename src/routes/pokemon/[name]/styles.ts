@@ -1,4 +1,5 @@
 ﻿import * as stylex from "@stylexjs/stylex";
+import { motion } from "../../../lib/styles/motion.stylex";
 import { tokens } from "../../../lib/styles/tokens.stylex";
 
 const pulse = stylex.keyframes({
@@ -51,8 +52,8 @@ export const styles = stylex.create({
     color: tokens.tx60,
     textDecorationLine: "none",
     transitionProperty: "all",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-    transitionDuration: "150ms",
+    transitionTimingFunction: motion.easeStandard,
+    transitionDuration: motion.durFast,
     ":hover": {
       color: tokens.txStrong,
     },
@@ -181,6 +182,14 @@ export const styles = stylex.create({
     fontSize: "10px",
     fontWeight: 900,
     textTransform: "uppercase",
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
+    },
   },
   chipActive: {
     color: tokens.btnFg,
@@ -201,15 +210,15 @@ export const styles = stylex.create({
     textDecorationLine: "none",
     transitionProperty:
       "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-    transitionDuration: "150ms",
+    transitionTimingFunction: motion.easeStandard,
+    transitionDuration: motion.durFast,
     ":hover": {
       color: tokens.txStrong,
     },
   },
   badgeCol: {
     position: "absolute",
-    top: "1rem",
+    bottom: "1rem",
     right: "1rem",
     display: "flex",
     flexDirection: "column",
@@ -224,12 +233,37 @@ export const styles = stylex.create({
     color: tokens.onAccent,
     textTransform: "uppercase",
   },
+  rankBadgeLink: {
+    cursor: "pointer",
+    textDecorationLine: "none",
+    transitionProperty: "all",
+    transitionDuration: motion.durFast,
+    transitionTimingFunction: motion.easeStandard,
+    ":hover": {
+      scale: 1.04,
+    },
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":hover": {
+        scale: 1,
+      },
+      ":active": {
+        scale: 1,
+      },
+    },
+  },
   legendaryBadge: {
-    backgroundImage: `linear-gradient(to right, ${tokens.pokemonYellow}, ${tokens.pokemonGold})`,
+    backgroundImage: `linear-gradient(135deg, #fff8c2 0%, #ffdf4d 25%, ${tokens.pokemonYellow} 50%, ${tokens.pokemonGold} 100%)`,
+    color: tokens.txNavy,
+    boxShadow: `inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 0 12px color-mix(in srgb, ${tokens.pokemonYellow} 45%, transparent)`,
   },
   mythicalBadge: {
     backgroundImage:
       "linear-gradient(to right, oklch(65.6% 0.241 354.308), oklch(62.7% 0.265 303.9))",
+    boxShadow:
+      "inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 0 12px color-mix(in srgb, oklch(65.6% 0.241 354.308) 45%, transparent)",
   },
   identity: {
     marginTop: "1.25rem",
@@ -295,9 +329,6 @@ export const styles = stylex.create({
     flexWrap: "wrap",
     justifyContent: "center",
     gap: "0.5rem",
-  },
-  typeLink: {
-    textDecorationLine: "none",
   },
   flavor: {
     marginTop: "1rem",
@@ -376,8 +407,8 @@ export const styles = stylex.create({
     textDecorationLine: "none",
     color: tokens.text,
     transitionProperty: "all",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-    transitionDuration: "150ms",
+    transitionTimingFunction: motion.easeStandard,
+    transitionDuration: motion.durFast,
   },
   formCardActive: {
     borderColor: tokens.accent,
@@ -551,6 +582,14 @@ export const styles = stylex.create({
     lineHeight: "calc(1 / 0.75)",
     fontWeight: 700,
     textTransform: "uppercase",
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
+    },
   },
   moveTabActive: {
     color: tokens.txStrong,

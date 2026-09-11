@@ -575,7 +575,7 @@
             : styles.bestMoveIdle,
         )}
       >
-        <TypeBadge type={move.type} size="xs" tooltip={false} />
+        <TypeBadge type={move.type} size="xs" tooltip={false} link={false} />
         <span {...stylex.attrs(styles.bestMoveName)}
           >{formatName(move.name)}</span
         >
@@ -615,7 +615,7 @@
         {formatName(p.name)}
       </div>
       <div {...stylex.attrs(styles.selectedCardTypes)}>
-        {#each p.types as t}<TypeBadge type={t} size="xs" />{/each}
+        {#each p.types as t}<TypeBadge type={t} size="xs" link={false} />{/each}
       </div>
     </div>
   </a>
@@ -724,7 +724,12 @@
                         : styles.moveButtonIdle,
                     )}
                   >
-                    <TypeBadge type={m.type} size="xs" tooltip={false} />
+                    <TypeBadge
+                      type={m.type}
+                      size="xs"
+                      tooltip={false}
+                      link={false}
+                    />
                     <span {...stylex.attrs(styles.moveName)}
                       >{formatName(m.name)}</span
                     >

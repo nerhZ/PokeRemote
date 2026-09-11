@@ -1,4 +1,5 @@
 ﻿import * as stylex from "@stylexjs/stylex";
+import { motion } from "../styles/motion.stylex";
 import { tokens } from "../styles/tokens.stylex";
 
 export const styles = stylex.create({
@@ -43,10 +44,18 @@ export const styles = stylex.create({
     backgroundColor: tokens.accent,
     transitionProperty:
       "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke",
-    transitionDuration: "150ms",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
+    transitionDuration: motion.durFast,
+    transitionTimingFunction: motion.easeStandard,
     ":hover": {
       backgroundColor: `color-mix(in srgb, ${tokens.accent} 80%, transparent)`,
+    },
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
     },
   },
 });

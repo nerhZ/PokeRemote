@@ -1,10 +1,11 @@
 ﻿import * as stylex from "@stylexjs/stylex";
+import { motion } from "../styles/motion.stylex";
 import { tokens } from "../styles/tokens.stylex";
 
 export const styles = stylex.create({
   panel: {
-    width: "18rem",
-    maxHeight: "10rem",
+    width: "22rem",
+    maxHeight: "12rem",
     borderRadius: "0.5rem",
     padding: "0.5rem",
   },
@@ -23,10 +24,18 @@ export const styles = stylex.create({
     color: tokens.tx60,
     transitionProperty:
       "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-    transitionDuration: "150ms",
+    transitionTimingFunction: motion.easeStandard,
+    transitionDuration: motion.durFast,
     ":hover": {
       color: tokens.txStrong,
+    },
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
     },
   },
   message: {
@@ -41,9 +50,10 @@ export const styles = stylex.create({
     rowGap: "0.125rem",
   },
   item: {
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
+    display: "flex",
+    minWidth: 0,
+    alignItems: "center",
+    gap: "0.25rem",
     borderRadius: "0.375rem",
     paddingInline: "0.375rem",
     paddingBlock: "0.125rem",
@@ -53,10 +63,28 @@ export const styles = stylex.create({
     textDecorationLine: "none",
     transitionProperty:
       "color, background-color, border-color, outline-color, text-decoration-color, fill, stroke",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-    transitionDuration: "150ms",
+    transitionTimingFunction: motion.easeStandard,
+    transitionDuration: motion.durFast,
     ":hover": {
       backgroundColor: tokens.surf5,
     },
+  },
+  sprite: {
+    width: "1.25rem",
+    height: "1.25rem",
+    flexShrink: 0,
+    objectFit: "contain",
+  },
+  name: {
+    minWidth: 0,
+    flexGrow: 1,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  id: {
+    flexShrink: 0,
+    fontSize: "10px",
+    color: tokens.tx30,
   },
 });

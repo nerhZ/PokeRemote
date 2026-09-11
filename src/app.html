@@ -97,6 +97,12 @@
         background-color: #3884ff;
         color: white;
       }
+      /* Keyboard focus ring. !important overrides the outline:none resets in
+         component styles, which exist to keep mouse clicks quiet. */
+      :focus-visible {
+        outline: 2px solid #3884ff !important;
+        outline-offset: 2px;
+      }
       ::-webkit-scrollbar {
         width: 10px;
         height: 10px;

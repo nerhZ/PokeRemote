@@ -1,4 +1,5 @@
 ﻿import * as stylex from "@stylexjs/stylex";
+import { motion } from "../../lib/styles/motion.stylex";
 import { tokens } from "../../lib/styles/tokens.stylex";
 
 export const styles = stylex.create({
@@ -115,6 +116,14 @@ export const styles = stylex.create({
     color: tokens.tx60,
     ":hover": {
       color: tokens.txStrong,
+    },
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
     },
   },
 });

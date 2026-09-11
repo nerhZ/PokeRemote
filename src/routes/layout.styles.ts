@@ -1,4 +1,5 @@
 ﻿import * as stylex from "@stylexjs/stylex";
+import { motion } from "../lib/styles/motion.stylex";
 import { tokens } from "../lib/styles/tokens.stylex";
 
 export const styles = stylex.create({
@@ -200,10 +201,18 @@ export const styles = stylex.create({
     backgroundColor: `color-mix(in srgb, ${tokens.card} 90%, transparent)`,
     color: tokens.text,
     transitionProperty: "transform, translate, scale, rotate",
-    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-    transitionDuration: "150ms",
+    transitionTimingFunction: motion.easeStandard,
+    transitionDuration: motion.durFast,
     ":hover": {
       translate: "0 -0.125rem",
+    },
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
     },
   },
   footer: {

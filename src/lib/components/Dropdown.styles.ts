@@ -1,5 +1,6 @@
 ﻿import * as stylex from "@stylexjs/stylex";
 import { tokens } from "../styles/tokens.stylex";
+import { motion } from "../styles/motion.stylex";
 
 export const styles = stylex.create({
   host: {
@@ -23,6 +24,14 @@ export const styles = stylex.create({
     ":hover": {
       borderColor: tokens.bd20,
     },
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
+    },
   },
   panel: {
     position: "absolute",
@@ -31,13 +40,13 @@ export const styles = stylex.create({
     maxHeight: "15rem",
     width: "100%",
     overflowY: "auto",
-    borderRadius: "0.75rem",
+    borderRadius: motion.radiusControl,
     borderWidth: 1,
     borderStyle: "solid",
     borderColor: tokens.border,
     backgroundColor: tokens.card,
     padding: "0.25rem",
-    boxShadow: "0 25px 50px -12px rgb(0 0 0 / 0.25)",
+    boxShadow: tokens.shadow3,
   },
   search: {
     width: "100%",
@@ -74,6 +83,14 @@ export const styles = stylex.create({
     color: tokens.tx40,
     ":hover": {
       backgroundColor: tokens.surf5,
+    },
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
     },
   },
   option: {

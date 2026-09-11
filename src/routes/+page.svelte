@@ -609,7 +609,12 @@
                   </h3>
                   <div {...stylex.attrs(styles.typeRow)}>
                     {#each p.types || [] as type}
-                      <TypeBadge {type} size="xs" focusable={false} />
+                      <TypeBadge
+                        {type}
+                        size="xs"
+                        focusable={false}
+                        link={false}
+                      />
                     {/each}
                     <span
                       {...stylex.attrs(
