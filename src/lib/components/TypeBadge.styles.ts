@@ -5,7 +5,7 @@ export const styles = stylex.create({
   tooltip: {
     width: "max-content",
   },
-  link: {
+  grow: {
     display: "inline-flex",
     borderRadius: "9999px",
     textDecorationLine: "none",

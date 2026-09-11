@@ -35,7 +35,7 @@
   <a
     href={resolve("/") + `?type=${type}`}
     tabindex={focusable ? undefined : -1}
-    {...stylex.attrs(styles.link)}
+    {...stylex.attrs(styles.grow)}
   >
     {#if tooltip}
       <Tooltip popupSx={styles.tooltip} {position}>
@@ -51,14 +51,18 @@
     {/if}
   </a>
 {:else if tooltip}
-  <Tooltip popupSx={styles.tooltip} {position}>
-    {#snippet popup()}
-      <TypePopup {type} />
-    {/snippet}
-    {#snippet trigger()}
-      <TypeBadgeInner {type} {size} tabindex={focusable ? 0 : undefined} />
-    {/snippet}
-  </Tooltip>
+  <span {...stylex.attrs(styles.grow)}>
+    <Tooltip popupSx={styles.tooltip} {position}>
+      {#snippet popup()}
+        <TypePopup {type} />
+      {/snippet}
+      {#snippet trigger()}
+        <TypeBadgeInner {type} {size} tabindex={focusable ? 0 : undefined} />
+      {/snippet}
+    </Tooltip>
+  </span>
 {:else}
-  <TypeBadgeInner {type} {size} />
+  <span {...stylex.attrs(styles.grow)}>
+    <TypeBadgeInner {type} {size} />
+  </span>
 {/if}
