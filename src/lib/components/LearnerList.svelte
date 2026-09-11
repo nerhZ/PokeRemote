@@ -1,7 +1,9 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import { formatName } from "$lib/pokemon-types";
+  import * as stylex from "@stylexjs/stylex";
   import Popover from "./Popover.svelte";
+  import { styles } from "./LearnerList.styles";
 
   let {
     name,
@@ -41,30 +43,23 @@
   }
 </script>
 
-<Popover
-  {open}
-  onClose={() => (open = false)}
-  panelClass="w-72 max-h-40 rounded-lg p-2"
->
+<Popover {open} onClose={() => (open = false)} panelSx={styles.panel}>
   {#snippet trigger()}
-    <button
-      onclick={toggle}
-      class="cursor-pointer self-start rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-bold text-white/60 transition-colors hover:text-white"
+    <button onclick={toggle} {...stylex.attrs(styles.trigger)}
       >{label(count)} {open ? "▴" : "▾"}</button
     >
   {/snippet}
   {#snippet panel()}
     {#if loading}
-      <span class="text-xs text-white/40">Loading…</span>
+      <span {...stylex.attrs(styles.message)}>Loading…</span>
     {:else if error}
-      <span class="text-xs text-white/40">Couldn't load names.</span>
+      <span {...stylex.attrs(styles.message)}>Couldn't load names.</span>
     {:else}
-      <div class="grid grid-cols-2 gap-x-3 gap-y-0.5">
+      <div {...stylex.attrs(styles.grid)}>
         {#each names as learner}
           <a
             href={resolve(`/pokemon/${learner}`)}
-            class="truncate rounded-md px-1.5 py-0.5 text-sm no-underline transition-colors hover:bg-white/5 hover:text-white"
-            style="color: var(--muted)">{formatName(learner)}</a
+            {...stylex.attrs(styles.item)}>{formatName(learner)}</a
           >
         {/each}
       </div>

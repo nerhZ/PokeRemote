@@ -1,17 +1,22 @@
 <script lang="ts">
+  import * as stylex from "@stylexjs/stylex";
+  import type { ImageSx } from "$lib/styles/stylex-types";
+  import { styles } from "./PokemonImageCore.styles";
+
   let {
     src,
     fallback,
     alt = "",
-    class: klass = "",
-    style = "",
+    sx,
+    pixelated = false,
     lazy = true,
   }: {
     src: string;
     fallback?: string[];
     alt?: string;
-    class?: string;
-    style?: string;
+    sx?: ImageSx;
+    /** Render the image with hard edges instead of smoothing. */
+    pixelated?: boolean;
     lazy?: boolean;
   } = $props();
 
@@ -29,7 +34,7 @@
 {#if failed}
   <!-- Neutral tile: a white pokeball placeholder read as a bright dead-pixel
        spot against the dark page background. -->
-  <div class="{klass} rounded-lg bg-white/5" {style}></div>
+  <div {...stylex.attrs(styles.placeholder, sx)}></div>
 {:else}
   <!-- Keyed on the effective source: advancing the fallback chain recreates
        the element, so the browser always fires load for the new URL. -->
@@ -37,7 +42,6 @@
     <img
       src={effectiveSrc}
       {alt}
-      {style}
       loading={lazy ? "lazy" : "eager"}
       onload={() => (loaded = true)}
       onerror={() => {
@@ -48,9 +52,12 @@
           failed = true;
         }
       }}
-      class="{klass} transition-opacity duration-300 {loaded
-        ? 'opacity-100'
-        : 'opacity-0'}"
+      {...stylex.attrs(
+        styles.img,
+        sx,
+        loaded ? styles.loaded : styles.loading,
+        pixelated && styles.pixelated,
+      )}
     />
   {/key}
 {/if}

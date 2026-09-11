@@ -1,44 +1,33 @@
 <script lang="ts">
-  const BP_WIDTHS: Record<string, number> = {
-    sm: 640,
-    md: 768,
-    lg: 1024,
-    xl: 1280,
-    "2xl": 1536,
-  };
+  import * as stylex from "@stylexjs/stylex";
+  import type { BoxSx } from "$lib/styles/stylex-types";
+  import { styles } from "./Skeleton.styles";
+
+  const BP = { sm: 640, lg: 1024 };
 
   let {
     rows = 1,
-    class: klass = "h-24",
+    sx,
     grid = true,
     tiles = false,
-    cols = "sm:grid-cols-2 lg:grid-cols-3",
+    cols = 3,
   }: {
     rows?: number;
-    class?: string;
+    sx?: BoxSx;
     grid?: boolean;
     /** Bare tiles without a wrapper grid; drop them into an existing grid so
         they flow into its partial last row instead of leaving holes. */
     tiles?: boolean;
-    cols?: string;
+    cols?: 2 | 3;
   } = $props();
 
-  const colTiers = $derived.by(() => {
-    const tiers: { bp: string | null; cols: number }[] = [];
-    let unsupported = false;
-    for (const m of cols.matchAll(/(?:^|\s)(?:([\w-]+):)?grid-cols-(\d+)/g)) {
-      const prefix = m[1] ?? null;
-      if (prefix !== null && !(prefix in BP_WIDTHS)) {
-        unsupported = true;
-        continue;
-      }
-      tiers.push({ bp: prefix, cols: parseInt(m[2], 10) });
-    }
-    return { tiers, unsupported };
-  });
-
-  const baseCols = $derived(
-    colTiers.tiers.find((t) => t.bp === null)?.cols ?? 1,
+  const tiers = $derived(
+    cols === 2
+      ? [{ width: BP.sm, cols: 2 }]
+      : [
+          { width: BP.sm, cols: 2 },
+          { width: BP.lg, cols: 3 },
+        ],
   );
 
   let activeCols = $state(1);
@@ -51,26 +40,14 @@
       activeCols = 1;
       return;
     }
-    if (colTiers.unsupported) {
-      console.warn(
-        `Skeleton: unsupported grid-cols breakpoint in cols="${cols}" — row fill disabled`,
-      );
-      activeCols = 1;
-      return;
-    }
-    // Ascending by breakpoint width: all queries are cumulative min-widths, so
-    // the last match is the widest tier, independent of cols string order.
-    const mqls = colTiers.tiers
-      .filter((t) => t.bp !== null)
-      .sort((a, b) => BP_WIDTHS[a.bp!] - BP_WIDTHS[b.bp!])
-      .map((t) => ({
-        cols: t.cols,
-        mql: window.matchMedia(`(min-width: ${BP_WIDTHS[t.bp!]}px)`),
-      }));
+    const mqls = tiers.map((t) => ({
+      cols: t.cols,
+      mql: window.matchMedia(`(min-width: ${t.width}px)`),
+    }));
     const update = () => {
-      let cols = baseCols;
-      for (const { cols: c, mql } of mqls) if (mql.matches) cols = c;
-      activeCols = cols;
+      let count = 1;
+      for (const { cols: c, mql } of mqls) if (mql.matches) count = c;
+      activeCols = count;
     };
     update();
     for (const { mql } of mqls) mql.addEventListener("change", update);
@@ -86,18 +63,18 @@
 
 {#if tiles}
   {#each Array(rows) as _}
-    <div class="animate-pulse rounded-2xl bg-white/3 {klass}"></div>
+    <div {...stylex.attrs(styles.tile, sx)}></div>
   {/each}
 {:else if grid}
-  <div class="grid grid-cols-1 gap-3 {cols}">
+  <div {...stylex.attrs(styles.grid, cols === 2 ? styles.cols2 : styles.cols3)}>
     {#each Array(filledRows) as _}
-      <div class="animate-pulse rounded-2xl bg-white/3 {klass}"></div>
+      <div {...stylex.attrs(styles.tile, sx)}></div>
     {/each}
   </div>
 {:else}
-  <div class="space-y-2">
+  <div {...stylex.attrs(styles.stack)}>
     {#each Array(rows) as _}
-      <div class="animate-pulse rounded-2xl bg-white/3 {klass}"></div>
+      <div {...stylex.attrs(styles.tile, sx)}></div>
     {/each}
   </div>
 {/if}

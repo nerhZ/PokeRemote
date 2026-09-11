@@ -12,24 +12,26 @@
 
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import type { HostSx, PopupSx } from "$lib/styles/stylex-types";
+  import * as stylex from "@stylexjs/stylex";
   import { onDismiss, popupPosition } from "$lib/popup";
+  import { dynamic } from "../styles/dynamic.stylex";
+  import { styles } from "./Tooltip.styles";
 
   let {
     popup,
     trigger,
-    width = "w-64",
+    popupSx,
     nowrap = false,
     position = "top",
-    hostClass = "",
-    hostStyle = "",
+    hostSx,
   }: {
     popup: Snippet;
     trigger: Snippet;
-    width?: string;
+    popupSx?: PopupSx;
     nowrap?: boolean;
     position?: "top" | "bottom";
-    hostClass?: string;
-    hostStyle?: string;
+    hostSx?: HostSx;
   } = $props();
 
   let host: HTMLElement | undefined = $state();
@@ -197,24 +199,23 @@
   });
 </script>
 
-<div
-  bind:this={host}
-  class="relative inline-block cursor-default {hostClass}"
-  style={hostStyle}
->
+<div bind:this={host} {...stylex.attrs(styles.host, hostSx)}>
   {#if visible}
     <div
       bind:this={popupEl}
       bind:clientWidth={tooltipWidth}
       bind:clientHeight={popupHeight}
       role="tooltip"
-      class="pointer-events-none fixed z-[9999] rounded-xl border p-3 text-left text-[11px] leading-relaxed shadow-2xl {width} {nowrap
-        ? 'whitespace-nowrap'
-        : 'whitespace-normal'}"
-      style="left: {popupPos.left}px; top: {popupPos.top}px; transform: translate({popupTranslate}, {popupSide ===
-      'top'
-        ? '-100%'
-        : '0'}); background: var(--card); border-color: var(--border); color: var(--muted-strong);"
+      {...stylex.attrs(
+        styles.popup,
+        popupSx,
+        nowrap ? styles.nowrap : styles.normal,
+        dynamic.left(`${popupPos.left}px`),
+        dynamic.top(`${popupPos.top}px`),
+        dynamic.transform(
+          `translate(${popupTranslate}, ${popupSide === "top" ? "-100%" : "0"})`,
+        ),
+      )}
     >
       {@render popup()}
     </div>

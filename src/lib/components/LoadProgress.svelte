@@ -1,5 +1,8 @@
 <script lang="ts">
+  import * as stylex from "@stylexjs/stylex";
   import Pokeball from "./Pokeball.svelte";
+  import { dynamic } from "../styles/dynamic.stylex";
+  import { styles } from "./LoadProgress.styles";
 
   let {
     done,
@@ -16,16 +19,18 @@
   } = $props();
 </script>
 
-<div class="flex flex-col items-center justify-center py-20">
-  <Pokeball class="mb-8 h-24 w-24" spinning />
+<div {...stylex.attrs(styles.root)}>
+  <Pokeball sx={styles.pokeball} spinning />
   {#if total > 0}
-    <p class="text-sm font-semibold" style="color: var(--text)">
+    <p {...stylex.attrs(styles.label)}>
       Loading {done} / {total}{noun ? ` ${noun}` : ""}...
     </p>
-    <div class="mt-4 h-1.5 w-64 overflow-hidden rounded-full bg-white/6">
+    <div {...stylex.attrs(styles.track)}>
       <div
-        class="bg-accent h-full rounded-full transition-all duration-300"
-        style="width: {(done / (total || 1)) * 100}%"
+        {...stylex.attrs(
+          styles.fill,
+          dynamic.width(`${(done / (total || 1)) * 100}%`),
+        )}
       ></div>
     </div>
   {:else if children}

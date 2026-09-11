@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { ImageSx } from "$lib/styles/stylex-types";
   import { spriteMode } from "$lib/sprite-mode.svelte";
   import PokemonImageCore from "./PokemonImageCore.svelte";
 
@@ -6,8 +7,7 @@
     src,
     id,
     alt = "",
-    class: klass = "",
-    style = "",
+    sx,
     lazy = true,
   }: {
     src: string;
@@ -15,19 +15,12 @@
         internally (animated → classic sprite → artwork fallback). */
     id?: number;
     alt?: string;
-    class?: string;
-    style?: string;
+    sx?: ImageSx;
     lazy?: boolean;
   } = $props();
 
   const sources = $derived(
     id != null ? spriteMode.thumbnail(id, src) : { src, fallback: [] },
-  );
-
-  const effectiveStyle = $derived(
-    id != null && spriteMode.active
-      ? `${style}${style ? "; " : ""}image-rendering: pixelated`
-      : style,
   );
 </script>
 
@@ -39,8 +32,8 @@
     src={sources.src}
     fallback={sources.fallback}
     {alt}
-    class={klass}
-    style={effectiveStyle}
+    {sx}
+    pixelated={id != null && spriteMode.active}
     {lazy}
   />
 {/key}

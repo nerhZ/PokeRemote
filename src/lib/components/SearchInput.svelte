@@ -1,12 +1,16 @@
 <script lang="ts">
+  import * as stylex from "@stylexjs/stylex";
+  import type { BoxSx } from "$lib/styles/stylex-types";
+  import { styles } from "./SearchInput.styles";
+
   let {
     value = $bindable(""),
     placeholder = "Search...",
-    class: klass = "",
+    sx,
   }: {
     value?: string;
     placeholder?: string;
-    class?: string;
+    sx?: BoxSx;
   } = $props();
 </script>
 
@@ -15,5 +19,5 @@
   bind:value
   {placeholder}
   aria-label={placeholder}
-  class="focus:border-accent/50 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm placeholder-white/30 outline-none {klass}"
+  {...stylex.attrs(styles.input, sx)}
 />

@@ -1,8 +1,11 @@
 <script lang="ts">
+  import * as stylex from "@stylexjs/stylex";
+  import type { ButtonSx, PopupSx } from "$lib/styles/stylex-types";
   import { formatName } from "$lib/pokemon-types";
   import { onDismiss } from "$lib/popup";
   import type { Snippet } from "svelte";
   import TypeBadge from "./TypeBadge.svelte";
+  import { styles } from "./Dropdown.styles";
 
   export type DropdownOption = {
     value: string;
@@ -19,12 +22,13 @@
     onselect,
     onclear,
     placeholder = "None",
-    buttonClass = "",
+    buttonSx,
     searchable = false,
     button,
-    /** Sizing for the host (button + panel share its width); e.g. `w-44` to
-        keep a shrink-wrapped flex item from collapsing around short labels. */
-    class: klass = "",
+    /** Sizing for the host. The button and panel share its width, so pass a
+        width style (for example `{ width: "11rem" }`) to keep a
+        shrink-wrapped flex item from collapsing around short labels. */
+    sx,
   }: {
     open?: boolean;
     options: DropdownOption[];
@@ -32,11 +36,11 @@
     onselect: (value: string) => void;
     onclear?: () => void;
     placeholder?: string;
-    buttonClass?: string;
+    buttonSx?: ButtonSx;
     /** Show a filter input above the options (for long lists like moves). */
     searchable?: boolean;
     button?: Snippet<[string]>;
-    class?: string;
+    sx?: PopupSx;
   } = $props();
 
   let host: HTMLElement | undefined = $state();
@@ -109,14 +113,14 @@
   });
 </script>
 
-<div bind:this={host} class="relative {klass}">
+<div bind:this={host} {...stylex.attrs(styles.host, sx)}>
   <button
     type="button"
     onclick={toggle}
     onkeydown={onKeydown}
     aria-haspopup="listbox"
     aria-expanded={open}
-    class="w-full cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left text-xs text-white/70 outline-none hover:border-white/20 {buttonClass}"
+    {...stylex.attrs(styles.button, buttonSx)}
   >
     {#if button}
       {@render button(selected)}
@@ -129,8 +133,7 @@
     <div
       role="listbox"
       aria-label={placeholder}
-      class="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border bg-(--card) p-1 shadow-2xl"
-      style="border-color: var(--border)"
+      {...stylex.attrs(styles.panel)}
     >
       {#if searchable}
         <input
@@ -139,7 +142,7 @@
           onkeydown={onKeydown}
           placeholder="Filter..."
           aria-label={`Filter ${placeholder.toLowerCase()}`}
-          class="focus:border-accent/50 mb-1 w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white/70 placeholder-white/30 outline-none"
+          {...stylex.attrs(styles.search)}
         />
       {/if}
       {#if onclear}
@@ -148,8 +151,7 @@
           onclick={clear}
           role="option"
           aria-selected={selected === ""}
-          class="w-full cursor-pointer rounded-lg border-0 bg-transparent px-3 py-2 text-left text-xs text-white/40 hover:bg-white/5"
-          >None</button
+          {...stylex.attrs(styles.clear)}>None</button
         >
       {/if}
       {#each filteredOptions as o, i}
@@ -160,24 +162,26 @@
           role="option"
           id={`dd-${uid}-opt-${i}`}
           aria-selected={selected === o.value}
-          class="flex w-full flex-col gap-0.5 rounded-lg border-0 bg-transparent px-3 py-2 text-left text-xs text-white/70 hover:bg-white/5 {selected ===
-          o.value
-            ? 'bg-white/10'
-            : ''} {i === highlight ? 'bg-white/5' : ''}"
+          {...stylex.attrs(
+            styles.option,
+            i === highlight && styles.optionHighlighted,
+            selected === o.value && styles.optionSelected,
+          )}
         >
-          <span class="flex items-center gap-1.5">
+          <span {...stylex.attrs(styles.optionRow)}>
             {#if o.badge}<TypeBadge
                 type={o.badge}
                 size="xs"
                 tooltip={false}
               />{/if}
-            <span class="truncate">{o.label ?? formatName(o.value)}</span>
-            {#if o.meta}<span class="ml-auto shrink-0 text-[10px] text-white/30"
+            <span {...stylex.attrs(styles.optionLabel)}
+              >{o.label ?? formatName(o.value)}</span
+            >
+            {#if o.meta}<span {...stylex.attrs(styles.optionMeta)}
                 >{o.meta}</span
               >{/if}
           </span>
-          {#if o.hint}<span class="text-[10px] leading-tight text-white/30"
-              >{o.hint}</span
+          {#if o.hint}<span {...stylex.attrs(styles.optionHint)}>{o.hint}</span
             >{/if}
         </button>
       {/each}

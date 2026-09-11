@@ -4,6 +4,9 @@
     formatName,
     STAT_LABELS,
   } from "$lib/pokemon-types";
+  import * as stylex from "@stylexjs/stylex";
+  import { dynamic } from "../styles/dynamic.stylex";
+  import { styles } from "./RadarChart.styles";
   let {
     pokemon,
     color = "#777",
@@ -44,12 +47,12 @@
   );
 </script>
 
-<svg viewBox="0 0 200 200" class="mx-auto w-full">
+<svg viewBox="0 0 200 200" {...stylex.attrs(styles.chart)}>
   {#each gridRings as ring}
     <polygon
       points={ring}
       fill="none"
-      style="stroke: var(--chart-grid)"
+      {...stylex.attrs(styles.grid)}
       stroke-width="1"
     />
   {/each}
@@ -60,7 +63,7 @@
       y1={cy}
       x2={cx + maxR * Math.cos(a)}
       y2={cy + maxR * Math.sin(a)}
-      style="stroke: var(--chart-grid)"
+      {...stylex.attrs(styles.grid)}
       stroke-width="1"
     />
   {/each}
@@ -89,15 +92,19 @@
       y={ly}
       text-anchor="middle"
       dominant-baseline="middle"
-      style="fill: var(--chart-label)"
+      {...stylex.attrs(styles.label)}
       font-size="8"
       font-weight="700">{STAT_LABELS[stat.name]}</text
     >
   {/each}
 </svg>
 {#if overlay}
-  <div class="mt-2 flex justify-center gap-4 text-xs">
-    <span style="color: {color}">● {formatName(pokemon.name)}</span>
-    <span style="color: {overlayColor}">○ {formatName(overlay.name)}</span>
+  <div {...stylex.attrs(styles.legend)}>
+    <span {...stylex.attrs(dynamic.color(color))}
+      >● {formatName(pokemon.name)}</span
+    >
+    <span {...stylex.attrs(dynamic.color(overlayColor))}
+      >○ {formatName(overlay.name)}</span
+    >
   </div>
 {/if}

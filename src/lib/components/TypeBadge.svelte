@@ -2,6 +2,7 @@
   import Tooltip from "./Tooltip.svelte";
   import TypeBadgeInner from "./TypeBadgeInner.svelte";
   import TypePopup from "./TypePopup.svelte";
+  import { styles } from "./TypeBadge.styles";
 
   let {
     type,
@@ -21,7 +22,7 @@
 </script>
 
 {#if tooltip}
-  <Tooltip width="w-max" {position}>
+  <Tooltip popupSx={styles.tooltip} {position}>
     {#snippet popup()}
       <TypePopup {type} />
     {/snippet}

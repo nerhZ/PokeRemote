@@ -11,6 +11,10 @@
   import Skeleton from "$lib/components/Skeleton.svelte";
   import LearnerList from "$lib/components/LearnerList.svelte";
   import { onMount } from "svelte";
+  import * as stylex from "@stylexjs/stylex";
+  import { shared } from "$lib/styles/shared.stylex";
+  import { dynamic } from "../../lib/styles/dynamic.stylex";
+  import { styles } from "./styles";
 
   let abilities = $state<AbilityEntry[]>([]);
   let loading = $state(true);
@@ -47,23 +51,23 @@
   });
 </script>
 
-<div class="tool-shell">
-  <div class="tool-hero">
-    <h1>Ability Dex</h1>
-    <p>
+<div {...stylex.attrs(shared.toolShell)}>
+  <div {...stylex.attrs(shared.toolHero)}>
+    <h1 {...stylex.attrs(shared.toolHeroTitle)}>Ability Dex</h1>
+    <p {...stylex.attrs(shared.toolHeroText)}>
       All abilities with short effects and how many Pokémon have them. {abilities.length
         ? `${abilities.length} total`
         : ""}
     </p>
   </div>
 
-  <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
+  <div {...stylex.attrs(styles.filters)}>
     <SearchInput
       bind:value={search}
       placeholder="Search abilities..."
-      class="md:max-w-xs"
+      sx={styles.searchInput}
     />
-    <div class="flex flex-wrap items-center gap-1.5">
+    <div {...stylex.attrs(styles.chipRow)}>
       <FilterChip
         label="All gens"
         active={genFilter === ""}
@@ -91,29 +95,32 @@
       subtitle="Try a different search or generation filter."
     />
   {:else}
-    <div class="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div {...stylex.attrs(styles.grid)}>
       {#each filtered as a}
-        <div class="panel flex flex-col gap-2 p-4!">
-          <div class="flex items-center justify-between gap-2">
-            <span class="truncate text-sm font-bold">{formatName(a.name)}</span>
+        <div {...stylex.attrs(shared.panel, styles.card)}>
+          <div {...stylex.attrs(styles.cardHead)}>
+            <span {...stylex.attrs(styles.cardName)}>{formatName(a.name)}</span>
             {#if a.generation}
               {@const gen = generationLabel(a.generation)}
               {#if gen}
                 {@const color = GEN_COLORS[gen.split(" ")[1]] ?? "#777"}
                 <span
-                  class="rounded-full border px-2 py-0.5 text-[10px] font-bold"
-                  style="color: {color}; border-color: {color}40; background: {color}18"
-                  >{gen}</span
+                  {...stylex.attrs(
+                    styles.genBadge,
+                    dynamic.color(color),
+                    dynamic.borderColor(`${color}40`),
+                    dynamic.background(`${color}18`),
+                  )}>{gen}</span
                 >
               {/if}
             {/if}
           </div>
           {#if a.effect}
-            <p class="line-clamp-3 text-xs leading-relaxed text-white/50">
+            <p {...stylex.attrs(styles.effect)}>
               {a.effect}
             </p>
           {:else}
-            <p class="text-xs leading-relaxed text-white/40 italic">
+            <p {...stylex.attrs(styles.effectMissing)}>
               No ability description provided.
             </p>
           {/if}

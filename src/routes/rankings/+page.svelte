@@ -14,6 +14,10 @@
   import LoadProgress from "$lib/components/LoadProgress.svelte";
   import Skeleton from "$lib/components/Skeleton.svelte";
   import { onMount } from "svelte";
+  import * as stylex from "@stylexjs/stylex";
+  import { shared } from "$lib/styles/shared.stylex";
+  import { dynamic } from "../../lib/styles/dynamic.stylex";
+  import { styles } from "./styles";
 
   let rankings = $state<StatRankings | null>(null);
   let loading = $state(true);
@@ -59,31 +63,30 @@
     stats.find((s) => s.key === activeStat)?.max ?? 255,
   );
 
-  function medalColor(i: number) {
-    if (i === 0) return "#ffcb05";
-    if (i === 1) return "#c0c0c0";
-    if (i === 2) return "#cd7f32";
-    return "var(--muted)";
+  function medalStyle(i: number) {
+    if (i === 0) return styles.medalGold;
+    if (i === 1) return styles.medalSilver;
+    if (i === 2) return styles.medalBronze;
+    return styles.medalMuted;
   }
 </script>
 
-<div class="tool-shell max-w-3xl">
-  <div class="tool-hero">
-    <h1>Stat Rankings</h1>
-    <p>
+<div {...stylex.attrs(shared.toolShell, styles.shell)}>
+  <div {...stylex.attrs(shared.toolHero)}>
+    <h1 {...stylex.attrs(shared.toolHeroTitle)}>Stat Rankings</h1>
+    <p {...stylex.attrs(shared.toolHeroText)}>
       Top 10 across all {TOTAL_POKEMON} forms. Click a row to open the Pokédex entry.
     </p>
   </div>
 
-  <div class="mb-6 flex flex-wrap gap-2">
+  <div {...stylex.attrs(styles.statTabs)}>
     {#each stats as s}
       <button
         onclick={() => (activeStat = s.key)}
-        class="cursor-pointer rounded-xl border px-3 py-2 text-xs font-bold tracking-wide uppercase {activeStat ===
-        s.key
-          ? 'bg-accent border-accent text-white'
-          : 'border-white/10 bg-white/5 text-white/50 hover:border-white/25'}"
-        >{s.label}</button
+        {...stylex.attrs(
+          styles.statTab,
+          activeStat === s.key ? styles.statTabActive : styles.statTabIdle,
+        )}>{s.label}</button
       >
     {/each}
   </div>
@@ -96,7 +99,7 @@
         noun="Pokémon"
       />
     {:else}
-      <Skeleton rows={10} class="h-16" grid={false} />
+      <Skeleton rows={10} sx={styles.skeletonTall} grid={false} />
     {/if}
   {:else if error && !rankings}
     <EmptyState
@@ -111,43 +114,39 @@
       subtitle="No rankings available for this stat."
     />
   {:else if rankings}
-    <div class="space-y-2">
+    <div {...stylex.attrs(styles.list)}>
       {#each activeList as entry, i}
         <a
           href={resolve(`/pokemon/${entry.name}`)}
-          class="group flex items-center gap-3 rounded-2xl border border-white/6 bg-white/3 p-3.5 no-underline transition-all hover:border-white/20 hover:bg-white/5"
+          {...stylex.attrs(styles.item, stylex.defaultMarker())}
         >
-          <span
-            class="w-8 text-center text-lg font-black"
-            style="color: {medalColor(i)}">#{i + 1}</span
-          >
+          <span {...stylex.attrs(styles.medal, medalStyle(i))}>#{i + 1}</span>
           <PokemonImage
             src={entry.image}
             id={entry.id}
             alt={entry.name}
-            class="h-12 w-12 object-contain transition-transform group-hover:scale-110"
+            sx={styles.itemImage}
           />
-          <div class="min-w-0 flex-1">
-            <div class="truncate text-sm font-bold text-white">
+          <div {...stylex.attrs(styles.itemBody)}>
+            <div {...stylex.attrs(styles.itemName)}>
               {formatName(entry.name)}
             </div>
-            <div class="mt-0.5 flex items-center gap-1.5">
-              <span class="text-[10px] text-white/30">{formatId(entry.id)}</span
-              >
+            <div {...stylex.attrs(styles.meta)}>
+              <span {...stylex.attrs(styles.id)}>{formatId(entry.id)}</span>
               {#if entry.types}{#each entry.types as t}<TypeBadge
                     type={t}
                     size="xs"
                   />{/each}{/if}
             </div>
           </div>
-          <div class="text-right">
-            <div class="text-lg font-black text-white">{entry.value}</div>
-            <div
-              class="mt-1 ml-auto h-1.5 w-20 overflow-hidden rounded-full bg-white/6"
-            >
+          <div {...stylex.attrs(styles.valueCol)}>
+            <div {...stylex.attrs(styles.value)}>{entry.value}</div>
+            <div {...stylex.attrs(styles.bar)}>
               <div
-                class="bg-accent h-full rounded-full"
-                style="width: {(entry.value / currentMax) * 100}%"
+                {...stylex.attrs(
+                  styles.barFill,
+                  dynamic.width(`${(entry.value / currentMax) * 100}%`),
+                )}
               ></div>
             </div>
           </div>

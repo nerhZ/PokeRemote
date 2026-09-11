@@ -9,6 +9,10 @@
   import Tooltip from "$lib/components/Tooltip.svelte";
   import TypePopup from "$lib/components/TypePopup.svelte";
   import FitViewport from "$lib/components/FitViewport.svelte";
+  import * as stylex from "@stylexjs/stylex";
+  import { shared } from "$lib/styles/shared.stylex";
+  import { dynamic } from "../../lib/styles/dynamic.stylex";
+  import { styles } from "./styles";
 
   let heroRef = $state<HTMLElement | undefined>();
   let legendRef = $state<HTMLElement | undefined>();
@@ -38,45 +42,33 @@
     return TYPE_CHART[att]?.[def] ?? 1;
   }
 
-  function cellClass(m: number): string {
-    if (m === 0) return "bg-black/50 text-white/40";
-    if (m >= 2) return "bg-pokemon-red/25 text-pokemon-red";
-    if (m < 1) return "bg-pokemon-green/25 text-pokemon-green";
-    return "text-white/30";
+  function cellStyle(m: number) {
+    if (m === 0) return styles.cellZero;
+    if (m >= 2) return styles.cellSuper;
+    if (m < 1) return styles.cellResist;
+    return styles.cellNeutral;
   }
 </script>
 
-<FitViewport
-  class="px-4 py-2 md:px-6"
-  onMeasure={fitChart}
-  onOverflow={shrinkChart}
->
-  <div bind:this={heroRef} class="tool-hero mx-auto mb-3 max-w-7xl">
-    <h1 class="text-2xl md:text-3xl">Type Chart</h1>
-    <p class="text-xs md:text-sm">
+<FitViewport sx={styles.shell} onMeasure={fitChart} onOverflow={shrinkChart}>
+  <div bind:this={heroRef} {...stylex.attrs(shared.toolHero, styles.hero)}>
+    <h1 {...stylex.attrs(shared.toolHeroTitle, styles.title)}>Type Chart</h1>
+    <p {...stylex.attrs(shared.toolHeroText, styles.subtitle)}>
       Effectiveness when the row type attacks the column type. Hover a row for
       details.
     </p>
   </div>
 
-  <div
-    class="mx-auto w-full overflow-x-auto rounded-2xl border"
-    style="border-color: var(--border)"
-  >
-    <div
-      class="grid min-w-260"
-      style="grid-template-columns: 8.5rem repeat(18, minmax(3.25rem, 1fr));"
-    >
+  <div {...stylex.attrs(styles.scroll)}>
+    <div {...stylex.attrs(styles.grid)}>
       <div
-        class="sticky left-0 z-10 p-2"
-        style="background: var(--card); height: {headerHeight}px"
+        {...stylex.attrs(styles.corner, dynamic.height(`${headerHeight}px`))}
       ></div>
       {#each ALL_TYPES as def}
         <Tooltip
           position="bottom"
-          width="w-max max-w-[min(24rem,calc(100vw-2rem))]"
-          hostClass="flex items-end justify-center pb-1.5"
-          hostStyle="height: {headerHeight}px"
+          popupSx={styles.chartTooltip}
+          hostSx={[styles.chartHeader, dynamic.height(`${headerHeight}px`)]}
         >
           {#snippet popup()}
             <TypePopup type={def} />
@@ -84,13 +76,17 @@
           {#snippet trigger()}
             <button
               type="button"
-              class="cursor-default"
-              style="font-size: {labelFont}px"
+              {...stylex.attrs(
+                styles.headerButton,
+                dynamic.fontSize(`${labelFont}px`),
+              )}
               title={formatName(def)}
             >
               <span
-                class="font-bold tracking-wide uppercase"
-                style="color: {TYPE_COLORS[def]}">{formatName(def)}</span
+                {...stylex.attrs(
+                  styles.headerLabel,
+                  dynamic.color(TYPE_COLORS[def]),
+                )}>{formatName(def)}</span
               >
             </button>
           {/snippet}
@@ -99,9 +95,8 @@
       {#each ALL_TYPES as att}
         <Tooltip
           position="top"
-          width="w-max max-w-[min(24rem,calc(100vw-2rem))]"
-          hostClass="sticky left-0 z-10 border-y border-white/4 bg-(--card)"
-          hostStyle="height: {rowHeight}px"
+          popupSx={styles.chartTooltip}
+          hostSx={[styles.chartRow, dynamic.height(`${rowHeight}px`)]}
         >
           {#snippet popup()}
             <TypePopup type={att} />
@@ -109,12 +104,16 @@
           {#snippet trigger()}
             <button
               type="button"
-              class="flex h-full w-full cursor-default items-center px-2"
-              style="font-size: {labelFont}px"
+              {...stylex.attrs(
+                styles.rowButton,
+                dynamic.fontSize(`${labelFont}px`),
+              )}
             >
               <span
-                class="truncate font-bold uppercase"
-                style="color: {TYPE_COLORS[att]}">{formatName(att)}</span
+                {...stylex.attrs(
+                  styles.rowLabel,
+                  dynamic.color(TYPE_COLORS[att]),
+                )}>{formatName(att)}</span
               >
             </button>
           {/snippet}
@@ -122,8 +121,12 @@
         {#each ALL_TYPES as def}
           {@const m = multOf(att, def)}
           <div
-            class="flex items-center justify-center font-bold {cellClass(m)}"
-            style="height: {rowHeight}px; font-size: {cellFont}px"
+            {...stylex.attrs(
+              styles.cell,
+              cellStyle(m),
+              dynamic.height(`${rowHeight}px`),
+              dynamic.fontSize(`${cellFont}px`),
+            )}
             title="{formatName(att)} vs {formatName(def)}: {multiplierLabel(m)}"
           >
             {multiplierLabel(m)}
@@ -133,27 +136,21 @@
     </div>
   </div>
 
-  <div
-    bind:this={legendRef}
-    class="mx-auto mt-3 flex w-full flex-wrap items-center gap-x-5 gap-y-2 text-[11px]"
-    style="color: var(--muted)"
-  >
-    <span class="flex items-center gap-1.5"
-      ><span class="bg-pokemon-red/40 h-2.5 w-2.5 rounded-sm"></span> Super effective
-      (2×)</span
+  <div bind:this={legendRef} {...stylex.attrs(styles.legend)}>
+    <span {...stylex.attrs(styles.legendItem)}
+      ><span {...stylex.attrs(styles.legendSwatchRed)}></span> Super effective (2×)</span
     >
-    <span class="flex items-center gap-1.5"
-      ><span class="bg-pokemon-green/40 h-2.5 w-2.5 rounded-sm"></span> Not very effective
+    <span {...stylex.attrs(styles.legendItem)}
+      ><span {...stylex.attrs(styles.legendSwatchGreen)}></span> Not very effective
       (½×)</span
     >
-    <span class="flex items-center gap-1.5"
-      ><span class="h-2.5 w-2.5 rounded-sm bg-black/50"></span> No effect (0×)</span
+    <span {...stylex.attrs(styles.legendItem)}
+      ><span {...stylex.attrs(styles.legendSwatchNone)}></span> No effect (0×)</span
     >
-    <span class="flex items-center gap-1.5"
-      ><span class="h-2.5 w-2.5 rounded-sm border border-white/25"></span> Neutral
-      (1×)</span
+    <span {...stylex.attrs(styles.legendItem)}
+      ><span {...stylex.attrs(styles.legendSwatchNeutral)}></span> Neutral (1×)</span
     >
-    <span class="basis-full"
+    <span {...stylex.attrs(styles.legendNote)}
       >Single-type matchups cap at 2× / ½× — 4× / ¼× only happens against
       dual-type defenders.</span
     >

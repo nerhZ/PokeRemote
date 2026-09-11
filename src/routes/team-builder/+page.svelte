@@ -53,6 +53,10 @@
   import ClearButton from "$lib/components/ClearButton.svelte";
   import { clamp, flash } from "$lib/utils";
   import { onMount } from "svelte";
+  import * as stylex from "@stylexjs/stylex";
+  import { shared } from "$lib/styles/shared.stylex";
+  import { dynamic } from "../../lib/styles/dynamic.stylex";
+  import { styles } from "./styles";
 
   let allNames: { name: string; id: number }[] = $state([]);
   let search = $state("");
@@ -501,19 +505,19 @@
   let coverageSections = $derived([
     {
       title: "Shared weaknesses",
-      color: "text-pokemon-red",
+      color: styles.sectionRed,
       types: teamWeak,
       empty: "None — nice!",
     },
     {
       title: "Resistances",
-      color: "text-pokemon-green",
+      color: styles.sectionGreen,
       types: teamSafe,
       empty: "None",
     },
     {
       title: "Strong coverage",
-      color: "text-pokemon-red",
+      color: styles.sectionRed,
       types: teamStrong,
       empty: teamHasMoves
         ? "Nothing hits super effectively"
@@ -521,7 +525,7 @@
     },
     {
       title: "Blind spots",
-      color: "text-pokemon-green",
+      color: styles.sectionGreen,
       types: teamBlind,
       empty: teamHasMoves
         ? "None — great coverage!"
@@ -550,18 +554,20 @@
   }
 </script>
 
-<div class="tool-shell">
-  <div class="tool-hero">
-    <div class="flex items-start justify-between gap-4">
+<div {...stylex.attrs(shared.toolShell)}>
+  <div {...stylex.attrs(shared.toolHero)}>
+    <div {...stylex.attrs(styles.heroRow)}>
       <div>
-        <h1>Team Builder</h1>
-        <p>Six slots, movesets, share with competitive setups.</p>
+        <h1 {...stylex.attrs(shared.toolHeroTitle)}>Team Builder</h1>
+        <p {...stylex.attrs(shared.toolHeroText)}>
+          Six slots, movesets, share with competitive setups.
+        </p>
       </div>
       <ClearButton onclick={clearState} />
     </div>
   </div>
 
-  <div class="panel mb-6 max-w-xl p-4!">
+  <div {...stylex.attrs(shared.panel, styles.searchPanel)}>
     <PokemonSearch
       bind:value={search}
       options={allNames.filter((n) => !team.some((t) => t.id === n.id))}
@@ -569,10 +575,13 @@
       placeholder={team.length >= 6 ? "Team is full" : "Add a Pokémon..."}
       onselect={addToTeam}
     />
-    {#if loading}<div class="mt-2 flex justify-center">
-        <Pokeball spinning class="h-6 w-6" />
+    {#if loading}<div {...stylex.attrs(styles.loadingRow)}>
+        <Pokeball spinning sx={styles.pokeballSm} />
       </div>{/if}
-    {#if slotError}<p class="text-pokemon-red mt-2 text-xs" role="alert">
+    {#if slotError}<p
+        {...stylex.attrs(styles.errorText, styles.slotError)}
+        role="alert"
+      >
         {slotError}
       </p>{/if}
     <button
@@ -580,29 +589,28 @@
         showImport = !showImport;
         importError = "";
       }}
-      class="mt-3 cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/60 transition-colors hover:text-white"
+      {...stylex.attrs(styles.secondaryButton, styles.importToggle)}
       >{showImport ? "Close import" : "Import from Showdown ⤒"}</button
     >
     {#if showImport}
-      <div class="mt-3 space-y-2">
+      <div {...stylex.attrs(styles.stack2, styles.importArea)}>
         <textarea
           bind:value={importText}
           rows={6}
           aria-label="Paste a Pokémon Showdown team"
           placeholder={"Paste a Showdown team here, e.g.\n\nGarchomp @ Rocky Helmet\nAbility: Rough Skin\nEVs: 252 HP / 4 Atk / 252 Spe\nJolly Nature\n- Earthquake\n- Stealth Rock\n- Dragon Claw\n- Swords Dance"}
-          class="focus:border-accent/50 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-mono text-xs text-white/80 placeholder-white/25 outline-none"
-        ></textarea>
-        {#if importError}<p class="text-pokemon-red text-xs" role="alert">
+          {...stylex.attrs(styles.importTextarea)}></textarea>
+        {#if importError}<p {...stylex.attrs(styles.errorText)} role="alert">
             {importError}
           </p>{/if}
-        <div class="flex items-center gap-2">
+        <div {...stylex.attrs(styles.importActions)}>
           <button
             onclick={importShowdown}
             disabled={importLoading || !importText.trim()}
-            class="bg-accent hover:bg-accent/80 cursor-pointer rounded-xl border-0 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40"
+            {...stylex.attrs(styles.accentButton, styles.importButton)}
             >{importLoading ? "Importing…" : "Import"}</button
           >
-          <span class="text-[10px] text-white/40"
+          <span {...stylex.attrs(styles.hintText)}
             >Up to 6 · moves/ability/nature/EVs are applied, items and levels
             are skipped</span
           >
@@ -611,17 +619,20 @@
     {/if}
   </div>
 
-  <div class="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
+  <div {...stylex.attrs(styles.slotsGrid)}>
     {#each Array(6) as _, i}
       {#if team[i]}
         {@const p = team[i]}
         {@const color = typeColor(p.types)}
         {@const hasSet = setHasContent(sets[i])}
-        <div class="relative transition-all hover:-translate-y-1">
+        <div {...stylex.attrs(styles.slotWrap)}>
           <button
             type="button"
-            class="panel relative w-full cursor-pointer p-3! text-center"
-            style="box-shadow: inset 0 0 0 1px {color}40"
+            {...stylex.attrs(
+              shared.panel,
+              styles.slotButton,
+              dynamic.boxShadow(`inset 0 0 0 1px ${color}40`),
+            )}
             onclick={() => editPokemon(i)}
             title={hoverTitle(i)}
           >
@@ -629,42 +640,32 @@
               src={p.sprites.other["official-artwork"].front_default}
               id={p.id}
               alt={p.name}
-              class="mx-auto h-16 w-16 object-contain"
+              sx={styles.slotImage}
             />
-            <span
-              class="mt-1 block truncate text-xs font-bold"
-              style="color: var(--text)"
-            >
+            <span {...stylex.attrs(styles.slotName)}>
               {formatName(p.name)}
             </span>
-            <span class="mt-1 flex justify-center gap-0.5">
+            <span {...stylex.attrs(styles.slotTypes)}>
               {#each p.types as t}<TypeBadge type={t} size="xs" />{/each}
             </span>
             {#if hasSet}
-              <span
-                class="bg-pokemon-green/20 text-pokemon-green mt-1.5 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold"
-              >
-                set
-              </span>
+              <span {...stylex.attrs(styles.setBadge)}> set </span>
             {/if}
           </button>
           <a
             href={resolve(`/pokemon/${p.name}`)}
-            class="absolute top-2 left-2 z-10 flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-white/10 bg-black/20 text-xs text-white/50 no-underline hover:text-white"
+            {...stylex.attrs(styles.slotLink)}
             title="Open Pokédex">◉</a
           >
           <button
             type="button"
             onclick={() => removeFromTeam(p.id)}
             aria-label="Remove from team"
-            class="bg-pokemon-red/20 text-pokemon-red hover:bg-pokemon-red/40 absolute top-2 right-2 z-10 h-6 w-6 cursor-pointer rounded-md border-0 text-xs font-bold transition-colors"
-            >×</button
+            {...stylex.attrs(styles.removeButton)}>×</button
           >
         </div>
       {:else}
-        <div
-          class="flex min-h-36 items-center justify-center rounded-3xl border border-dashed border-white/10 text-xs text-white/20"
-        >
+        <div {...stylex.attrs(styles.emptySlot)}>
           Slot {i + 1}
         </div>
       {/if}
@@ -676,44 +677,39 @@
     {@const p = team[i]}
     {@const s = sets[i] ?? initSet()}
     {@const color = typeColor(p.types)}
-    <div class="panel mb-8 max-w-2xl">
-      <div class="mb-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
+    <div {...stylex.attrs(shared.panel, styles.editorPanel)}>
+      <div {...stylex.attrs(styles.editorHeader)}>
+        <div {...stylex.attrs(styles.editorHeadLeft)}>
           <PokemonImage
             src={p.sprites.other["official-artwork"].front_default}
             id={p.id}
             alt={p.name}
-            class="h-12 w-12 object-contain"
+            sx={styles.editorImage}
           />
           <div>
-            <div class="text-lg font-bold" style="color: var(--text)">
+            <div {...stylex.attrs(styles.editorName)}>
               {formatName(p.name)}
             </div>
-            <div class="flex gap-1">
+            <div {...stylex.attrs(styles.typeRow)}>
               {#each p.types as t}<TypeBadge type={t} size="xs" />{/each}
             </div>
           </div>
         </div>
         <button
           onclick={saveSet}
-          class="bg-accent hover:bg-accent/80 cursor-pointer rounded-xl border-0 px-5 py-2 text-sm font-semibold text-white"
-          >Done</button
+          {...stylex.attrs(styles.accentButton, styles.doneButton)}>Done</button
         >
       </div>
 
       {#if editLoading}
-        <div class="flex justify-center py-8">
-          <Pokeball spinning class="h-8 w-8" />
+        <div {...stylex.attrs(styles.loadingBox)}>
+          <Pokeball spinning sx={styles.pokeballMd} />
         </div>
       {:else}
-        <div class="grid gap-4 md:grid-cols-2">
+        <div {...stylex.attrs(styles.editorGrid)}>
           <div>
-            <div
-              class="text-[10px] font-bold tracking-wider text-white/40 uppercase"
-            >
-              Moves
-            </div>
-            <div class="mt-2 space-y-2">
+            <div {...stylex.attrs(styles.sectionLabel)}>Moves</div>
+            <div {...stylex.attrs(styles.movesList)}>
               {#each Array(4) as _, mi}
                 <Dropdown
                   selected={s.moves[mi]}
@@ -737,7 +733,7 @@
                       {@const move = moveOptions.find(
                         (o) => o.name === selected,
                       )}
-                      <span class="flex items-center gap-1.5">
+                      <span {...stylex.attrs(styles.moveOption)}>
                         {#if move}
                           <TypeBadge
                             type={move.type}
@@ -747,7 +743,7 @@
                         {/if}
                         <span>{formatName(selected)}</span>
                         {#if move}
-                          <span class="ml-auto text-[10px] text-white/30"
+                          <span {...stylex.attrs(styles.moveMeta)}
                             >{move.power ?? "—"}/{move.accuracy ??
                               "—"}/{move.pp ?? "—"}</span
                           >
@@ -761,19 +757,15 @@
               {/each}
             </div>
           </div>
-          <div class="space-y-4">
+          <div {...stylex.attrs(styles.editorColumn)}>
             <div>
-              <div
-                class="text-[10px] font-bold tracking-wider text-white/40 uppercase"
-              >
-                Ability
-              </div>
-              <div class="relative">
+              <div {...stylex.attrs(styles.sectionLabel)}>Ability</div>
+              <div {...stylex.attrs(styles.relative)}>
                 <Dropdown
                   selected={s.ability}
                   onselect={pickAbility}
                   onclear={() => pickAbility("")}
-                  buttonClass="mt-2"
+                  buttonSx={styles.buttonMt2}
                   searchable
                   options={abilityOptions.map((a) => ({
                     value: a.name,
@@ -784,17 +776,13 @@
               </div>
             </div>
             <div>
-              <div
-                class="text-[10px] font-bold tracking-wider text-white/40 uppercase"
-              >
-                Nature
-              </div>
-              <div class="relative">
+              <div {...stylex.attrs(styles.sectionLabel)}>Nature</div>
+              <div {...stylex.attrs(styles.relative)}>
                 <Dropdown
                   selected={s.nature}
                   onselect={pickNature}
                   onclear={() => pickNature("")}
-                  buttonClass="mt-2"
+                  buttonSx={styles.buttonMt2}
                   options={NATURE_OPTIONS}
                 />
               </div>
@@ -804,31 +792,31 @@
                 evs={s.evs}
                 oninput={setEv}
                 warning={evWarning}
-                cols="grid-cols-3"
+                cols={3}
               />
             </div>
-            <div class="mt-4">
-              <div class="flex items-center justify-between">
-                <span
-                  class="text-[10px] font-bold tracking-wider text-white/40 uppercase"
-                >
+            <div {...stylex.attrs(styles.finalStats)}>
+              <div {...stylex.attrs(styles.finalStatsHead)}>
+                <span {...stylex.attrs(styles.sectionLabel)}>
                   Final stats
                 </span>
-                <div class="flex gap-1">
+                <div {...stylex.attrs(styles.typeRow)}>
                   {#each [50, 100] as lv}
                     <button
                       onclick={() => (previewLevel = lv)}
-                      class="cursor-pointer rounded-full border px-2 py-0.5 text-[10px] font-bold {previewLevel ===
-                      lv
-                        ? 'bg-accent border-accent text-white'
-                        : 'border-white/10 bg-white/5 text-white/50 hover:text-white'}"
+                      {...stylex.attrs(
+                        styles.levelButton,
+                        previewLevel === lv
+                          ? styles.levelButtonActive
+                          : styles.levelButtonIdle,
+                      )}
                     >
                       Lv {lv}
                     </button>
                   {/each}
                 </div>
               </div>
-              <div class="mt-2 grid grid-cols-6 gap-1.5 text-center">
+              <div {...stylex.attrs(styles.statsGrid)}>
                 {#each STAT_DEFS as def}
                   {@const base =
                     p.stats.find((st) => st.name === def.apiName)?.base_stat ??
@@ -841,12 +829,14 @@
                     nature: mods,
                     statKey: def.apiName,
                   })}
-                  <div class="rounded-lg bg-white/3 px-1 py-1.5">
-                    <div class="text-[9px] text-white/40">{def.shortLabel}</div>
-                    <div class="text-xs font-bold" style="color: var(--text)">
+                  <div {...stylex.attrs(styles.statCell)}>
+                    <div {...stylex.attrs(styles.statLabel)}>
+                      {def.shortLabel}
+                    </div>
+                    <div {...stylex.attrs(styles.statValue)}>
                       {val}
                     </div>
-                    <div class="text-[9px] text-white/30">
+                    <div {...stylex.attrs(styles.statBase)}>
                       {mods?.up === def.apiName
                         ? "▲"
                         : mods?.down === def.apiName
@@ -869,13 +859,13 @@
       subtitle="Add up to 6 Pokémon, click a card to configure movesets, and export a share link."
     />
   {:else}
-    <div class="mb-6 grid gap-4 md:grid-cols-2">
-      <div class="panel">
-        <h2 class="mb-4 text-lg font-bold">Type Heat Map</h2>
-        <div class="grid grid-cols-3 gap-2 sm:grid-cols-4">
+    <div {...stylex.attrs(styles.coverageGrid)}>
+      <div {...stylex.attrs(shared.panel)}>
+        <h2 {...stylex.attrs(styles.panelTitle)}>Type Heat Map</h2>
+        <div {...stylex.attrs(styles.heatGrid)}>
           {#each ALL_TYPES as t}
             {@const c = coverage[t]}
-            <Tooltip width="w-max">
+            <Tooltip popupSx={styles.tooltipWide}>
               {#snippet popup()}
                 <TypePopup type={t} />
               {/snippet}
@@ -883,19 +873,22 @@
                 <!-- svelte-ignore a11y_no_noninteractive_tabindex: tooltip trigger; focus reveals the popup -->
                 <div
                   tabindex="0"
-                  class="cursor-pointer rounded-lg px-2 py-2 text-center text-[10px] font-bold uppercase"
-                  style="background-color: {c >= 2
-                    ? 'rgba(255,62,62,0.2)'
-                    : c <= -1
-                      ? 'rgba(74,222,128,0.2)'
-                      : 'var(--surface-2)'}; border: 1px solid {c >= 2
-                    ? 'rgba(255,62,62,0.3)'
-                    : c <= -1
-                      ? 'rgba(74,222,128,0.3)'
-                      : 'var(--border)'}"
+                  {...stylex.attrs(
+                    styles.heatCell,
+                    c >= 2
+                      ? styles.heatWeak
+                      : c <= -1
+                        ? styles.heatSafe
+                        : styles.heatOk,
+                  )}
                 >
-                  <span class="block" style="color: {TYPE_COLORS[t]}">{t}</span>
-                  <span class="opacity-60"
+                  <span
+                    {...stylex.attrs(
+                      styles.heatTypeName,
+                      dynamic.color(TYPE_COLORS[t]),
+                    )}>{t}</span
+                  >
+                  <span {...stylex.attrs(styles.opacity60)}
                     >{c >= 2 ? "Weak" : c <= -1 ? "Safe" : "OK"}</span
                   >
                 </div>
@@ -904,17 +897,17 @@
           {/each}
         </div>
       </div>
-      <div class="panel space-y-4">
+      <div {...stylex.attrs(shared.panel, styles.coveragePanel)}>
         {#each coverageSections as section}
           <div>
-            <h3
-              class="{section.color} mb-2 text-xs font-bold tracking-wider uppercase"
-            >
+            <h3 {...stylex.attrs(styles.coverageHeading, section.color)}>
               {section.title}
             </h3>
-            <div class="flex flex-wrap gap-1.5">
+            <div {...stylex.attrs(styles.coverageTypes)}>
               {#if section.types.length === 0}
-                <span class="text-xs text-white/40">{section.empty}</span>
+                <span {...stylex.attrs(styles.coverageEmpty)}
+                  >{section.empty}</span
+                >
               {:else}
                 {#each section.types as t}<TypeBadge
                     type={t}
@@ -924,38 +917,30 @@
             </div>
           </div>
         {/each}
-        <div
-          class="flex flex-wrap items-center gap-2 border-t border-white/6 pt-3"
-        >
+        <div {...stylex.attrs(styles.teamFooter)}>
           <input
             bind:value={teamName}
             aria-label="Team name"
-            class="focus:border-accent/50 min-w-30 flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none"
+            {...stylex.attrs(styles.teamNameInput)}
             placeholder="Team name"
           />
           <button
             onclick={exportTeam}
-            class="bg-accent hover:bg-accent/80 cursor-pointer rounded-xl border-0 px-4 py-2 text-sm font-semibold text-white"
+            {...stylex.attrs(styles.accentButton, styles.shareButton)}
             >{copied ? "Link copied!" : "Save & share"}</button
           >
           <button
             onclick={exportShowdown}
-            class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/60 transition-colors hover:text-white"
+            {...stylex.attrs(styles.secondaryButton)}
             >{showdownCopied ? "Copied!" : "Showdown ⤓"}</button
           >
         </div>
         {#if saved.length}
           <div>
-            <h3
-              class="mb-2 text-xs font-bold tracking-wider text-white/40 uppercase"
-            >
-              Saved teams
-            </h3>
-            <div class="space-y-1">
+            <h3 {...stylex.attrs(styles.savedTitle)}>Saved teams</h3>
+            <div {...stylex.attrs(styles.savedList)}>
               {#each saved.slice(0, 5) as t}
-                <div
-                  class="rounded-lg bg-white/2 px-2 py-1.5 text-xs text-white/60"
-                >
+                <div {...stylex.attrs(styles.savedItem)}>
                   {t.name}: {t.names.map(formatName).join(", ")}
                 </div>
               {/each}
@@ -964,33 +949,31 @@
         {/if}
       </div>
     </div>
-    <div class="panel mb-6">
-      <h2 class="mb-5 text-lg font-bold">Team Summary</h2>
-      <div class="space-y-4">
+    <div {...stylex.attrs(shared.panel, styles.summaryPanel)}>
+      <h2 {...stylex.attrs(styles.summaryTitle)}>Team Summary</h2>
+      <div {...stylex.attrs(styles.editorColumn)}>
         {#each team as p, i}
           {@const s = sets[i]}
-          <div class="rounded-2xl border border-white/6 bg-white/2 p-4">
-            <div class="flex flex-wrap items-start gap-4">
+          <div {...stylex.attrs(styles.summaryCard)}>
+            <div {...stylex.attrs(styles.summaryRow)}>
               <PokemonImage
                 src={p.sprites.other["official-artwork"].front_default}
                 id={p.id}
                 alt={p.name}
-                class="h-16 w-16 shrink-0 object-contain"
+                sx={styles.summaryImage}
               />
-              <div class="min-w-0 flex-1">
-                <div class="flex flex-wrap items-center gap-2">
-                  <span class="text-base font-bold" style="color: var(--text)"
+              <div {...stylex.attrs(styles.summaryBody)}>
+                <div {...stylex.attrs(styles.summaryNameRow)}>
+                  <span {...stylex.attrs(styles.summaryName)}
                     >{formatName(p.name)}</span
                   >
-                  <div class="flex gap-1">
+                  <div {...stylex.attrs(styles.typeRow)}>
                     {#each p.types as t}<TypeBadge type={t} size="xs" />{/each}
                   </div>
                 </div>
                 {#if s}
-                  <div
-                    class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs"
-                  >
-                    <span class="text-white/40">Moves:</span>
+                  <div {...stylex.attrs(styles.movesRow)}>
+                    <span {...stylex.attrs(styles.muted40)}>Moves:</span>
                     {#each s.moves as m, mi}
                       {#if m}
                         {@const move = metaCache[p.name]?.moves.find(
@@ -998,23 +981,17 @@
                         )}
                         <MoveTooltip move={move ?? { name: m }} />
                       {:else}
-                        <span
-                          class="cursor-default rounded-full border border-dashed border-white/10 px-2 py-0.5 text-[11px] text-white/20"
+                        <span {...stylex.attrs(styles.emptyMove)}
                           >move {mi + 1}</span
                         >
                       {/if}
                     {/each}
                   </div>
-                  <div
-                    class="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[11px]"
-                  >
-                    <Tooltip width="w-56">
+                  <div {...stylex.attrs(styles.metaRow)}>
+                    <Tooltip popupSx={styles.tooltipNarrow}>
                       {#snippet popup()}
                         {#if s.ability}
-                          <div
-                            class="mb-1 block font-semibold"
-                            style="color: var(--text)"
-                          >
+                          <div {...stylex.attrs(styles.tooltipTitle)}>
                             {formatName(s.ability)}
                           </div>
                           {abilityTooltip(p.name, s.ability)}
@@ -1024,19 +1001,20 @@
                         <!-- svelte-ignore a11y_no_noninteractive_tabindex: tooltip trigger; focus reveals the popup -->
                         <span
                           tabindex="0"
-                          class="inline-flex items-baseline gap-1"
+                          {...stylex.attrs(styles.inlineTrigger)}
                         >
-                          <span class="text-white/40">Ability:</span>
-                          <span class="text-white/70">
+                          <span {...stylex.attrs(styles.muted40)}>Ability:</span
+                          >
+                          <span {...stylex.attrs(styles.muted70)}>
                             {s.ability ? formatName(s.ability) : "—"}
                           </span>
                         </span>
                       {/snippet}
                     </Tooltip>
-                    <Tooltip width="" nowrap>
+                    <Tooltip nowrap popupSx={styles.tooltipWide}>
                       {#snippet popup()}
                         {#if s.nature}
-                          <div style="color: var(--text)">
+                          <div {...stylex.attrs(styles.tooltipText)}>
                             {s.nature}: {NATURES_MODIFIERS[s.nature] ??
                               "neutral"}
                           </div>
@@ -1046,16 +1024,18 @@
                         <!-- svelte-ignore a11y_no_noninteractive_tabindex: tooltip trigger; focus reveals the popup -->
                         <span
                           tabindex="0"
-                          class="inline-flex items-baseline gap-1"
+                          {...stylex.attrs(styles.inlineTrigger)}
                         >
-                          <span class="text-white/40">Nature:</span>
-                          <span class="text-white/70"> {s.nature || "—"}</span>
+                          <span {...stylex.attrs(styles.muted40)}>Nature:</span>
+                          <span {...stylex.attrs(styles.muted70)}>
+                            {s.nature || "—"}</span
+                          >
                         </span>
                       {/snippet}
                     </Tooltip>
-                    <Tooltip width="" nowrap>
+                    <Tooltip nowrap popupSx={styles.tooltipWide}>
                       {#snippet popup()}
-                        <div style="color: var(--text)">
+                        <div {...stylex.attrs(styles.tooltipText)}>
                           HP / Atk / Def / SpA / SpD / Spe
                         </div>
                       {/snippet}
@@ -1063,10 +1043,10 @@
                         <!-- svelte-ignore a11y_no_noninteractive_tabindex: tooltip trigger; focus reveals the popup -->
                         <span
                           tabindex="0"
-                          class="inline-flex items-baseline gap-1"
+                          {...stylex.attrs(styles.inlineTrigger)}
                         >
-                          <span class="text-white/40">EVs:</span>
-                          <span class="text-white/70">
+                          <span {...stylex.attrs(styles.muted40)}>EVs:</span>
+                          <span {...stylex.attrs(styles.muted70)}>
                             {evsLine(s.evs ?? zeroEvs())}</span
                           >
                         </span>

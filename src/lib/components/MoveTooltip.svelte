@@ -1,8 +1,10 @@
 <script lang="ts">
   import { formatName } from "$lib/pokemon-types";
+  import * as stylex from "@stylexjs/stylex";
   import AttackingMatchups from "./AttackingMatchups.svelte";
   import TypeBadge from "./TypeBadge.svelte";
   import Tooltip from "./Tooltip.svelte";
+  import { styles } from "./MoveTooltip.styles";
 
   interface MoveTooltipData {
     name: string;
@@ -24,10 +26,7 @@
 
 {#snippet defaultTrigger()}
   <!-- svelte-ignore a11y_no_noninteractive_tabindex: tooltip trigger; focus reveals the popup -->
-  <span
-    tabindex="0"
-    class="inline-flex items-center gap-1 rounded-full border border-white/6 bg-white/3 px-2 py-0.5 text-[11px]"
-  >
+  <span tabindex="0" {...stylex.attrs(styles.trigger)}>
     {#if move.type}
       <TypeBadge type={move.type} size="xs" tooltip={false} />
     {/if}
@@ -35,16 +34,16 @@
   </span>
 {/snippet}
 
-<Tooltip width="w-max">
+<Tooltip popupSx={styles.moveTooltip}>
   {#snippet popup()}
-    <div class="mb-1 block font-semibold" style="color: var(--text)">
+    <div {...stylex.attrs(styles.title)}>
       {formatName(move.name)}
     </div>
-    <div class="block">
+    <div {...stylex.attrs(styles.line)}>
       Pow {move.power ?? "—"} / Acc {move.accuracy ?? "—"} / PP {move.pp ?? "—"}
     </div>
     {#if move.effect}
-      <div class="mt-1 block">{move.effect}</div>
+      <div {...stylex.attrs(styles.effect)}>{move.effect}</div>
     {/if}
     {#if move.type}
       <AttackingMatchups type={move.type} />

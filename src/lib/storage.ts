@@ -1,6 +1,8 @@
 import { browser } from "$app/environment";
+import * as stylex from "@stylexjs/stylex";
 import { STAT_DEFS } from "$lib/pokemon-types";
 import { clamp } from "$lib/utils";
+import { lightTheme } from "$lib/styles/themes";
 
 const FAV_KEY = "pokeremote:favorites";
 const RECENT_KEY = "pokeremote:recent";
@@ -72,15 +74,26 @@ export function getTheme(): ThemeMode {
   return "dark";
 }
 
+const LIGHT_THEME_CLASSES = (stylex.attrs(lightTheme).class ?? "")
+  .split(" ")
+  .filter(Boolean);
+
+function applyMode(mode: ThemeMode) {
+  document.documentElement.dataset.theme = mode;
+  for (const cls of LIGHT_THEME_CLASSES) {
+    document.documentElement.classList.toggle(cls, mode === "light");
+  }
+}
+
 export function setTheme(mode: ThemeMode) {
   if (!browser) return;
   localStorage.setItem(THEME_KEY, mode);
-  document.documentElement.dataset.theme = mode;
+  applyMode(mode);
 }
 
 export function applyTheme() {
   if (!browser) return;
-  document.documentElement.dataset.theme = getTheme();
+  applyMode(getTheme());
 }
 
 const SPRITES_KEY = "pokeremote:sprites";

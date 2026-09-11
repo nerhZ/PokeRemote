@@ -17,6 +17,10 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Dropdown from "$lib/components/Dropdown.svelte";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
+  import * as stylex from "@stylexjs/stylex";
+  import { shared } from "$lib/styles/shared.stylex";
+  import { dynamic } from "../../lib/styles/dynamic.stylex";
+  import { styles } from "./styles";
 
   type Difficulty = "easy" | "normal" | "hard";
 
@@ -146,21 +150,21 @@
 </script>
 
 <FitViewport
-  class="tool-shell max-w-5xl"
+  sx={[shared.toolShell, styles.shell]}
   deps={fitDeps}
   onMeasure={fitQuiz}
   onOverflow={shrinkSilhouette}
 >
-  <div class="tool-hero" bind:this={heroRef}>
-    <h1>Who's That Pokémon?</h1>
-    <p>
+  <div {...stylex.attrs(shared.toolHero)} bind:this={heroRef}>
+    <h1 {...stylex.attrs(shared.toolHeroTitle)}>Who's That Pokémon?</h1>
+    <p {...stylex.attrs(shared.toolHeroText)}>
       Guess the silhouette. Consecutive correct answers build your streak — pick
       a difficulty and use hints on the easier modes.
     </p>
   </div>
 
   {#if loading}
-    <div class="flex justify-center py-24">
+    <div {...stylex.attrs(styles.loadingWrap)}>
       <Pokeball spinning />
     </div>
   {:else if error}
@@ -171,12 +175,9 @@
       onaction={() => window.location.reload()}
     />
   {:else if target}
-    <div class="panel text-center">
-      <div
-        bind:this={fixedTopRef}
-        class="mb-5 flex flex-wrap items-center justify-center gap-4"
-      >
-        <div class="w-52 text-left">
+    <div {...stylex.attrs(shared.panel, styles.panel)}>
+      <div bind:this={fixedTopRef} {...stylex.attrs(styles.controls)}>
+        <div {...stylex.attrs(styles.dropdownWrap)}>
           <Dropdown
             selected={difficulty}
             onselect={changeDifficulty}
@@ -187,47 +188,43 @@
             ]}
           />
         </div>
-        <span class="text-lg"
-          >Streak: <b class="text-2xl" style="color: var(--text)">{streak}</b
-          ></span
+        <span {...stylex.attrs(styles.streak)}
+          >Streak: <b {...stylex.attrs(styles.streakValue)}>{streak}</b></span
         >
-        <span class="text-sm text-white/40">Best: {stats.best}</span>
+        <span {...stylex.attrs(styles.best)}>Best: {stats.best}</span>
       </div>
 
-      <div class="flex justify-center">
+      <div {...stylex.attrs(styles.silhouetteWrap)}>
         <div
-          class="flex aspect-square max-w-full items-center justify-center overflow-hidden rounded-3xl border"
-          style="height: {silHeight}px; border-color: var(--border)"
+          {...stylex.attrs(
+            styles.silhouetteBox,
+            dynamic.height(`${silHeight}px`),
+          )}
         >
           <img
             src={artworkUrl(target.id)}
             alt={revealed ? formatName(target.name) : "Silhouette"}
-            class="h-full w-full object-contain"
-            style={revealed ? "" : "filter: brightness(0) contrast(1.05)"}
+            {...stylex.attrs(
+              styles.silhouette,
+              revealed ? null : dynamic.filter("brightness(0) contrast(1.05)"),
+            )}
           />
         </div>
       </div>
 
       <div bind:this={fixedBottomRef}>
         {#if revealed}
-          <h2
-            class="mt-6 text-4xl font-black md:text-5xl"
-            style="color: var(--text)"
-          >
+          <h2 {...stylex.attrs(styles.answer)}>
             {formatName(target.name)}
           </h2>
-          <div class="mt-4 flex justify-center gap-2">
-            <button
-              onclick={newRound}
-              class="bg-accent hover:bg-accent/80 cursor-pointer rounded-xl border-0 px-6 py-2.5 text-sm font-semibold text-white"
+          <div {...stylex.attrs(styles.nextWrap)}>
+            <button onclick={newRound} {...stylex.attrs(styles.nextButton)}
               >Next Pokémon</button
             >
           </div>
         {:else}
-          <p class="mt-6 text-base" style="color: var(--muted)">
-            Who's that Pokémon?
-          </p>
-          <div class="mx-auto mt-3 max-w-lg">
+          <p {...stylex.attrs(styles.prompt)}>Who's that Pokémon?</p>
+          <div {...stylex.attrs(styles.searchWrap)}>
             <PokemonSearch
               bind:value={guess}
               options={catalog}
@@ -235,13 +232,13 @@
               placeholder="Type your guess..."
             />
           </div>
-          {#if hint}<p class="text-pokemon-red mt-2 text-xs">{hint}</p>{/if}
+          {#if hint}<p {...stylex.attrs(styles.hint)}>{hint}</p>{/if}
           {#if difficulty !== "hard"}
-            <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <div {...stylex.attrs(styles.hintRow)}>
               <button
                 onclick={() => (letterHint = true)}
                 disabled={letterHint}
-                class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/60 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                {...stylex.attrs(styles.hintButton)}
                 >{letterHint
                   ? "Letter: " + formatName(target.name)[0]
                   : "Reveal letter"}</button
@@ -249,15 +246,13 @@
               <button
                 onclick={revealType}
                 disabled={typeHint || hintLoading}
-                class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/60 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                {...stylex.attrs(styles.hintButton)}
               >
                 {hintLoading ? "…" : typeHint ? "Type revealed" : "Reveal type"}
               </button>
             </div>
             {#if typeHint && targetDetail}
-              <div
-                class="mt-3 flex flex-wrap items-center justify-center gap-1.5 text-xs text-white/60"
-              >
+              <div {...stylex.attrs(styles.typeHintRow)}>
                 <span>Type:</span>
                 {#each targetDetail.types as t}
                   <TypeBadge type={t} size="xs" />
@@ -265,13 +260,11 @@
               </div>
             {/if}
           {/if}
-          <button
-            onclick={skip}
-            class="mt-4 cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/60 hover:text-white"
+          <button onclick={skip} {...stylex.attrs(styles.skipButton)}
             >Skip</button
           >
         {/if}
-        <p class="mt-4 text-[10px] text-white/30">
+        <p {...stylex.attrs(styles.lifetime)}>
           Lifetime: {stats.correct} correct across {stats.rounds} rounds
         </p>
       </div>

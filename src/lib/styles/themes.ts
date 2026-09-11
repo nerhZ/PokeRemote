@@ -1,0 +1,67 @@
+import * as stylex from "@stylexjs/stylex";
+import { tokens } from "./tokens.stylex";
+
+export const lightTheme = stylex.createTheme(tokens, {
+  bg: "#f0f3f9",
+  card: "#ffffff",
+  text: "#0f172a",
+  muted: "rgba(15, 23, 42, 0.55)",
+  mutedStrong: "rgba(15, 23, 42, 0.72)",
+  border: "rgba(15, 23, 42, 0.12)",
+  surface: "#ffffff",
+  surface2: "rgba(15, 23, 42, 0.04)",
+  surface3: "rgba(15, 23, 42, 0.07)",
+  overlay: "rgba(15, 23, 42, 0.08)",
+  inputBg: "#ffffff",
+  kbdBg: "rgba(15, 23, 42, 0.06)",
+  shadow: "0 12px 32px rgba(15, 23, 42, 0.08)",
+  chartGrid: "rgba(15, 23, 42, 0.12)",
+  chartLabel: "rgba(15, 23, 42, 0.55)",
+  badgeOutline: "rgba(255, 255, 255, 0.6)",
+  appBgImage:
+    "radial-gradient(circle at 10% 20%, rgba(56, 132, 255, 0.1) 0%, transparent 50%), radial-gradient(circle at 90% 60%, rgba(255, 62, 62, 0.07) 0%, transparent 50%), radial-gradient(circle at 50% 90%, rgba(56, 132, 255, 0.06) 0%, transparent 35%)",
+  bgNavy: "#f0f3f9",
+  cardNavy: "#ffffff",
+
+  txStrong: "#0f172a",
+  tx85: "#0f172a",
+  tx80: "#0f172a",
+  tx70: "#0f172a",
+  tx60: "rgba(15, 23, 42, 0.72)",
+  tx55: "rgba(15, 23, 42, 0.72)",
+  tx50: "rgba(15, 23, 42, 0.72)",
+  tx45: "rgba(15, 23, 42, 0.72)",
+  tx40: "rgba(15, 23, 42, 0.55)",
+  tx30: "rgba(15, 23, 42, 0.55)",
+  tx25: "rgba(15, 23, 42, 0.55)",
+  tx20: "rgba(15, 23, 42, 0.55)",
+  txNavy: "#0f172a",
+
+  surf2: "rgba(15, 23, 42, 0.04)",
+  surf3: "rgba(15, 23, 42, 0.04)",
+  surf4: "rgba(15, 23, 42, 0.04)",
+  surf5: "rgba(15, 23, 42, 0.04)",
+  surf6: "rgba(15, 23, 42, 0.04)",
+  surf10: "rgba(15, 23, 42, 0.07)",
+
+  bdSolid: "rgba(15, 23, 42, 0.12)",
+  bd4: "rgba(15, 23, 42, 0.12)",
+  bd5: "rgba(15, 23, 42, 0.12)",
+  bd6: "rgba(15, 23, 42, 0.12)",
+  bd10: "rgba(15, 23, 42, 0.12)",
+  bd20: "rgba(15, 23, 42, 0.12)",
+  bd25: "rgba(15, 23, 42, 0.12)",
+
+  ph30: "rgba(15, 23, 42, 0.55)",
+  ph25: "rgba(15, 23, 42, 0.55)",
+
+  scrim20: "rgba(15, 23, 42, 0.08)",
+  scrim30: "rgba(15, 23, 42, 0.08)",
+  scrim35: "rgba(15, 23, 42, 0.08)",
+  scrim40: "rgba(15, 23, 42, 0.08)",
+
+  btnBg: "#0f172a",
+  btnFg: "#ffffff",
+  onAccent: "#ffffff",
+  yellowText: "#b8860b",
+});

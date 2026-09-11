@@ -1,8 +1,11 @@
 <script lang="ts">
+  import * as stylex from "@stylexjs/stylex";
   import EvolutionChain from "./EvolutionChain.svelte";
   import { type EvolutionStage, formatName } from "$lib/pokemon-types";
   import { resolve } from "$app/paths";
   import PokemonImage from "./PokemonImage.svelte";
+  import { dynamic } from "../styles/dynamic.stylex";
+  import { styles } from "./EvolutionChain.styles";
 
   let {
     stage,
@@ -45,40 +48,42 @@
 </script>
 
 {#if stage}
-  <div class="flex flex-col items-center gap-2">
+  <div {...stylex.attrs(styles.root)}>
     <a
       href={resolve(`/pokemon/${stage.name}`)}
-      class="group flex flex-col items-center gap-1.5 no-underline"
+      {...stylex.attrs(styles.link, stylex.defaultMarker())}
     >
       <div
-        class="h-20 w-20 rounded-2xl border border-white/6 bg-white/3 p-2 transition-all group-hover:-translate-y-1"
-        style={stage.name === currentName
-          ? `box-shadow: 0 0 0 2px ${color}`
-          : ""}
+        {...stylex.attrs(
+          styles.thumb,
+          stage.name === currentName
+            ? dynamic.boxShadow(`0 0 0 2px ${color}`)
+            : null,
+        )}
       >
         <PokemonImage
           src={stage.image}
           id={stage.id}
           alt={stage.name}
           lazy={false}
-          class="h-full w-full object-contain"
+          sx={styles.image}
         />
       </div>
       <span
-        class="text-xs font-semibold"
-        style={stage.name === currentName
-          ? `color: ${color}`
-          : "color: var(--muted)"}>{formatName(stage.name)}</span
+        {...stylex.attrs(
+          styles.name,
+          stage.name !== currentName && styles.nameIdle,
+          stage.name === currentName ? dynamic.color(color) : null,
+        )}>{formatName(stage.name)}</span
       >
     </a>
     {#if stage.children.length > 0}
-      <div class="flex flex-wrap items-start justify-center gap-4">
+      <div {...stylex.attrs(styles.children)}>
         {#each stage.children as child}
-          <div class="flex flex-col items-center gap-1">
-            <div class="flex flex-col items-center px-1">
-              <span class="text-white/25">↓</span>
-              <span
-                class="max-w-18 text-center text-[10px] leading-tight text-white/40"
+          <div {...stylex.attrs(styles.childRow)}>
+            <div {...stylex.attrs(styles.condition)}>
+              <span {...stylex.attrs(styles.arrow)}>↓</span>
+              <span {...stylex.attrs(styles.conditionText)}
                 >{describe(child)}</span
               >
             </div>

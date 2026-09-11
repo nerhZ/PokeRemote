@@ -1,6 +1,9 @@
 <script lang="ts">
   import { MATCHUP_COLORS, type TypeMatchup } from "$lib/pokemon-types";
+  import * as stylex from "@stylexjs/stylex";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
+  import { dynamic } from "../styles/dynamic.stylex";
+  import { styles } from "./TypeMatchup.styles";
 
   let { effectiveness }: { effectiveness: TypeMatchup } = $props();
 
@@ -47,18 +50,18 @@
 </script>
 
 {#if rows.length === 0}
-  <p class="text-sm text-white/40">No special matchups.</p>
+  <p {...stylex.attrs(styles.empty)}>No special matchups.</p>
 {:else}
-  <div class="space-y-4">
+  <div {...stylex.attrs(styles.rows)}>
     {#each rows as row}
       <div>
-        <div class="mb-2 flex items-center gap-2">
-          <span class="text-sm font-semibold" style="color: {row.color}"
+        <div {...stylex.attrs(styles.rowHead)}>
+          <span {...stylex.attrs(styles.mult, dynamic.color(row.color))}
             >{row.mult}</span
           >
-          <span class="text-xs text-white/40">{row.label}</span>
+          <span {...stylex.attrs(styles.rowLabel)}>{row.label}</span>
         </div>
-        <div class="flex flex-wrap gap-1.5">
+        <div {...stylex.attrs(styles.badges)}>
           {#each row.types as t}<TypeBadge type={t} size="sm" />{/each}
         </div>
       </div>

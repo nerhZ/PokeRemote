@@ -1,14 +1,15 @@
 <script lang="ts">
-  let {
-    class: klass = "h-24 w-24",
-    spinning = false,
-  }: { class?: string; spinning?: boolean } = $props();
+  import * as stylex from "@stylexjs/stylex";
+  import type { BoxSx } from "$lib/styles/stylex-types";
+  import { styles } from "./Pokeball.styles";
+
+  let { sx, spinning = false }: { sx?: BoxSx; spinning?: boolean } = $props();
 </script>
 
-<div class="{klass} {spinning ? 'animate-spin' : ''}">
+<div {...stylex.attrs(styles.root, spinning && styles.spinning, sx)}>
   <svg
     viewBox="0 0 1324.2 1318.92"
-    class="h-full w-full"
+    {...stylex.attrs(styles.svg)}
     xmlns="http://www.w3.org/2000/svg"
   >
     <path

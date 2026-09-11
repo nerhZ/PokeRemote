@@ -1,17 +1,20 @@
 <script lang="ts">
+  import * as stylex from "@stylexjs/stylex";
+  import { dynamic } from "../styles/dynamic.stylex";
+  import type { ShellSx } from "$lib/styles/stylex-types";
   import { onMount, untrack } from "svelte";
   import type { Snippet } from "svelte";
 
   const NO_DEPS: unknown[] = [];
 
   let {
-    class: klass = "",
+    sx,
     deps = NO_DEPS,
     onMeasure = () => {},
     onOverflow = () => {},
     children,
   }: {
-    class?: string;
+    sx?: ShellSx;
     /** Reactive values that trigger a re-measure when they change (pass a
         `$derived` array so its identity tracks the values, not every render). */
     deps?: unknown[];
@@ -68,6 +71,6 @@
   });
 </script>
 
-<div class={klass} style="min-height: {pageH}px">
+<div {...stylex.attrs(sx, dynamic.minHeight(`${pageH}px`))}>
   {@render children()}
 </div>

@@ -1,5 +1,8 @@
 <script lang="ts">
+  import * as stylex from "@stylexjs/stylex";
   import TypeBadgeInner from "./TypeBadgeInner.svelte";
+  import { dynamic } from "../styles/dynamic.stylex";
+  import { styles } from "./MatchupRow.styles";
 
   let {
     label,
@@ -8,11 +11,9 @@
   }: { label: string; types: string[]; color: string } = $props();
 </script>
 
-<div class="mt-1.5 flex items-center gap-1.5">
-  <span class="shrink-0 text-[10px] font-bold" style="color: {color}"
-    >{label}</span
-  >
-  <div class="flex flex-wrap gap-1">
+<div {...stylex.attrs(styles.row)}>
+  <span {...stylex.attrs(styles.label, dynamic.color(color))}>{label}</span>
+  <div {...stylex.attrs(styles.badges)}>
     {#each types as t}
       <TypeBadgeInner type={t} size="xs" />
     {/each}

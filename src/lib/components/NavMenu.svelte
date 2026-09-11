@@ -1,6 +1,9 @@
 <script lang="ts">
   import { isActive } from "$lib/navigation";
   import { onDismiss, popupAlign } from "$lib/popup";
+  import * as stylex from "@stylexjs/stylex";
+  import { shared } from "$lib/styles/shared.stylex";
+  import { styles } from "./NavMenu.styles";
 
   let {
     label,
@@ -32,34 +35,39 @@
   });
 </script>
 
-<div bind:this={host} class="relative">
+<div bind:this={host} {...stylex.attrs(styles.host)}>
   <button
     type="button"
     onclick={() => (open = !open)}
     aria-expanded={open}
     aria-haspopup="menu"
-    class="nav-link {groupActive
-      ? 'nav-link-active'
-      : ''} flex cursor-pointer items-center gap-1 border-0"
+    {...stylex.attrs(
+      shared.navLink,
+      groupActive && shared.navLinkActive,
+      styles.trigger,
+    )}
   >
     <span>{icon} {label}</span>
-    <span class="text-[9px] opacity-70">{open ? "▴" : "▾"}</span>
+    <span {...stylex.attrs(styles.caret)}>{open ? "▴" : "▾"}</span>
   </button>
   {#if open}
     <div
       role="menu"
-      class="absolute top-full z-50 mt-1 min-w-44 rounded-xl border p-1 shadow-2xl {alignRight
-        ? 'right-0'
-        : 'left-0'}"
-      style="background: var(--card); border-color: var(--border)"
+      {...stylex.attrs(
+        styles.menu,
+        alignRight ? styles.menuRight : styles.menuLeft,
+      )}
     >
       {#each items as item}
         <a
           href={item.href}
           onclick={() => (open = false)}
           role="menuitem"
-          class="nav-link block {isActive(item.href) ? 'nav-link-active' : ''}"
-          >{item.icon} {item.label}</a
+          {...stylex.attrs(
+            shared.navLink,
+            styles.menuItem,
+            isActive(item.href) && shared.navLinkActive,
+          )}>{item.icon} {item.label}</a
         >
       {/each}
     </div>

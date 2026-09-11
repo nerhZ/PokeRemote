@@ -1,14 +1,17 @@
 <script lang="ts">
+  import * as stylex from "@stylexjs/stylex";
+  import type { BoxSx } from "$lib/styles/stylex-types";
   import { onMount } from "svelte";
+  import { styles } from "./InfiniteScroll.styles";
 
   let {
     loadMore,
     hasMore,
-    class: klass = "",
+    sx,
   }: {
     loadMore: () => void;
     hasMore: boolean;
-    class?: string;
+    sx?: BoxSx;
   } = $props();
 
   let sentinel = $state<HTMLElement | undefined>();
@@ -39,7 +42,11 @@
 </script>
 
 {#if hasMore}
-  <div class="flex justify-center {klass}">
-    <div bind:this={sentinel} class="h-px" aria-hidden="true"></div>
+  <div {...stylex.attrs(styles.root, sx)}>
+    <div
+      bind:this={sentinel}
+      {...stylex.attrs(styles.sentinel)}
+      aria-hidden="true"
+    ></div>
   </div>
 {/if}

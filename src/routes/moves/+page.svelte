@@ -14,6 +14,9 @@
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import LearnerList from "$lib/components/LearnerList.svelte";
   import { onMount } from "svelte";
+  import * as stylex from "@stylexjs/stylex";
+  import { shared } from "$lib/styles/shared.stylex";
+  import { styles } from "./styles";
 
   let moves = $state<MoveDetail[]>([]);
   let loading = $state(true);
@@ -100,24 +103,24 @@
   });
 </script>
 
-<div class="tool-shell">
-  <div class="tool-hero">
-    <h1>Move Dex</h1>
-    <p>
+<div {...stylex.attrs(shared.toolShell)}>
+  <div {...stylex.attrs(shared.toolHero)}>
+    <h1 {...stylex.attrs(shared.toolHeroTitle)}>Move Dex</h1>
+    <p {...stylex.attrs(shared.toolHeroText)}>
       Browse all moves with power, accuracy, PP, and effects. {total
         ? `${moves.length} / ${total} loaded`
         : ""}
     </p>
   </div>
 
-  <div class="mb-4 space-y-3">
-    <div class="flex flex-col gap-3 md:flex-row md:items-center">
+  <div {...stylex.attrs(styles.filterSection)}>
+    <div {...stylex.attrs(styles.searchRow)}>
       <SearchInput
         bind:value={search}
         placeholder="Search moves..."
-        class="md:max-w-xs"
+        sx={styles.searchInput}
       />
-      <div class="flex flex-wrap items-center gap-1.5">
+      <div {...stylex.attrs(styles.chipRow)}>
         <FilterChip
           label="All types"
           active={typeFilter === ""}
@@ -135,7 +138,7 @@
         {/each}
       </div>
     </div>
-    <div class="flex flex-wrap items-center gap-1.5">
+    <div {...stylex.attrs(styles.chipRow)}>
       {#each DAMAGE_CLASSES as c}
         <FilterChip
           label={c}
@@ -148,7 +151,7 @@
   </div>
 
   {#if search && moves.length > 0}
-    <p class="mb-3 text-xs" style="color: var(--muted)">
+    <p {...stylex.attrs(styles.resultNote)}>
       Results only cover the {moves.length} of {total} moves loaded so far (loaded
       alphabetically) — scroll to the bottom to load more.
     </p>
@@ -166,23 +169,18 @@
   {:else if filtered.length === 0}
     <EmptyState title="No moves match" subtitle="Try different filters." />
   {:else}
-    <div class="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div {...stylex.attrs(styles.grid)}>
       {#each filtered as m}
-        <div class="panel flex flex-col gap-2 p-4!">
-          <div class="flex items-center gap-2">
+        <div {...stylex.attrs(shared.panel, styles.card)}>
+          <div {...stylex.attrs(styles.cardHead)}>
             <TypeBadge type={m.type} size="xs" focusable={false} />
-            <span class="truncate text-sm font-bold">{formatName(m.name)}</span>
-            <span
-              class="ml-auto shrink-0 text-[10px] font-bold text-white/40 capitalize"
-              >{m.damage_class}</span
-            >
+            <span {...stylex.attrs(styles.name)}>{formatName(m.name)}</span>
+            <span {...stylex.attrs(styles.damageClass)}>{m.damage_class}</span>
           </div>
-          <div class="text-[10px] font-bold tracking-wide text-white/50">
+          <div {...stylex.attrs(styles.stats)}>
             Pow {m.power ?? "—"} / Acc {m.accuracy ?? "—"} / PP {m.pp ?? "—"}
           </div>
-          {#if m.effect}<p
-              class="line-clamp-2 text-xs leading-relaxed text-white/50"
-            >
+          {#if m.effect}<p {...stylex.attrs(styles.effect)}>
               {m.effect}
             </p>{/if}
           {#if m.learned_by_count != null && m.learned_by_count > 0}
@@ -196,14 +194,12 @@
         </div>
       {/each}
       {#if loadingMore}
-        <Skeleton rows={6} tiles class="h-32" />
+        <Skeleton rows={6} tiles sx={styles.skeletonTile} />
       {/if}
     </div>
     {#if stalled}
-      <div class="mb-4 flex justify-center">
-        <button
-          onclick={loadMore}
-          class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/60 hover:text-white"
+      <div {...stylex.attrs(styles.retryWrap)}>
+        <button onclick={loadMore} {...stylex.attrs(styles.retryButton)}
           >Couldn't load more moves — retry</button
         >
       </div>

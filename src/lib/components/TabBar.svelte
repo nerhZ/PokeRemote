@@ -1,4 +1,8 @@
 <script lang="ts">
+  import * as stylex from "@stylexjs/stylex";
+  import { dynamic } from "../styles/dynamic.stylex";
+  import { styles } from "./TabBar.styles";
+
   interface Tab {
     id: string;
     label: string;
@@ -17,10 +21,7 @@
   } = $props();
 </script>
 
-<div
-  role="tablist"
-  class="mb-5 flex gap-1 overflow-x-auto rounded-2xl border border-white/6 bg-white/3 p-1"
->
+<div role="tablist" {...stylex.attrs(styles.root)}>
   {#each tabs as t, i}
     <button
       role="tab"
@@ -33,10 +34,11 @@
           onchange(tabs[(i + dir + tabs.length) % tabs.length].id);
         }
       }}
-      class="min-w-18 flex-1 cursor-pointer rounded-xl border-0 px-3 py-2 text-xs font-bold tracking-wide uppercase transition-all"
-      style={active === t.id
-        ? `background-color: ${color}33; color: #fff`
-        : "background: transparent; color: var(--muted)"}>{t.label}</button
+      {...stylex.attrs(
+        styles.tab,
+        active === t.id ? styles.tabActive : styles.tabIdle,
+        active === t.id && dynamic.backgroundColor(`${color}33`),
+      )}>{t.label}</button
     >
   {/each}
 </div>

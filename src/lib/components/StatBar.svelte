@@ -1,4 +1,15 @@
 <script lang="ts">
+  import * as stylex from "@stylexjs/stylex";
+  import { dynamic } from "../styles/dynamic.stylex";
+  import {
+    bars,
+    labels,
+    rows,
+    styles,
+    values,
+    type StatBarSize,
+  } from "./StatBar.styles";
+
   let {
     label,
     value,
@@ -10,38 +21,26 @@
     value: number;
     color?: string;
     max?: number;
-    size?: "sm" | "md";
+    size?: StatBarSize;
   } = $props();
 
-  const classes = $derived.by(() => {
-    if (size === "sm") {
-      return {
-        row: "flex items-center gap-2",
-        label: "w-12 text-right text-[10px] font-bold text-white/45",
-        value: "w-7 text-xs font-black",
-        bar: "h-1.5",
-        solid: true,
-      };
-    }
-    return {
-      row: "flex items-center gap-3",
-      label: "w-14 text-right text-[11px] font-bold text-white/50",
-      value: "w-8 text-right text-sm font-black",
-      bar: "h-2",
-      solid: false,
-    };
-  });
+  const solid = $derived(size === "sm");
 </script>
 
-<div class={classes.row}>
-  <span class={classes.label}>{label}</span>
-  <span class={classes.value} style="color: {color}">{value}</span>
-  <div class="flex-1 overflow-hidden rounded-full bg-white/6 {classes.bar}">
+<div {...stylex.attrs(styles.row, rows[size])}>
+  <span {...stylex.attrs(styles.label, labels[size])}>{label}</span>
+  <span {...stylex.attrs(styles.value, values[size], dynamic.color(color))}
+    >{value}</span
+  >
+  <div {...stylex.attrs(styles.bar, bars[size])}>
     <div
-      class="h-full rounded-full"
-      style="width: {(value / max) * 100}%; background: {classes.solid
-        ? color
-        : `linear-gradient(90deg, ${color}, ${color}80)`}"
+      {...stylex.attrs(
+        styles.fill,
+        dynamic.width(`${(value / max) * 100}%`),
+        dynamic.background(
+          solid ? color : `linear-gradient(90deg, ${color}, ${color}80)`,
+        ),
+      )}
     ></div>
   </div>
 </div>

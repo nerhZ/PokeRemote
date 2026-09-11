@@ -13,7 +13,17 @@
   import NavMenu from "$lib/components/NavMenu.svelte";
   import Pokeball from "$lib/components/Pokeball.svelte";
   import SpriteToggle from "$lib/components/SpriteToggle.svelte";
-  import "../app.css";
+  import * as stylex from "@stylexjs/stylex";
+  import { shared } from "$lib/styles/shared.stylex";
+  import { dynamic } from "../lib/styles/dynamic.stylex";
+  import { styles } from "./layout.styles";
+  import "../styles.css";
+
+  if (import.meta.env.DEV) {
+    $effect(() => {
+      void import("virtual:stylex:runtime");
+    });
+  }
 
   let { children } = $props();
   let mobileOpen = $state(false);
@@ -257,19 +267,22 @@
 
 <svelte:head>
   <title>PokéRemote - Modern Pokedex</title>
+  {#if import.meta.env.DEV}
+    <link rel="stylesheet" href="/virtual:stylex.css" />
+  {/if}
 </svelte:head>
 
-<div class="flex min-h-screen flex-col">
+<div {...stylex.attrs(styles.shell)}>
   {#snippet githubLink(showTitle: boolean)}
     <a
       href="https://github.com/nerhZ/PokeRemote"
       target="_blank"
       rel="noopener noreferrer"
-      class="nav-link border-0 focus:outline-none"
+      {...stylex.attrs(shared.navLink, styles.iconLink)}
       aria-label="GitHub"
       title={showTitle ? "GitHub" : undefined}
     >
-      <svg viewBox="0 0 24 24" class="size-5 fill-current">
+      <svg viewBox="0 0 24 24" {...stylex.attrs(styles.icon)}>
         <path
           d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"
         />
@@ -280,7 +293,7 @@
   {#snippet themeToggle(showTitle: boolean)}
     <button
       onclick={toggleTheme}
-      class="nav-link cursor-pointer border-0"
+      {...stylex.attrs(shared.navLink, styles.iconLink, styles.cursorPointer)}
       aria-label="Toggle theme"
       title={showTitle ? "Toggle theme" : undefined}
     >
@@ -288,28 +301,18 @@
     </button>
   {/snippet}
 
-  <header
-    class="sticky top-0 z-50 border-b py-3 backdrop-blur-md"
-    style="background: color-mix(in srgb, var(--bg) 85%, transparent); border-color: var(--border)"
-  >
-    <nav
-      class="mx-auto flex min-h-11 max-w-7xl items-center justify-between gap-3 px-4 md:px-6"
-    >
-      <a
-        href={resolve("/")}
-        class="flex items-center gap-2.5 text-xl font-extrabold tracking-tighter no-underline md:text-2xl"
-        style="color: var(--text)"
-      >
-        <Pokeball class="size-7" />
+  <header {...stylex.attrs(styles.header)}>
+    <nav {...stylex.attrs(styles.nav)}>
+      <a href={resolve("/")} {...stylex.attrs(styles.brand)}>
+        <Pokeball sx={styles.pokeball} />
         PokéRemote
       </a>
 
       <div
-        class="desktop-search hidden min-w-0 flex-1 justify-center px-2 lg:flex"
-        class:closed={onHome}
+        {...stylex.attrs(styles.desktopSearch, onHome && styles.searchClosed)}
         inert={onHome}
       >
-        <div class="w-full max-w-md">
+        <div {...stylex.attrs(styles.searchWrap)}>
           <PokemonSearch
             navigate
             globalSearch
@@ -318,12 +321,14 @@
         </div>
       </div>
 
-      <div class="hidden flex-wrap items-center gap-1 lg:flex">
+      <div {...stylex.attrs(styles.navLinks)}>
         {#each primary as link}
           <a
             href={resolve(link.href)}
-            class="nav-link {isActive(link.href) ? 'nav-link-active' : ''}"
-            >{link.icon} {link.label}</a
+            {...stylex.attrs(
+              shared.navLink,
+              isActive(link.href) && shared.navLinkActive,
+            )}>{link.icon} {link.label}</a
           >
         {/each}
         {#each groups as group}
@@ -339,21 +344,27 @@
         {/each}
         <a
           href={resolve(quiz.href)}
-          class="nav-link {isActive(quiz.href) ? 'nav-link-active' : ''}"
-          >{quiz.icon} {quiz.label}</a
+          {...stylex.attrs(
+            shared.navLink,
+            isActive(quiz.href) && shared.navLinkActive,
+          )}>{quiz.icon} {quiz.label}</a
         >
         <SpriteToggle />
         {@render themeToggle(true)}
         {@render githubLink(true)}
       </div>
 
-      <div class="flex items-center gap-2 lg:hidden">
+      <div {...stylex.attrs(styles.mobileIcons)}>
         {@render themeToggle(false)}
         {@render githubLink(false)}
         <button
           bind:this={menuButton}
           onclick={() => (mobileOpen = !mobileOpen)}
-          class="nav-link cursor-pointer border-0"
+          {...stylex.attrs(
+            shared.navLink,
+            styles.iconLink,
+            styles.cursorPointer,
+          )}
           aria-label="Menu"
           aria-expanded={mobileOpen}>☰</button
         >
@@ -361,13 +372,15 @@
     </nav>
 
     <div
-      class="mobile-search lg:hidden"
-      class:closed={!searchOpen}
+      {...stylex.attrs(
+        styles.mobileSearch,
+        !searchOpen && styles.mobileSearchClosed,
+        dynamic.searchH(`${searchH}px`),
+      )}
       inert={!searchOpen}
-      style="--search-h: {searchH}px"
       bind:this={searchCollapse}
     >
-      <div bind:this={searchRow} class="px-4 pt-2 md:px-6">
+      <div bind:this={searchRow} {...stylex.attrs(styles.searchRow)}>
         <PokemonSearch
           navigate
           globalSearch
@@ -377,25 +390,20 @@
     </div>
 
     {#if mobileOpen}
-      <div
-        bind:this={mobileMenu}
-        class="mt-2 flex flex-col gap-1 border-t px-4 py-3 lg:hidden"
-        style="border-color: var(--border); background: var(--bg)"
-      >
+      <div bind:this={mobileMenu} {...stylex.attrs(styles.mobileMenu)}>
         {#each primary as link}
           <a
             href={resolve(link.href)}
             onclick={() => (mobileOpen = false)}
-            class="nav-link {isActive(link.href)
-              ? 'nav-link-active'
-              : ''} block">{link.icon} {link.label}</a
+            {...stylex.attrs(
+              shared.navLink,
+              isActive(link.href) && shared.navLinkActive,
+              styles.menuLinkBlock,
+            )}>{link.icon} {link.label}</a
           >
         {/each}
         {#each groups as group}
-          <p
-            class="px-3 pt-2 text-[10px] font-bold tracking-wider uppercase"
-            style="color: var(--muted)"
-          >
+          <p {...stylex.attrs(styles.menuLabel)}>
             {group.icon}
             {group.label}
           </p>
@@ -403,28 +411,35 @@
             <a
               href={resolve(item.href)}
               onclick={() => (mobileOpen = false)}
-              class="nav-link {isActive(item.href)
-                ? 'nav-link-active'
-                : ''} block pl-6">{item.icon} {item.label}</a
+              {...stylex.attrs(
+                shared.navLink,
+                isActive(item.href) && shared.navLinkActive,
+                styles.menuLinkBlock,
+                styles.menuLinkIndent,
+              )}>{item.icon} {item.label}</a
             >
           {/each}
         {/each}
         <a
           href={resolve(quiz.href)}
           onclick={() => (mobileOpen = false)}
-          class="nav-link {isActive(quiz.href)
-            ? 'nav-link-active'
-            : ''} mt-2 block">{quiz.icon} {quiz.label}</a
+          {...stylex.attrs(
+            shared.navLink,
+            isActive(quiz.href) && shared.navLinkActive,
+            styles.menuLinkMt,
+            styles.menuLinkBlock,
+          )}>{quiz.icon} {quiz.label}</a
         >
         <SpriteToggle mobile onclick={() => (mobileOpen = false)} />
-        <p class="px-3 pt-2 text-[10px]" style="color: var(--muted)">
-          Shortcuts: <kbd>/</kbd> search · <kbd>R</kbd> random
+        <p {...stylex.attrs(styles.shortcuts)}>
+          Shortcuts: <kbd {...stylex.attrs(shared.kbd)}>/</kbd> search ·
+          <kbd {...stylex.attrs(shared.kbd)}>R</kbd> random
         </p>
       </div>
     {/if}
   </header>
 
-  <main class="relative flex-1">
+  <main {...stylex.attrs(styles.main)}>
     <LoadingBar />
     {@render children()}
   </main>
@@ -432,14 +447,13 @@
   {#if showTop}
     <button
       onclick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-      class="fixed right-5 bottom-5 z-40 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border shadow-lg transition-transform hover:-translate-y-0.5"
-      style="border-color: var(--border); background: color-mix(in srgb, var(--card) 90%, transparent); color: var(--text)"
+      {...stylex.attrs(styles.toTop)}
       aria-label="Back to top"
       title="Back to top"
     >
       <svg
         viewBox="0 0 24 24"
-        class="size-5"
+        {...stylex.attrs(styles.icon)}
         fill="none"
         stroke="currentColor"
         stroke-width="2.5"
@@ -452,51 +466,11 @@
     </button>
   {/if}
 
-  <footer
-    class="mx-auto max-w-7xl px-6 py-8 text-center text-xs"
-    style="color: var(--muted)"
-  >
+  <footer {...stylex.attrs(styles.footer)}>
     <p>
       Credit to PokeAPI · Pokémon and Pokémon character names are trademarks of
-      Nintendo · Press <kbd>/</kbd> search · <kbd>R</kbd> random
+      Nintendo · Press <kbd {...stylex.attrs(shared.kbd)}>/</kbd> search ·
+      <kbd {...stylex.attrs(shared.kbd)}>R</kbd> random
     </p>
   </footer>
 </div>
-
-<style>
-  /* Always mounted (nav teardown kills anything else); desktop fades via CSS,
-     mobile height via the rAF loop + opacity via this compositor transition. */
-  .desktop-search {
-    opacity: 1;
-    transform: translateX(0);
-    transition:
-      opacity 350ms ease,
-      transform 350ms ease;
-  }
-  .desktop-search.closed {
-    opacity: 0;
-    transform: translateX(-32px);
-  }
-
-  .mobile-search {
-    --search-h: 50px;
-    height: var(--search-h);
-    will-change: opacity;
-    transition: opacity 1000ms ease;
-  }
-  /* overflow hidden only when closed: while open, the row must not clip the
-     absolute suggestion dropdown below the input. During animations the
-     effect sets overflow inline and clears it when done. */
-  .mobile-search.closed {
-    height: 0;
-    opacity: 0;
-    overflow: hidden;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .desktop-search,
-    .mobile-search {
-      transition: none;
-    }
-  }
-</style>

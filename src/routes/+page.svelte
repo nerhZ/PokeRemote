@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as stylex from "@stylexjs/stylex";
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
   import { onMount, untrack } from "svelte";
@@ -26,6 +27,7 @@
     getRecent,
     type FavEntry,
   } from "$lib/storage";
+  import { shared } from "$lib/styles/shared.stylex";
   import TypeBadge from "$lib/components/TypeBadge.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import LoadProgress from "$lib/components/LoadProgress.svelte";
@@ -33,6 +35,8 @@
   import FilterChip from "$lib/components/FilterChip.svelte";
   import Popover from "$lib/components/Popover.svelte";
   import { onCollapseFinished } from "$lib/search-anim";
+  import { dynamic } from "../lib/styles/dynamic.stylex";
+  import { styles } from "./home.styles";
 
   let allPokemon = $state<any[]>([]);
   let loadProgress = $state({ done: 0, total: 0 });
@@ -288,59 +292,59 @@
   });
 </script>
 
-<div class="relative min-h-[calc(100vh-73px)]">
-  <div
-    class="pointer-events-none absolute inset-0 overflow-hidden"
-    aria-hidden="true"
-  >
-    <div
-      class="bg-pokemon-red/5 absolute -top-24 -right-24 h-96 w-96 rounded-full blur-3xl"
-    ></div>
-    <div
-      class="bg-accent/5 absolute -bottom-32 -left-32 h-125 w-125 rounded-full blur-3xl"
-    ></div>
+<div {...stylex.attrs(styles.root)}>
+  <div {...stylex.attrs(styles.glowLayer)} aria-hidden="true">
+    <div {...stylex.attrs(styles.glowRed)}></div>
+    <div {...stylex.attrs(styles.glowAccent)}></div>
   </div>
 
-  <div class="relative mx-auto max-w-7xl px-4 md:px-6">
-    <div class="pt-10 pb-6 text-center md:pt-14">
-      <div
-        class="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold tracking-wider text-white/60 uppercase"
-      >
-        <span class="bg-pokemon-green h-2 w-2 animate-pulse rounded-full"
-        ></span>
+  <div {...stylex.attrs(styles.container)}>
+    <div {...stylex.attrs(styles.hero)}>
+      <div {...stylex.attrs(styles.statsBadge)}>
+        <span {...stylex.attrs(styles.pulseDot)}></span>
         {allPokemon.length || TOTAL_SPECIES} species · {TOTAL_POKEMON} forms · {favorites.length}
         favorites
       </div>
-      <h1
-        class="mb-3 text-4xl font-black tracking-tight md:text-6xl"
-        style="color: var(--text)"
-      >
+      <h1 {...stylex.attrs(styles.heroTitle)}>
         Explore the
-        <span
-          class="from-pokemon-red via-pokemon-yellow to-accent bg-linear-to-r bg-clip-text text-transparent"
-          >Pokémon World</span
-        >
+        <span {...stylex.attrs(styles.heroGradient)}>Pokémon World</span>
       </h1>
-      <p
-        class="mx-auto mb-5 max-w-2xl text-base md:text-lg"
-        style="color: var(--muted)"
-      >
+      <p {...stylex.attrs(styles.heroText)}>
         Filter by type & generation · tools for compare, teams & damage · press <kbd
-          class="text-xs">R</kbd
+          {...stylex.attrs(shared.kbd, styles.heroKbd)}>R</kbd
         > for random
       </p>
-      <div class="flex flex-wrap justify-center gap-2">
+      <div {...stylex.attrs(styles.heroActions)}>
         <button
           onclick={gotoRandomPokemon}
-          class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/70 transition-all hover:bg-white/10 hover:text-white"
+          {...stylex.attrs(styles.heroBtn, styles.heroBtnMuted)}
         >
+          <svg
+            {...stylex.attrs(styles.heroIcon)}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.8-1.1 2-1.7 3.3-1.7H22"
+            />
+            <path d="m18 2 4 4-4 4" />
+            <path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2" />
+            <path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8" />
+            <path d="m18 14 4 4-4 4" />
+          </svg>
           Random Pokémon
         </button>
         <button
           onclick={() => (showFavoritesOnly = !showFavoritesOnly)}
-          class="inline-flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-all {showFavoritesOnly
-            ? 'bg-pokemon-yellow/20 border-pokemon-yellow/40 text-pokemon-yellow'
-            : 'border-white/10 bg-white/5 text-white/70 hover:text-white'}"
+          {...stylex.attrs(
+            styles.heroBtn,
+            showFavoritesOnly ? styles.heroBtnActive : styles.heroBtnOutline,
+          )}
         >
           ★ Favorites {favorites.length ? `(${favorites.length})` : ""}
         </button>
@@ -348,25 +352,21 @@
     </div>
 
     {#if recent.length > 0 && !showFavoritesOnly}
-      <div class="mb-6">
-        <h2
-          class="mb-2 text-xs font-bold tracking-wider text-white/40 uppercase"
-        >
-          Recently viewed
-        </h2>
-        <div class="flex gap-2 overflow-x-auto pb-2">
+      <div {...stylex.attrs(styles.recentSection)}>
+        <h2 {...stylex.attrs(styles.recentTitle)}>Recently viewed</h2>
+        <div {...stylex.attrs(styles.recentRow)}>
           {#each recent as r}
             <a
               href={resolve(`/pokemon/${r.name}`)}
-              class="flex shrink-0 items-center gap-2 rounded-xl border border-white/6 bg-white/3 px-3 py-2 no-underline transition-all hover:border-white/20"
+              {...stylex.attrs(styles.recentCard)}
             >
               <PokemonImage
                 src={r.image}
                 id={r.id}
                 alt={r.name}
-                class="h-8 w-8 object-contain"
+                sx={styles.recentImage}
               />
-              <span class="text-xs font-semibold text-white/70"
+              <span {...stylex.attrs(styles.recentName)}
                 >{formatName(r.name)}</span
               >
             </a>
@@ -375,19 +375,12 @@
       </div>
     {/if}
 
-    <div
-      class="sticky top-17 z-40 mb-6 rounded-2xl border px-4 py-3 backdrop-blur-md md:px-6"
-      style="background: color-mix(in srgb, var(--bg) 92%, transparent); border-color: var(--border)"
-    >
-      <div
-        class="flex flex-col items-stretch gap-3 md:flex-row md:items-center"
-      >
-        <div class="relative max-w-md flex-1">
-          <div
-            class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"
-          >
+    <div {...stylex.attrs(styles.filterBar)}>
+      <div {...stylex.attrs(styles.filterInner)}>
+        <div {...stylex.attrs(styles.searchWrap)}>
+          <div {...stylex.attrs(styles.searchIconWrap)}>
             <svg
-              class="h-4 w-4 text-white/30"
+              {...stylex.attrs(styles.searchIcon)}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -405,21 +398,23 @@
             placeholder="Search name or #..."
             aria-label="Search Pokémon by name or number"
             bind:value={searchQuery}
-            class="focus:border-accent/50 w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pr-3 pl-10 text-sm text-white placeholder-white/30 outline-none"
+            {...stylex.attrs(styles.searchInput)}
           />
         </div>
-        <div class="flex flex-wrap items-center gap-2">
+        <div {...stylex.attrs(styles.filterControls)}>
           <button
             onclick={() => (filtersOpen = !filtersOpen)}
-            class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/70 md:hidden"
+            {...stylex.attrs(styles.filtersToggle)}
           >
             Filters {filtersOpen ? "▴" : "▾"}
           </button>
-          <span class="text-xs text-white/40">{filtered.length} results</span>
+          <span {...stylex.attrs(styles.resultCount)}
+            >{filtered.length} results</span
+          >
           <select
             bind:value={sortBy}
             aria-label="Sort Pokémon"
-            class="focus:border-accent/50 cursor-pointer rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-xs text-white/70 outline-none"
+            {...stylex.attrs(styles.sortSelect)}
           >
             <option value="id-asc">ID ↑</option>
             <option value="id-desc">ID ↓</option>
@@ -427,12 +422,17 @@
             <option value="name-desc">Name Z-A</option>
           </select>
         </div>
-        <p class="mt-1 text-[10px]" style="color: var(--muted)">
+        <p {...stylex.attrs(styles.filterHint)}>
           Click to toggle · types narrow by AND, gens broaden by OR
         </p>
       </div>
-      <div class="mt-3 space-y-2 {filtersOpen ? 'block' : 'hidden md:block'}">
-        <div class="flex flex-wrap gap-1.5">
+      <div
+        {...stylex.attrs(
+          styles.filterRows,
+          !filtersOpen && styles.filterRowsCollapsed,
+        )}
+      >
+        <div {...stylex.attrs(styles.chipRow)}>
           <FilterChip
             label="All types"
             active={activeTypes.length === 0}
@@ -453,7 +453,7 @@
             />
           {/each}
         </div>
-        <div class="flex flex-wrap gap-1.5">
+        <div {...stylex.attrs(styles.chipRow)}>
           <FilterChip
             label="All gens"
             active={activeGens.length === 0}
@@ -480,7 +480,7 @@
             />
           {/each}
         </div>
-        <div class="flex flex-wrap gap-1.5">
+        <div {...stylex.attrs(styles.chipRow)}>
           <FilterChip
             label="All"
             active={special === ""}
@@ -514,7 +514,7 @@
         total={loadProgress.total}
         noun="species"
       >
-        <p class="text-sm" style="color: var(--muted)">Loading Pokédex...</p>
+        <p {...stylex.attrs(styles.loadingText)}>Loading Pokédex...</p>
       </LoadProgress>
     {:else if loadPhase === "error"}
       <EmptyState
@@ -537,9 +537,7 @@
         }}
       />
     {:else}
-      <div
-        class="grid grid-cols-2 gap-3 pb-8 sm:grid-cols-3 md:grid-cols-4 md:gap-4 lg:grid-cols-5"
-      >
+      <div {...stylex.attrs(styles.grid)}>
         {#each filtered as p, i (p.id)}
           {@const primaryColor = typeColor(p.types)}
           {@const fav = favorites.some((f) => f.id === p.id)}
@@ -548,73 +546,86 @@
           <Popover
             open={hasForms && expandedId === p.id}
             onClose={() => (expandedId = null)}
-            panelClass="right-0 max-h-64 rounded-xl p-1.5"
+            panelSx={styles.formsPanel}
           >
             {#snippet trigger()}
               <a
                 href={resolve(`/pokemon/${p.name}`)}
-                class="poke-card card-enter group"
-                style="animation-delay: {Math.min(i, 15) * 35}ms"
+                {...stylex.attrs(
+                  shared.pokeCard,
+                  shared.cardEnter,
+                  stylex.defaultMarker(),
+                  dynamic.animationDelay(`${Math.min(i, 15) * 35}ms`),
+                )}
               >
-                <div
-                  class="relative flex aspect-square items-center justify-center overflow-hidden p-5"
-                >
+                <div {...stylex.attrs(styles.cardImageWrap)}>
                   <div
-                    class="absolute inset-0 opacity-40"
-                    style="background: radial-gradient(circle at 50% 70%, {primaryColor}22 0%, transparent 65%)"
+                    {...stylex.attrs(
+                      styles.cardGlow,
+                      dynamic.background(
+                        `radial-gradient(circle at 50% 70%, ${primaryColor}22 0%, transparent 65%)`,
+                      ),
+                    )}
                   ></div>
                   <PokemonImage
                     src={p.image}
                     id={p.id}
                     alt={p.name}
-                    class="relative z-10 object-contain drop-shadow-2xl transition-transform duration-500 group-hover:-translate-y-1 group-hover:scale-110 {spriteMode.active
-                      ? 'h-full w-full'
-                      : 'max-h-full max-w-full'}"
+                    sx={[
+                      styles.cardImage,
+                      spriteMode.active
+                        ? styles.cardImageActive
+                        : styles.cardImageFit,
+                    ]}
                   />
                   <span
-                    class="absolute top-2.5 left-2.5 rounded-md bg-black/35 px-2 py-0.5 text-[10px] font-black tracking-wider backdrop-blur-sm"
-                    style="color: {primaryColor}">{formatId(p.id)}</span
+                    {...stylex.attrs(
+                      styles.idBadge,
+                      dynamic.color(primaryColor),
+                    )}>{formatId(p.id)}</span
                   >
                   <button
                     onclick={(e) => onFav(e, p)}
-                    class="absolute top-2.5 right-2.5 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-black/35 text-sm backdrop-blur-sm {fav
-                      ? 'text-pokemon-yellow'
-                      : 'text-white/40 hover:text-white'}"
+                    {...stylex.attrs(
+                      styles.favBtn,
+                      fav ? styles.favActive : styles.favIdle,
+                    )}
                     aria-label={fav ? "Remove favorite" : "Add favorite"}
                     >★</button
                   >
                   {#if hasForms}
                     <button
                       onclick={(e) => toggleForms(e, p.id)}
-                      class="absolute right-2.5 bottom-2.5 z-20 cursor-pointer rounded-md border border-white/10 bg-black/40 px-2 py-0.5 text-[10px] font-bold text-white/80 backdrop-blur-sm hover:text-white"
+                      {...stylex.attrs(styles.formsBtn)}
                       >{forms.length} forms {expandedId === p.id
                         ? "▴"
                         : "▾"}</button
                     >
                   {/if}
                 </div>
-                <div class="border-t border-white/4 p-3 pt-2">
-                  <h3
-                    class="text-sm font-bold text-white/85 transition-colors group-hover:text-white"
-                  >
+                <div {...stylex.attrs(styles.cardBody)}>
+                  <h3 {...stylex.attrs(styles.cardName)}>
                     {formatName(p.name)}
                   </h3>
-                  <div class="mt-1.5 flex flex-wrap items-center gap-1">
+                  <div {...stylex.attrs(styles.typeRow)}>
                     {#each p.types || [] as type}
                       <TypeBadge {type} size="xs" focusable={false} />
                     {/each}
                     <span
-                      class="ml-auto rounded-full px-1.5 py-0.5 text-[9px] font-bold text-white/80"
-                      style="background: {primaryColor}33"
-                      >{generationShortLabel(getGeneration(p.id))}</span
+                      {...stylex.attrs(
+                        styles.genBadge,
+                        dynamic.background(`${primaryColor}33`),
+                      )}>{generationShortLabel(getGeneration(p.id))}</span
                     >
                   </div>
                 </div>
                 <div
-                  class="type-edge"
-                  style="background: linear-gradient(90deg, {primaryColor}, {TYPE_COLORS[
-                    p.types?.[1]
-                  ] || primaryColor})"
+                  {...stylex.attrs(
+                    shared.typeEdge,
+                    dynamic.background(
+                      `linear-gradient(90deg, ${primaryColor}, ${TYPE_COLORS[p.types?.[1]] || primaryColor})`,
+                    ),
+                  )}
                 ></div>
               </a>
             {/snippet}
@@ -622,20 +633,19 @@
               {#each forms as form}
                 <a
                   href={resolve(`/pokemon/${form.name}`)}
-                  class="flex items-center gap-2 rounded-lg px-2 py-1.5 no-underline transition-colors hover:bg-white/5"
-                  style="color: var(--text)"
+                  {...stylex.attrs(styles.formLink)}
                 >
                   <PokemonImage
                     src={form.image}
                     id={form.id}
                     alt={form.name}
-                    class="h-8 w-8 shrink-0 object-contain"
+                    sx={styles.formImage}
                   />
-                  <div class="min-w-0 flex-1">
-                    <div class="truncate text-[11px] font-semibold">
+                  <div {...stylex.attrs(styles.formBody)}>
+                    <div {...stylex.attrs(styles.formName)}>
                       {formLabel(form.name, p.name)}
                     </div>
-                    <div class="text-[9px]" style="color: var(--muted)">
+                    <div {...stylex.attrs(styles.formMeta)}>
                       {formatId(form.id)}{form.is_default ? " · default" : ""}
                     </div>
                   </div>

@@ -43,6 +43,10 @@
   import ClearButton from "$lib/components/ClearButton.svelte";
   import { clamp } from "$lib/utils";
   import { onMount, untrack } from "svelte";
+  import * as stylex from "@stylexjs/stylex";
+  import { shared } from "$lib/styles/shared.stylex";
+  import { dynamic } from "../../lib/styles/dynamic.stylex";
+  import { styles } from "./styles";
 
   let allNames: { name: string; id: number }[] = $state([]);
   let attacker = $state<PokemonDetail | null>(null);
@@ -557,73 +561,72 @@
 {#snippet bestMovesList(
   footer = "Click a move to apply it to the calculation above.",
 )}
-  <h2 class="mb-4 text-lg font-bold">
+  <h2 {...stylex.attrs(styles.bestMovesTitle)}>
     Best moves vs {formatName(defender!.name)}
   </h2>
-  <div class="space-y-2">
+  <div {...stylex.attrs(styles.bestMovesList)}>
     {#each bestMoves as { move, result }}
       <button
         onclick={() => pickMove(move)}
-        class="flex w-full cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors {selectedMove?.name ===
-        move.name
-          ? 'border-accent bg-accent/10'
-          : 'border-white/6 bg-white/2 hover:bg-white/5'}"
+        {...stylex.attrs(
+          styles.bestMoveButton,
+          selectedMove?.name === move.name
+            ? styles.bestMoveSelected
+            : styles.bestMoveIdle,
+        )}
       >
         <TypeBadge type={move.type} size="xs" tooltip={false} />
-        <span class="w-36 shrink-0 truncate font-semibold text-white/80"
+        <span {...stylex.attrs(styles.bestMoveName)}
           >{formatName(move.name)}</span
         >
-        <span class="shrink-0 text-xs text-white/40"
+        <span {...stylex.attrs(styles.bestMoveRange)}
           >{result.min}–{result.max}</span
         >
-        <div
-          class="relative h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-white/6"
-        >
+        <div {...stylex.attrs(styles.bestMoveTrack)}>
           <div
-            class="bg-accent/50 absolute inset-y-0 left-0 rounded-full"
-            style="width: {(result.max / bestMoves[0].result.max) * 100}%"
+            {...stylex.attrs(
+              styles.bestMoveFill,
+              dynamic.width(`${(result.max / bestMoves[0].result.max) * 100}%`),
+            )}
           ></div>
         </div>
-        <span
-          class="bg-accent/20 text-accent border-accent/30 shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black whitespace-nowrap uppercase"
-          >{result.ko}</span
-        >
+        <span {...stylex.attrs(styles.koBadge)}>{result.ko}</span>
       </button>
     {/each}
   </div>
   {#if footer}
-    <p class="mt-3 text-xs text-white/40">{footer}</p>
+    <p {...stylex.attrs(styles.bestMovesFooter)}>{footer}</p>
   {/if}
 {/snippet}
 
 {#snippet selectedCard(p: PokemonDetail)}
   <a
     href={resolve(`/pokemon/${p.name}`)}
-    class="mt-4 flex items-center gap-3 rounded-xl bg-white/2 p-3 no-underline transition-colors hover:bg-white/5"
+    {...stylex.attrs(styles.selectedCard)}
   >
     <PokemonImage
       src={p.sprites.other["official-artwork"].front_default}
       id={p.id}
       alt={p.name}
-      class="h-14 w-14 object-contain"
+      sx={styles.selectedCardImage}
     />
     <div>
-      <div class="text-sm font-bold" style="color: var(--text)">
+      <div {...stylex.attrs(styles.selectedCardName)}>
         {formatName(p.name)}
       </div>
-      <div class="mt-1 flex gap-1">
+      <div {...stylex.attrs(styles.selectedCardTypes)}>
         {#each p.types as t}<TypeBadge type={t} size="xs" />{/each}
       </div>
     </div>
   </a>
 {/snippet}
 
-<div class="tool-shell max-w-5xl">
-  <div class="tool-hero">
-    <div class="flex items-start justify-between gap-4">
+<div {...stylex.attrs(shared.toolShell, styles.shell)}>
+  <div {...stylex.attrs(shared.toolHero)}>
+    <div {...stylex.attrs(styles.heroRow)}>
       <div>
-        <h1>Damage Calculator</h1>
-        <p>
+        <h1 {...stylex.attrs(shared.toolHeroTitle)}>Damage Calculator</h1>
+        <p {...stylex.attrs(shared.toolHeroText)}>
           Attacker + move + defender with natures, EVs, IVs, items, STAB, type
           effectiveness, KO estimates, and best-move suggestions. Shareable via
           query params.
@@ -633,27 +636,25 @@
     </div>
   </div>
 
-  <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-    <div class="panel">
-      <h2 class="mb-3 text-xs font-bold tracking-wider text-white/40 uppercase">
-        Attacker
-      </h2>
+  <div {...stylex.attrs(styles.attackerDefenderGrid)}>
+    <div {...stylex.attrs(shared.panel)}>
+      <h2 {...stylex.attrs(styles.panelTitle)}>Attacker</h2>
       <PokemonSearch
         bind:value={searchAtt}
         options={allNames}
         onselect={(n) => selectAttacker(n)}
       />
-      {#if loadingAtt}<div class="mt-2 flex justify-center">
-          <Pokeball spinning class="h-6 w-6" />
+      {#if loadingAtt}<div {...stylex.attrs(styles.loadingWrap)}>
+          <Pokeball spinning sx={styles.pokeballSm} />
         </div>{/if}
-      {#if attError}<p class="text-pokemon-red mt-2 text-xs" role="alert">
+      {#if attError}<p {...stylex.attrs(styles.errorText)} role="alert">
           {attError}
         </p>{/if}
       {#if attacker}
         {@render selectedCard(attacker)}
         {#if moveList}
-          <div class="mt-4 mb-2 flex items-center gap-2">
-            <span class="text-xs text-white/40">Level</span>
+          <div {...stylex.attrs(styles.levelRow)}>
+            <span {...stylex.attrs(styles.levelLabel)}>Level</span>
             <input
               type="number"
               bind:value={attLevel}
@@ -661,10 +662,10 @@
               min={1}
               max={100}
               aria-label="Attacker level"
-              class="focus:border-accent/50 w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs outline-none"
+              {...stylex.attrs(styles.levelInput)}
             />
           </div>
-          <div class="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div {...stylex.attrs(styles.natureItemGrid)}>
             <Dropdown
               selected={attNature}
               onselect={(n) => {
@@ -692,7 +693,7 @@
               options={ATTACK_ITEMS.map((i) => ({ value: i.label }))}
             />
           </div>
-          <div class="mb-3">
+          <div {...stylex.attrs(styles.evWrap)}>
             <EVInput
               evs={attEvs}
               oninput={setAttEv}
@@ -701,29 +702,35 @@
               onIvChange={syncUrl}
             />
           </div>
-          <div class="mb-2">
+          <div {...stylex.attrs(styles.moveFilterWrap)}>
             <input
               type="search"
               bind:value={moveFilter}
               placeholder="Filter moves..."
               aria-label="Filter attacker's moves"
-              class="focus:border-accent/50 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/70 placeholder-white/30 outline-none"
+              {...stylex.attrs(styles.moveFilter)}
             />
           </div>
-          <div class="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+          <div {...stylex.attrs(styles.moveGrid)}>
             {#each filteredMoveList as m}
               <MoveTooltip move={m}>
                 {#snippet children()}
                   <button
                     onclick={() => pickMove(m)}
-                    class="flex w-full cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-2 text-left text-xs {selectedMove?.name ===
-                    m.name
-                      ? 'border-accent bg-accent/10 text-white'
-                      : 'border-white/4 bg-white/2 text-white/60'}"
+                    {...stylex.attrs(
+                      styles.moveButton,
+                      selectedMove?.name === m.name
+                        ? styles.moveButtonSelected
+                        : styles.moveButtonIdle,
+                    )}
                   >
                     <TypeBadge type={m.type} size="xs" tooltip={false} />
-                    <span class="flex-1 truncate">{formatName(m.name)}</span>
-                    <span class="text-white/30">{m.power ?? "—"}</span>
+                    <span {...stylex.attrs(styles.moveName)}
+                      >{formatName(m.name)}</span
+                    >
+                    <span {...stylex.attrs(styles.movePower)}
+                      >{m.power ?? "—"}</span
+                    >
                   </button>
                 {/snippet}
               </MoveTooltip>
@@ -733,25 +740,23 @@
       {/if}
     </div>
 
-    <div class="panel">
-      <h2 class="mb-3 text-xs font-bold tracking-wider text-white/40 uppercase">
-        Defender
-      </h2>
+    <div {...stylex.attrs(shared.panel)}>
+      <h2 {...stylex.attrs(styles.panelTitle)}>Defender</h2>
       <PokemonSearch
         bind:value={searchDef}
         options={allNames}
         onselect={selectDefender}
       />
-      {#if loadingDef}<div class="mt-2 flex justify-center">
-          <Pokeball spinning class="h-6 w-6" />
+      {#if loadingDef}<div {...stylex.attrs(styles.loadingWrap)}>
+          <Pokeball spinning sx={styles.pokeballSm} />
         </div>{/if}
-      {#if defError}<p class="text-pokemon-red mt-2 text-xs" role="alert">
+      {#if defError}<p {...stylex.attrs(styles.errorText)} role="alert">
           {defError}
         </p>{/if}
       {#if defender}
         {@render selectedCard(defender)}
-        <div class="mt-3 flex items-center gap-2">
-          <span class="text-xs text-white/40">Level</span>
+        <div {...stylex.attrs(styles.levelRowDef)}>
+          <span {...stylex.attrs(styles.levelLabel)}>Level</span>
           <input
             type="number"
             bind:value={defLevel}
@@ -759,10 +764,10 @@
             min={1}
             max={100}
             aria-label="Defender level"
-            class="focus:border-accent/50 w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs outline-none"
+            {...stylex.attrs(styles.levelInput)}
           />
         </div>
-        <div class="mt-3 mb-3 max-w-xs">
+        <div {...stylex.attrs(styles.dropdownWide)}>
           <Dropdown
             selected={defItem}
             onselect={(label) => {
@@ -777,7 +782,7 @@
             options={DEFENSE_ITEMS.map((i) => ({ value: i.label }))}
           />
         </div>
-        <div class="mb-3 max-w-xs">
+        <div {...stylex.attrs(styles.dropdownMax)}>
           <Dropdown
             selected={defNature}
             onselect={(n) => {
@@ -792,7 +797,7 @@
             options={NATURE_OPTIONS}
           />
         </div>
-        <div class="mb-3">
+        <div {...stylex.attrs(styles.evWrap)}>
           <EVInput
             evs={defEvs}
             oninput={setDefEv}
@@ -803,7 +808,7 @@
             stats={EV_STATS.filter(
               (s) => s.key === "hp" || s.key === "def" || s.key === "spd",
             )}
-            cols="grid-cols-3"
+            cols={3}
           />
         </div>
         {@const defHp = statValue(baseStat(defender, "hp"), defLevel, {
@@ -820,18 +825,18 @@
           defLevel,
           { iv: defIv, ev: defEvs.spd },
         )}
-        <div class="mt-3 grid grid-cols-3 gap-1.5 text-center">
-          <div class="rounded-lg bg-white/3 px-2 py-1.5">
-            <div class="text-[10px] text-white/40">HP</div>
-            <div class="text-xs font-bold">{defHp}</div>
+        <div {...stylex.attrs(styles.statGrid)}>
+          <div {...stylex.attrs(styles.statTile)}>
+            <div {...stylex.attrs(styles.statLabel)}>HP</div>
+            <div {...stylex.attrs(styles.statValue)}>{defHp}</div>
           </div>
-          <div class="rounded-lg bg-white/3 px-2 py-1.5">
-            <div class="text-[10px] text-white/40">Defense</div>
-            <div class="text-xs font-bold">{defDef}</div>
+          <div {...stylex.attrs(styles.statTile)}>
+            <div {...stylex.attrs(styles.statLabel)}>Defense</div>
+            <div {...stylex.attrs(styles.statValue)}>{defDef}</div>
           </div>
-          <div class="rounded-lg bg-white/3 px-2 py-1.5">
-            <div class="text-[10px] text-white/40">Sp. Def</div>
-            <div class="text-xs font-bold">{defSpd}</div>
+          <div {...stylex.attrs(styles.statTile)}>
+            <div {...stylex.attrs(styles.statLabel)}>Sp. Def</div>
+            <div {...stylex.attrs(styles.statValue)}>{defSpd}</div>
           </div>
         </div>
       {/if}
@@ -839,13 +844,11 @@
   </div>
 
   {#if attacker && defender}
-    <div class="panel mb-6">
-      <h2 class="mb-3 text-xs font-bold tracking-wider text-white/40 uppercase">
-        Conditions
-      </h2>
-      <div class="flex flex-wrap items-end gap-3">
+    <div {...stylex.attrs(shared.panel, styles.panelMb6)}>
+      <h2 {...stylex.attrs(styles.panelTitle)}>Conditions</h2>
+      <div {...stylex.attrs(styles.conditionsRow)}>
         <Dropdown
-          class="w-36"
+          sx={styles.ddW36}
           selected={weather}
           onselect={(w) => {
             weather = w;
@@ -859,7 +862,7 @@
           options={WEATHER_OPTIONS}
         />
         <Dropdown
-          class="w-44"
+          sx={styles.ddW44}
           selected={terrain}
           onselect={(t) => {
             terrain = t;
@@ -873,7 +876,7 @@
           options={TERRAIN_OPTIONS}
         />
         <Dropdown
-          class="w-52"
+          sx={styles.ddW52}
           selected={roll}
           onselect={(r) => {
             roll = r as typeof roll;
@@ -886,9 +889,7 @@
           placeholder="Random roll"
           options={ROLL_OPTIONS}
         />
-        <label
-          class="flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/60"
-        >
+        <label {...stylex.attrs(styles.critLabel)}>
           <input
             type="checkbox"
             checked={crit}
@@ -896,13 +897,13 @@
               crit = e.currentTarget.checked;
               syncUrl();
             }}
-            class="accent-accent h-3.5 w-3.5"
+            {...stylex.attrs(styles.critCheckbox)}
           />
           Critical hit (×1.5)
         </label>
       </div>
       {#if damageResult && !damageResult.noDamage && damageResult.conditions.length > 0}
-        <p class="mt-3 text-[11px] text-white/40">
+        <p {...stylex.attrs(styles.conditionsNote)}>
           Conditions: {damageResult.conditions.join(" · ")}
         </p>
       {/if}
@@ -916,123 +917,121 @@
     />
   {:else if !selectedMove}
     {#if moveList === null && !movesError}
-      <div class="panel flex justify-center py-8">
-        <Pokeball spinning class="h-8 w-8" />
+      <div {...stylex.attrs(shared.panel, styles.loadingPanel)}>
+        <Pokeball spinning sx={styles.pokeballMd} />
       </div>
     {:else if movesError}
-      <div class="panel py-8 text-center">
-        <p class="text-sm" style="color: var(--muted)">
+      <div {...stylex.attrs(shared.panel, styles.errorPanel)}>
+        <p {...stylex.attrs(styles.errorMessage)}>
           Couldn't load {formatName(attacker.name)}'s moves — check your
           connection.
         </p>
         <button
           onclick={() => attacker && selectAttacker(attacker.name)}
-          class="bg-accent hover:bg-accent/80 mt-4 cursor-pointer rounded-xl border-0 px-4 py-2 text-xs font-semibold text-white"
-          >Try again</button
+          {...stylex.attrs(styles.retryButton)}>Try again</button
         >
       </div>
     {:else if bestMoves.length > 0}
-      <div class="panel">
-        <p
-          class="mb-4 rounded-xl border border-white/6 bg-white/2 p-3 text-xs text-white/50"
-        >
+      <div {...stylex.attrs(shared.panel)}>
+        <p {...stylex.attrs(styles.prompt)}>
           Pick a damaging move to see the damage calculation — or click a
           suggestion below.
         </p>
         {@render bestMovesList("")}
       </div>
     {:else}
-      <div class="panel py-8 text-center text-sm text-white/40">
+      <div {...stylex.attrs(shared.panel, styles.noMovesPanel)}>
         No damaging moves available for {formatName(attacker.name)} against{" "}
         {formatName(defender.name)}.
       </div>
     {/if}
   {:else if damageResult?.noDamage}
-    <div class="panel text-center text-white/50">{damageResult.label}</div>
+    <div {...stylex.attrs(shared.panel, styles.noDamagePanel)}>
+      {damageResult.label}
+    </div>
   {:else if damageResult && !damageResult.noDamage}
-    <div class="panel">
-      <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <h2 class="text-xl font-bold">Result</h2>
-        <span
-          class="bg-accent/20 text-accent border-accent/30 rounded-full border px-3 py-1.5 text-xs font-black tracking-wide uppercase"
-          >{damageResult.ko}</span
-        >
+    <div {...stylex.attrs(shared.panel)}>
+      <div {...stylex.attrs(styles.resultHeader)}>
+        <h2 {...stylex.attrs(styles.resultTitle)}>Result</h2>
+        <span {...stylex.attrs(styles.resultKoBadge)}>{damageResult.ko}</span>
       </div>
 
-      <div class="mb-6">
-        <div class="mb-1 flex justify-between text-xs text-white/40">
+      <div {...stylex.attrs(styles.resultBody)}>
+        <div {...stylex.attrs(styles.hpLabels)}>
           <span>HP damage</span>
           <span>{damageResult.minPct}% – {damageResult.maxPct}%</span>
         </div>
-        <div class="relative h-4 overflow-hidden rounded-full bg-white/6">
+        <div {...stylex.attrs(styles.hpTrack)}>
           <div
-            class="bg-accent/40 absolute inset-y-0 left-0 rounded-full"
-            style="width: {Math.min(100, damageResult.maxPct)}%"
+            {...stylex.attrs(
+              styles.hpFillMax,
+              dynamic.width(`${Math.min(100, damageResult.maxPct)}%`),
+            )}
           ></div>
           <div
-            class="bg-accent absolute inset-y-0 left-0 rounded-full"
-            style="width: {Math.min(100, damageResult.minPct)}%"
+            {...stylex.attrs(
+              styles.hpFillMin,
+              dynamic.width(`${Math.min(100, damageResult.minPct)}%`),
+            )}
           ></div>
         </div>
-        <div class="mt-3 text-center text-2xl font-black">
+        <div {...stylex.attrs(styles.damageTotal)}>
           {roll === "max"
             ? damageResult.max
             : roll === "min"
               ? damageResult.min
               : `${damageResult.min} – ${damageResult.max}`}
-          <span class="text-sm font-normal text-white/40"
-            >/ {damageResult.hp} HP</span
-          >
+          <span {...stylex.attrs(styles.damageHp)}>/ {damageResult.hp} HP</span>
         </div>
         {#if damageResult.critRange && !crit}
-          <p class="mt-2 text-center text-xs text-white/40">
+          <p {...stylex.attrs(styles.critRange)}>
             With a critical hit: {damageResult.critRange.min} – {damageResult
               .critRange.max}
           </p>
         {/if}
       </div>
 
-      <div class="grid grid-cols-2 gap-3 md:grid-cols-3">
-        <div
-          class="rounded-2xl border border-white/4 bg-white/2 p-3 text-center"
-        >
-          <div class="text-[10px] text-white/40 uppercase">Effectiveness</div>
+      <div {...stylex.attrs(styles.resultStats)}>
+        <div {...stylex.attrs(styles.resultStatTile)}>
+          <div {...stylex.attrs(styles.resultStatLabel)}>Effectiveness</div>
           <div
-            class="mt-1 text-sm font-bold"
-            style="color: {(damageResult.effectiveness ?? 1) >= 2
-              ? '#ff3e3e'
-              : (damageResult.effectiveness ?? 1) < 1
-                ? '#4ade80'
-                : '#fff'}"
+            {...stylex.attrs(
+              styles.resultStatValue,
+              dynamic.color(
+                (damageResult.effectiveness ?? 1) >= 2
+                  ? "#ff3e3e"
+                  : (damageResult.effectiveness ?? 1) < 1
+                    ? "#4ade80"
+                    : "#fff",
+              ),
+            )}
           >
             {damageResult.effLabel}
           </div>
         </div>
-        <div
-          class="rounded-2xl border border-white/4 bg-white/2 p-3 text-center"
-        >
-          <div class="text-[10px] text-white/40 uppercase">STAB</div>
+        <div {...stylex.attrs(styles.resultStatTile)}>
+          <div {...stylex.attrs(styles.resultStatLabel)}>STAB</div>
           <div
-            class="mt-1 text-sm font-bold"
-            style="color: {damageResult.stab ? '#4ade80' : '#fff'}"
+            {...stylex.attrs(
+              styles.resultStatValue,
+              dynamic.color(damageResult.stab ? "#4ade80" : "#fff"),
+            )}
           >
             {damageResult.stab ? "Yes (+50%)" : "No"}
           </div>
         </div>
-        <div
-          class="rounded-2xl border border-white/4 bg-white/2 p-3 text-center"
-        >
-          <div class="text-[10px] text-white/40 uppercase">
+        <div {...stylex.attrs(styles.resultStatTile)}>
+          <div {...stylex.attrs(styles.resultStatLabel)}>
             {damageResult.isSpecial ? "SpA / SpD" : "Atk / Def"}
           </div>
-          <div class="mt-1 text-sm font-bold">
+          <div {...stylex.attrs(styles.resultStatValue)}>
             {damageResult.atk} / {damageResult.def}
           </div>
         </div>
       </div>
 
       {#if bestMoves.length > 0}
-        <div class="mt-6 border-t border-white/6 pt-5">
+        <div {...stylex.attrs(styles.resultBestMoves)}>
           {@render bestMovesList()}
         </div>
       {/if}
@@ -1040,7 +1039,7 @@
   {/if}
 
   {#if bestMoves.length > 0 && damageResult?.noDamage}
-    <div class="panel mt-6">
+    <div {...stylex.attrs(shared.panel, styles.panelMt6)}>
       {@render bestMovesList()}
     </div>
   {/if}

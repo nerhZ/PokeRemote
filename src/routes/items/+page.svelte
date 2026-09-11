@@ -7,6 +7,9 @@
   import Skeleton from "$lib/components/Skeleton.svelte";
   import InfiniteScroll from "$lib/components/InfiniteScroll.svelte";
   import { onMount } from "svelte";
+  import * as stylex from "@stylexjs/stylex";
+  import { shared } from "$lib/styles/shared.stylex";
+  import { styles } from "./styles";
 
   let items = $state<ItemSummary[]>([]);
   let loading = $state(true);
@@ -91,17 +94,17 @@
   let filtered = $derived(search ? searchResults : items);
 </script>
 
-<div class="tool-shell">
-  <div class="tool-hero">
-    <h1>Item Dex</h1>
-    <p>
+<div {...stylex.attrs(shared.toolShell)}>
+  <div {...stylex.attrs(shared.toolHero)}>
+    <h1 {...stylex.attrs(shared.toolHeroTitle)}>Item Dex</h1>
+    <p {...stylex.attrs(shared.toolHeroText)}>
       Browse items from PokeAPI — sprites, categories, cost, and short effects. {total
         ? `${total} total`
         : ""}
     </p>
   </div>
 
-  <div class="mb-6 max-w-md">
+  <div {...stylex.attrs(styles.searchWrap)}>
     <SearchInput bind:value={search} placeholder="Search all items..." />
   </div>
 
@@ -115,8 +118,8 @@
       onaction={retryInitial}
     />
   {:else if search && searchLoading}
-    <div class="flex justify-center py-16">
-      <Pokeball spinning class="h-16 w-16" />
+    <div {...stylex.attrs(styles.loadingWrap)}>
+      <Pokeball spinning sx={styles.pokeball} />
     </div>
   {:else if filtered.length === 0}
     <EmptyState
@@ -124,44 +127,39 @@
       subtitle="Try a different search term."
     />
   {:else}
-    <div class="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div {...stylex.attrs(styles.grid)}>
       {#each filtered as item}
-        <div class="panel flex items-start gap-3 p-4!">
+        <div {...stylex.attrs(shared.panel, styles.card)}>
           {#if item.sprite}
             <img
               src={item.sprite}
               alt={item.name}
-              class="h-10 w-10 shrink-0 object-contain"
-              style="image-rendering: pixelated"
+              {...stylex.attrs(styles.sprite)}
             />
           {:else}
-            <div class="h-10 w-10 shrink-0 rounded-lg bg-white/5"></div>
+            <div {...stylex.attrs(styles.spritePlaceholder)}></div>
           {/if}
-          <div class="min-w-0">
-            <div class="truncate text-sm font-bold">
+          <div {...stylex.attrs(styles.body)}>
+            <div {...stylex.attrs(styles.name)}>
               {formatName(item.name)}
             </div>
-            <div class="mt-0.5 text-[10px] text-white/40 capitalize">
+            <div {...stylex.attrs(styles.meta)}>
               {item.category ? formatName(item.category) : "item"} · ₽{item.cost}
             </div>
-            {#if item.effect}<p
-                class="mt-1.5 line-clamp-3 text-xs leading-relaxed text-white/50"
-              >
+            {#if item.effect}<p {...stylex.attrs(styles.effect)}>
                 {item.effect}
               </p>{/if}
           </div>
         </div>
       {/each}
       {#if !search && loadingMore}
-        <Skeleton rows={6} tiles class="h-28" />
+        <Skeleton rows={6} tiles sx={styles.skeletonTile} />
       {/if}
     </div>
     {#if !search}
       {#if stalled}
-        <div class="mb-4 flex justify-center">
-          <button
-            onclick={loadMore}
-            class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/60 hover:text-white"
+        <div {...stylex.attrs(styles.retryWrap)}>
+          <button onclick={loadMore} {...stylex.attrs(styles.retryButton)}
             >Couldn't load more items - retry</button
           >
         </div>

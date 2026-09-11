@@ -3,9 +3,11 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import EmptyState from "$lib/components/EmptyState.svelte";
+  import * as stylex from "@stylexjs/stylex";
+  import { styles } from "./error.styles";
 </script>
 
-<div class="flex min-h-[calc(100vh-73px)] items-center justify-center">
+<div {...stylex.attrs(styles.root)}>
   <EmptyState
     title={page.status === 404 ? "Page not found" : "Something went wrong"}
     subtitle={page.status === 404

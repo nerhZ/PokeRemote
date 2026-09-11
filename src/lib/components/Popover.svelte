@@ -1,11 +1,14 @@
 <script lang="ts">
+  import * as stylex from "@stylexjs/stylex";
+  import type { PanelSx } from "$lib/styles/stylex-types";
   import { onDismiss } from "$lib/popup";
   import type { Snippet } from "svelte";
+  import { styles } from "./Popover.styles";
 
   let {
     open,
     onClose,
-    panelClass = "",
+    panelSx,
     trigger,
     panel,
   }: {
@@ -13,10 +16,10 @@
     open: boolean;
     /** Called on outside click or Escape so the parent can close. */
     onClose: () => void;
-    /** Sizing/shape classes for the floating panel: width, max-height,
-        radius, padding, and edge alignment (e.g. `right-0` to span from the
-        host's left edge outward). */
-    panelClass?: string;
+    /** Sizing and shape for the floating panel: width, max-height, radius,
+        padding, and edge alignment (for example `right: 0` to span outward
+        from the host's left edge). */
+    panelSx?: PanelSx;
     trigger: Snippet;
     panel: Snippet;
   } = $props();
@@ -32,13 +35,10 @@
   });
 </script>
 
-<div bind:this={host} class="relative">
+<div bind:this={host} {...stylex.attrs(styles.host)}>
   {@render trigger()}
   {#if open}
-    <div
-      class="absolute top-full left-0 z-30 mt-1 overflow-y-auto border bg-(--card) shadow-xl {panelClass}"
-      style="border-color: var(--border)"
-    >
+    <div {...stylex.attrs(styles.panel, panelSx)}>
       {@render panel()}
     </div>
   {/if}

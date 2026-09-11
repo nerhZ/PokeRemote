@@ -2,9 +2,12 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { onMount } from "svelte";
+  import * as stylex from "@stylexjs/stylex";
   import { getAutocompleteList } from "$lib/api";
   import { formatName, spriteUrl, tokenMatch } from "$lib/pokemon-types";
+  import { shared } from "$lib/styles/shared.stylex";
   import PokemonImage from "./PokemonImage.svelte";
+  import { styles } from "./PokemonSearch.styles";
 
   interface Props {
     value?: string;
@@ -105,7 +108,7 @@
   }
 </script>
 
-<div class="relative w-full">
+<div {...stylex.attrs(styles.root)}>
   <input
     type="search"
     {placeholder}
@@ -124,16 +127,14 @@
     aria-activedescendant={open && suggestions.length > 0
       ? `${listboxId}-opt-${highlight}`
       : undefined}
-    class="ui-input w-full px-4 py-2.5 text-sm transition-all outline-none focus:shadow-lg disabled:opacity-40"
-    style="background: var(--input-bg)"
+    {...stylex.attrs(shared.uiInput, styles.input)}
   />
   {#if open && suggestions.length > 0 && !disabled}
     <div
       id={listboxId}
       role="listbox"
       aria-label="Pokémon suggestions"
-      class="absolute top-full left-0 z-30 mt-1 max-h-72 w-full overflow-y-auto rounded-xl border py-1 shadow-2xl"
-      style="background: var(--card); border-color: var(--border)"
+      {...stylex.attrs(styles.listbox)}
     >
       {#each suggestions as s, i}
         <button
@@ -143,12 +144,10 @@
           role="option"
           id={`${listboxId}-opt-${i}`}
           aria-selected={i === highlight}
-          class="flex w-full cursor-pointer items-center gap-3 border-0 px-3 py-1.5 text-left transition-colors"
-          style="background: {i === highlight
-            ? 'var(--surface-2)'
-            : 'transparent'}; color: {i === highlight
-            ? 'var(--text)'
-            : 'var(--muted-strong)'}"
+          {...stylex.attrs(
+            styles.option,
+            i === highlight && styles.optionActive,
+          )}
         >
           <!-- Classic sprites are tiny; in sprite mode the id switches rows to
                animated GIFs (classic sprite as fallback). -->
@@ -156,12 +155,10 @@
             src={spriteUrl(s.id)}
             id={s.id}
             alt=""
-            class="size-9 shrink-0 object-contain"
+            sx={styles.resultImage}
           />
-          <span class="truncate text-sm font-medium">{formatName(s.name)}</span>
-          <span class="ml-auto shrink-0 text-xs" style="color: var(--muted)"
-            >#{s.id}</span
-          >
+          <span {...stylex.attrs(styles.resultName)}>{formatName(s.name)}</span>
+          <span {...stylex.attrs(styles.resultId)}>#{s.id}</span>
         </button>
       {/each}
     </div>

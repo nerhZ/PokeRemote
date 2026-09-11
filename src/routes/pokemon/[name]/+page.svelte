@@ -34,6 +34,10 @@
   import EvolutionChain from "$lib/components/EvolutionChain.svelte";
   import TabBar from "$lib/components/TabBar.svelte";
   import { untrack } from "svelte";
+  import * as stylex from "@stylexjs/stylex";
+  import { shared } from "$lib/styles/shared.stylex";
+  import { dynamic } from "../../../lib/styles/dynamic.stylex";
+  import { styles } from "./styles";
 
   let pokemon = $state<PokemonDetail | null>(null);
   let moves = $state<PokemonMoves | null>(null);
@@ -281,29 +285,29 @@
 </script>
 
 <div
-  class="relative min-h-[calc(100vh-73px)]"
-  style="background: linear-gradient(180deg, {primaryColor}18 0%, transparent 55%)"
+  {...stylex.attrs(
+    styles.pageRoot,
+    dynamic.background(
+      `linear-gradient(180deg, ${primaryColor}18 0%, transparent 55%)`,
+    ),
+  )}
 >
-  <div class="relative mx-auto max-w-6xl px-4 py-6 md:px-6">
-    <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-      <a
-        href={back.url}
-        class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/60 no-underline transition-all hover:text-white"
-        >← {back.label}</a
-      >
+  <div {...stylex.attrs(styles.container)}>
+    <div {...stylex.attrs(styles.topBar)}>
+      <a href={back.url} {...stylex.attrs(styles.backLink)}>← {back.label}</a>
       {#if pokemon}
-        <div class="flex items-center gap-2">
+        <div {...stylex.attrs(styles.navButtons)}>
           {#if prevId != null}
             <a
               href={resolve(`/pokemon/${prevId}`)}
-              class="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/50 no-underline hover:text-white"
+              {...stylex.attrs(styles.siblingLink)}
               aria-label="Previous species">‹</a
             >
           {/if}
           {#if nextId != null}
             <a
               href={resolve(`/pokemon/${nextId}`)}
-              class="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/50 no-underline hover:text-white"
+              {...stylex.attrs(styles.siblingLink)}
               aria-label="Next species">›</a
             >
           {/if}
@@ -312,11 +316,11 @@
     </div>
 
     {#if loading && !pokemon}
-      <div class="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_1.3fr]">
-        <div class="aspect-square animate-pulse rounded-3xl bg-white/3"></div>
-        <div class="space-y-4">
-          <div class="h-64 animate-pulse rounded-3xl bg-white/3"></div>
-          <div class="h-40 animate-pulse rounded-3xl bg-white/3"></div>
+      <div {...stylex.attrs(styles.heroGrid)}>
+        <div {...stylex.attrs(styles.skeletonHero, styles.pulse)}></div>
+        <div {...stylex.attrs(styles.skeletonSide)}>
+          <div {...stylex.attrs(styles.skeletonTall, styles.pulse)}></div>
+          <div {...stylex.attrs(styles.skeletonShort, styles.pulse)}></div>
         </div>
       </div>
     {:else if error && !pokemon}
@@ -327,36 +331,41 @@
         onaction={() => goto(resolve("/"))}
       />
     {:else if pokemon}
-      <div class="grid grid-cols-1 items-start gap-8 lg:grid-cols-[1fr_1.35fr]">
-        <div class="lg:sticky lg:top-24">
+      <div {...stylex.attrs(styles.mainGrid)}>
+        <div {...stylex.attrs(styles.stickyCol)}>
           <div
-            class="relative overflow-hidden rounded-3xl border border-white/6"
-            style="background: linear-gradient(180deg, {primaryColor}12 0%, transparent 70%)"
+            {...stylex.attrs(
+              styles.artCard,
+              dynamic.background(
+                `linear-gradient(180deg, ${primaryColor}12 0%, transparent 70%)`,
+              ),
+            )}
           >
-            <div
-              class="relative flex aspect-square items-center justify-center p-8"
-            >
+            <div {...stylex.attrs(styles.artStage)}>
               <div
-                class="absolute h-56 w-56 rounded-full opacity-15"
-                style="background: radial-gradient(circle, {primaryColor}, transparent 70%)"
+                {...stylex.attrs(
+                  styles.artGlow,
+                  dynamic.background(
+                    `radial-gradient(circle, ${primaryColor}, transparent 70%)`,
+                  ),
+                )}
               ></div>
               <PokemonImage
                 src={heroArtwork}
                 id={isShiny ? undefined : pokemon.id}
                 alt={pokemon.name}
                 lazy={false}
-                class="relative z-10 w-full max-w-80 object-contain drop-shadow-2xl"
-                style="animation: bob 3s ease-in-out infinite"
+                sx={styles.heroImage}
               />
             </div>
-            <div class="absolute top-4 left-4 flex flex-wrap gap-1.5">
+            <div {...stylex.attrs(styles.chipBar)}>
               {#if pokemon.sprites.other["official-artwork"].front_shiny}
                 <button
                   onclick={() => (isShiny = !isShiny)}
-                  class="cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-black uppercase {isShiny
-                    ? 'text-bg-navy border-white bg-white'
-                    : 'border-white/10 bg-black/40 text-white/60'}"
-                  >{isShiny ? "★ Shiny" : "☆ Shiny"}</button
+                  {...stylex.attrs(
+                    styles.chip,
+                    isShiny ? styles.chipActive : styles.chipInactive,
+                  )}>{isShiny ? "★ Shiny" : "☆ Shiny"}</button
                 >
               {/if}
               {#if pokemon.cries}
@@ -366,65 +375,70 @@
                     a.volume = 0.4;
                     a.play();
                   }}
-                  class="cursor-pointer rounded-full border border-white/10 bg-black/40 px-2.5 py-1 text-[10px] font-black text-white/60 uppercase"
+                  {...stylex.attrs(styles.chip, styles.chipInactive)}
                   aria-label="Play cry">🔊 Cry</button
                 >
               {/if}
               <button
                 onclick={onFav}
-                class="cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-black uppercase {fav
-                  ? 'bg-pokemon-yellow/20 border-pokemon-yellow/40 text-pokemon-yellow'
-                  : 'border-white/10 bg-black/40 text-white/60'}"
-                >{fav ? "★ Saved" : "☆ Save"}</button
+                {...stylex.attrs(
+                  styles.chip,
+                  fav ? styles.chipFav : styles.chipInactive,
+                )}>{fav ? "★ Saved" : "☆ Save"}</button
               >
               <a
                 href={resolve("/compare") + `?a=${pokemon.name}`}
-                class="cursor-pointer rounded-full border border-white/10 bg-black/40 px-2.5 py-1 text-[10px] font-black text-white/60 uppercase no-underline transition-colors hover:text-white"
-                >⇄ Compare</a
+                {...stylex.attrs(
+                  styles.chip,
+                  styles.chipInactive,
+                  styles.chipLink,
+                )}>⇄ Compare</a
               >
               <a
                 href={resolve("/team-builder") + `?p=${teamParam}`}
-                class="cursor-pointer rounded-full border border-white/10 bg-black/40 px-2.5 py-1 text-[10px] font-black text-white/60 uppercase no-underline transition-colors hover:text-white"
-                >⬡ Team</a
+                {...stylex.attrs(
+                  styles.chip,
+                  styles.chipInactive,
+                  styles.chipLink,
+                )}>⬡ Team</a
               >
               <button
                 onclick={copyLink}
-                class="cursor-pointer rounded-full border border-white/10 bg-black/40 px-2.5 py-1 text-[10px] font-black text-white/60 uppercase transition-colors hover:text-white"
-                >{linkCopied ? "Link copied!" : "🔗 Share"}</button
+                {...stylex.attrs(
+                  styles.chip,
+                  styles.chipInactive,
+                  styles.chipLink,
+                )}>{linkCopied ? "Link copied!" : "🔗 Share"}</button
               >
             </div>
-            <div class="absolute top-4 right-4 flex flex-col gap-1.5">
+            <div {...stylex.attrs(styles.badgeCol)}>
               {#if pokemon.is_legendary}<span
-                  class="from-pokemon-yellow to-pokemon-gold rounded-full bg-linear-to-r px-3 py-1 text-[10px] font-black text-white uppercase"
+                  {...stylex.attrs(styles.rankBadge, styles.legendaryBadge)}
                   >Legendary</span
                 >{/if}
               {#if pokemon.is_mythical}<span
-                  class="rounded-full bg-linear-to-r from-pink-500 to-purple-500 px-3 py-1 text-[10px] font-black text-white uppercase"
+                  {...stylex.attrs(styles.rankBadge, styles.mythicalBadge)}
                   >Mythical</span
                 >{/if}
             </div>
           </div>
 
-          <div class="mt-5 text-center">
+          <div {...stylex.attrs(styles.identity)}>
             <span
-              class="text-sm font-bold tracking-wider"
-              style="color: {primaryColor}">{formatId(pokemon.species_id)}</span
+              {...stylex.attrs(styles.dexNumber, dynamic.color(primaryColor))}
+              >{formatId(pokemon.species_id)}</span
             >
             {#if pokemon.id !== pokemon.species_id}
-              <span class="ml-1.5 text-xs" style="color: var(--muted)"
-                >form #{pokemon.id}</span
-              >
+              <span {...stylex.attrs(styles.formId)}>form #{pokemon.id}</span>
             {/if}
-            {#if pokemon.genus}<span
-                class="ml-2 text-sm"
-                style="color: var(--muted)">{pokemon.genus}</span
+            {#if pokemon.genus}<span {...stylex.attrs(styles.genus)}
+                >{pokemon.genus}</span
               >{/if}
             {#if pokemon.pokedex_numbers.length > 0}
-              <div class="mt-2 flex flex-wrap justify-center gap-1.5">
+              <div {...stylex.attrs(styles.dexRow)}>
                 {#each pokemon.pokedex_numbers as entry}
                   <span
-                    class="rounded-full border px-2 py-0.5 text-[10px] font-bold whitespace-nowrap"
-                    style="border-color: var(--border); color: var(--muted)"
+                    {...stylex.attrs(styles.dexPill)}
                     title={`${entry.dex} Pokédex`}
                     >{REGIONAL_DEX_LABELS[entry.dex] ?? formatName(entry.dex)} #{String(
                       entry.number,
@@ -433,48 +447,44 @@
                 {/each}
               </div>
             {/if}
-            <h1
-              class="mt-1 text-4xl font-black md:text-5xl"
-              style="color: var(--text)"
-            >
+            <h1 {...stylex.attrs(styles.name)}>
               {formatName(pokemon.name)}
             </h1>
             {#if pokemon.name !== pokemon.species_name}
-              <p class="mt-1 text-xs" style="color: var(--muted)">
+              <p {...stylex.attrs(styles.formNote)}>
                 {formLabel(pokemon.name, pokemon.species_name)} form of {formatName(
                   pokemon.species_name,
                 )}
               </p>
             {/if}
-            <div class="mt-3 flex flex-wrap justify-center gap-2">
+            <div {...stylex.attrs(styles.typeRow)}>
               {#each pokemon.types as type}
                 <a
                   href={resolve("/") + `?type=${type}`}
-                  class="no-underline"
+                  {...stylex.attrs(styles.typeLink)}
                   title={`Show ${formatName(type)}-type Pokémon`}
                   ><TypeBadge {type} size="md" /></a
                 >
               {/each}
             </div>
             {#if pokemon.flavor_text}
-              <p
-                class="mt-4 text-sm leading-relaxed italic"
-                style="color: var(--muted)"
-              >
+              <p {...stylex.attrs(styles.flavor)}>
                 "{pokemon.flavor_text}"
               </p>
             {/if}
           </div>
 
-          <div class="panel mt-5 grid grid-cols-2 gap-2 p-3!">
+          <div {...stylex.attrs(shared.panel, styles.quickPanel)}>
             {#each quickStats as stat, i}
               <div
-                class="{i % 2 === 1 ? 'border-l ' : ''}{i >= 2
-                  ? 'border-t '
-                  : ''}{i > 0 ? 'border-white/6 ' : ''}py-2 text-center"
+                {...stylex.attrs(
+                  styles.qsCell,
+                  i % 2 === 1 && styles.qsCellLeft,
+                  i >= 2 && styles.qsCellTop,
+                )}
               >
-                <div class="text-lg font-bold">{stat.value}</div>
-                <div class="text-[10px] tracking-wider text-white/40 uppercase">
+                <div {...stylex.attrs(styles.qsValue)}>{stat.value}</div>
+                <div {...stylex.attrs(styles.qsLabel)}>
                   {stat.label}
                 </div>
               </div>
@@ -482,22 +492,20 @@
           </div>
 
           {#if pokemon.forms?.length > 1}
-            <div class="panel mt-3 max-w-full overflow-hidden p-3!">
-              <h3
-                class="mb-2 text-[10px] font-bold tracking-wider uppercase"
-                style="color: var(--muted)"
-              >
+            <div {...stylex.attrs(shared.panel, styles.formsPanel)}>
+              <h3 {...stylex.attrs(styles.formsTitle)}>
                 Forms ({pokemon.forms.length})
               </h3>
-              <div class="flex flex-wrap gap-2">
+              <div {...stylex.attrs(styles.formsRow)}>
                 {#each pokemon.forms as form}
                   <a
                     href={resolve(`/pokemon/${form.name}`)}
-                    class="flex w-16 flex-col items-center gap-1 rounded-xl border p-1.5 no-underline transition-all {form.name ===
-                    pokemon.name
-                      ? 'border-accent bg-accent/10'
-                      : 'border-white/10 hover:border-white/25'}"
-                    style="color: var(--text)"
+                    {...stylex.attrs(
+                      styles.formCard,
+                      form.name === pokemon.name
+                        ? styles.formCardActive
+                        : styles.formCardInactive,
+                    )}
                     title={form.name}
                   >
                     <PokemonImage
@@ -505,10 +513,9 @@
                       id={form.id}
                       alt={form.name}
                       lazy={false}
-                      class="h-12 w-12 object-contain"
+                      sx={styles.formImage}
                     />
-                    <span
-                      class="line-clamp-2 text-center text-[9px] leading-tight font-semibold"
+                    <span {...stylex.attrs(styles.formLabel)}
                       >{formLabel(form.name, pokemon.species_name)}</span
                     >
                   </a>
@@ -518,7 +525,7 @@
           {/if}
         </div>
 
-        <div class="pb-12">
+        <div {...stylex.attrs(styles.tabCol)}>
           <TabBar
             {tabs}
             active={tab}
@@ -527,26 +534,28 @@
           />
 
           {#if tab === "overview"}
-            <div class="space-y-5">
-              <div class="panel">
-                <h2 class="mb-4 text-lg font-bold">Abilities</h2>
-                <div class="space-y-3">
+            <div {...stylex.attrs(styles.tabStack)}>
+              <div {...stylex.attrs(shared.panel)}>
+                <h2 {...stylex.attrs(styles.sectionTitle)}>Abilities</h2>
+                <div {...stylex.attrs(styles.abilityList)}>
                   {#each pokemon.abilities as ability}
                     <div
-                      class="rounded-xl border p-3"
-                      style="background-color: {primaryColor}10; border-color: {primaryColor}25"
+                      {...stylex.attrs(
+                        styles.abilityCard,
+                        dynamic.backgroundColor(`${primaryColor}10`),
+                        dynamic.borderColor(`${primaryColor}25`),
+                      )}
                     >
-                      <div class="mb-1 flex items-center gap-2">
-                        <span class="text-sm font-bold"
+                      <div {...stylex.attrs(styles.abilityHead)}>
+                        <span {...stylex.attrs(styles.abilityName)}
                           >{formatName(ability.name)}</span
                         >
                         {#if ability.is_hidden}<span
-                            class="rounded bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/50 uppercase"
-                            >Hidden</span
+                            {...stylex.attrs(styles.hiddenBadge)}>Hidden</span
                           >{/if}
                       </div>
                       {#if ability.description}<p
-                          class="text-xs leading-relaxed text-white/50"
+                          {...stylex.attrs(styles.abilityDesc)}
                         >
                           {ability.description}
                         </p>{/if}
@@ -556,8 +565,10 @@
               </div>
 
               {#if pokemon.evolution?.children?.length}
-                <div class="panel">
-                  <h2 class="mb-4 text-lg font-bold">Evolution Chain</h2>
+                <div {...stylex.attrs(shared.panel)}>
+                  <h2 {...stylex.attrs(styles.sectionTitle)}>
+                    Evolution Chain
+                  </h2>
                   <EvolutionChain
                     stage={pokemon.evolution}
                     currentName={pokemon.name}
@@ -567,17 +578,15 @@
               {/if}
 
               {#if pokemon.locations?.length}
-                <div class="panel">
-                  <h2 class="mb-4 text-lg font-bold">Locations</h2>
-                  <div class="grid gap-2 sm:grid-cols-2">
+                <div {...stylex.attrs(shared.panel)}>
+                  <h2 {...stylex.attrs(styles.sectionTitle)}>Locations</h2>
+                  <div {...stylex.attrs(styles.twoColGrid)}>
                     {#each pokemon.locations as loc}
-                      <div
-                        class="rounded-xl border border-white/4 bg-white/2 px-3 py-2 text-xs"
-                      >
-                        <div class="font-semibold text-white/80 capitalize">
+                      <div {...stylex.attrs(styles.locCard)}>
+                        <div {...stylex.attrs(styles.locArea)}>
                           {loc.area}
                         </div>
-                        <div class="mt-0.5 text-white/40 capitalize">
+                        <div {...stylex.attrs(styles.locMethod)}>
                           {loc.method}{loc.chance != null
                             ? ` · ${loc.chance}%`
                             : ""}
@@ -589,50 +598,57 @@
               {/if}
             </div>
           {:else if tab === "stats"}
-            <div class="panel">
-              <div class="mb-5 flex items-center justify-between">
-                <h2 class="text-lg font-bold">Base Stats</h2>
+            <div {...stylex.attrs(shared.panel)}>
+              <div {...stylex.attrs(styles.statsHead)}>
+                <h2 {...stylex.attrs(styles.statsTitle)}>Base Stats</h2>
                 <div
-                  class="flex h-11 w-11 items-center justify-center rounded-full text-sm font-black"
-                  style="background-color: {primaryColor}22; color: {primaryColor}"
+                  {...stylex.attrs(
+                    styles.totalBadge,
+                    dynamic.backgroundColor(`${primaryColor}22`),
+                    dynamic.color(primaryColor),
+                  )}
                 >
                   {totalStats}
                 </div>
               </div>
-              <div class="flex flex-col items-center gap-6">
-                <div class="mx-auto w-full max-w-sm">
+              <div {...stylex.attrs(styles.chartsCol)}>
+                <div {...stylex.attrs(styles.radarWrap)}>
                   <RadarChart {pokemon} color={primaryColor} />
                 </div>
-                <div class="w-full max-w-md">
+                <div {...stylex.attrs(styles.barsWrap)}>
                   <StatBars {pokemon} color={primaryColor} />
                 </div>
               </div>
             </div>
           {:else if tab === "matchups"}
-            <div class="panel">
-              <h2 class="mb-5 text-lg font-bold">Type Effectiveness</h2>
+            <div {...stylex.attrs(shared.panel)}>
+              <h2 {...stylex.attrs(styles.sectionTitleWide)}>
+                Type Effectiveness
+              </h2>
               <TypeMatchup effectiveness={pokemon.type_effectiveness} />
             </div>
           {:else if tab === "moves"}
-            <div class="panel">
-              <h2 class="mb-4 text-lg font-bold">Moves</h2>
+            <div {...stylex.attrs(shared.panel)}>
+              <h2 {...stylex.attrs(styles.sectionTitle)}>Moves</h2>
               {#if movesLoading}
-                <div class="flex justify-center py-10">
-                  <Pokeball spinning class="h-8 w-8" />
+                <div {...stylex.attrs(styles.loadingWrap)}>
+                  <Pokeball spinning sx={styles.spinner} />
                 </div>
               {:else if moves}
-                <div class="mb-4 flex flex-wrap gap-2">
+                <div {...stylex.attrs(styles.moveTabs)}>
                   {#each ["level_up", "machine", "egg", "tutor"] as t}
                     {#if moveTabCounts[t as keyof typeof moveTabCounts] > 0}
                       <button
                         onclick={() => (activeMoveTab = t)}
-                        class="cursor-pointer rounded-lg border-0 px-3 py-1.5 text-xs font-bold uppercase {activeMoveTab ===
-                        t
-                          ? 'text-white'
-                          : 'bg-white/5 text-white/40'}"
-                        style={activeMoveTab === t
-                          ? `background-color: ${primaryColor}33`
-                          : ""}
+                        {...stylex.attrs(
+                          styles.moveTab,
+                          activeMoveTab === t
+                            ? styles.moveTabActive
+                            : styles.moveTabInactive,
+                          activeMoveTab === t
+                            ? dynamic.backgroundColor(`${primaryColor}33`)
+                            : null,
+                        )}
                       >
                         {MOVE_TAB_LABELS[t]} ({moveTabCounts[
                           t as keyof typeof moveTabCounts
@@ -642,16 +658,13 @@
                   {/each}
                 </div>
                 {#if activeMoveTab === "level_up" || activeMoveTab === "machine" || activeMoveTab === "egg" || activeMoveTab === "tutor"}
-                  <div class="grid gap-2 sm:grid-cols-2">
+                  <div {...stylex.attrs(styles.twoColGrid)}>
                     {#each moves[activeMoveTab as keyof PokemonMoves] as m}
                       <MoveTooltip move={m}>
                         {#snippet children()}
-                          <div
-                            class="flex items-center gap-2 rounded-xl border border-white/4 bg-white/2 px-3 py-2 text-sm"
-                          >
+                          <div {...stylex.attrs(styles.moveRow)}>
                             {#if activeMoveTab === "level_up"}
-                              <span
-                                class="w-8 text-right text-[11px] font-black text-white/50"
+                              <span {...stylex.attrs(styles.moveLevel)}
                                 >{m.level}</span
                               >
                             {/if}
@@ -660,11 +673,10 @@
                               size="xs"
                               tooltip={false}
                             />
-                            <span
-                              class="flex-1 truncate font-semibold text-white/80"
+                            <span {...stylex.attrs(styles.moveName)}
                               >{formatName(m.name)}</span
                             >
-                            <span class="text-[10px] text-white/30">
+                            <span {...stylex.attrs(styles.moveStats)}>
                               {m.power ?? "—"}/{m.accuracy ?? "—"}/{m.pp ?? "—"}
                             </span>
                           </div>
@@ -676,18 +688,19 @@
               {/if}
             </div>
           {:else if tab === "data"}
-            <div class="panel">
-              <h2 class="mb-5 text-lg font-bold">Pokédex Data</h2>
-              <div class="grid grid-cols-2 gap-4 md:grid-cols-3">
+            <div {...stylex.attrs(shared.panel)}>
+              <h2 {...stylex.attrs(styles.sectionTitleWide)}>Pokédex Data</h2>
+              <div {...stylex.attrs(styles.dataGrid)}>
                 {#each dexData as entry}
                   <div>
-                    <div
-                      class="text-[10px] tracking-wider text-white/40 uppercase"
-                    >
+                    <div {...stylex.attrs(styles.dataLabel)}>
                       {entry.label}
                     </div>
                     <div
-                      class="font-bold {entry.capitalize ? 'capitalize' : ''}"
+                      {...stylex.attrs(
+                        styles.dataValue,
+                        entry.capitalize && styles.capitalize,
+                      )}
                     >
                       {entry.value}
                     </div>

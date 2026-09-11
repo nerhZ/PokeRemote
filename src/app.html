@@ -12,6 +12,12 @@
       type="image/svg+xml"
     />
     <link rel="apple-touch-icon" href="%sveltekit.assets%/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap"
+    />
     <script>
       (function () {
         try {
@@ -33,10 +39,84 @@
       });
     </script>
     <style>
+      /* Global reset plus selection and scrollbar styling. StyleX has no
+         global selectors and this CSS must exist before the bundle loads, so
+         it lives here. @layer base keeps StyleX rules winning over it. */
+      @layer base {
+        *,
+        ::before,
+        ::after {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+          border: 0 solid;
+        }
+        html {
+          line-height: 1.5;
+          -webkit-text-size-adjust: 100%;
+          tab-size: 4;
+          -webkit-tap-highlight-color: transparent;
+        }
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+          font-size: inherit;
+          font-weight: inherit;
+        }
+        a {
+          color: inherit;
+          text-decoration: inherit;
+        }
+        button,
+        input,
+        select,
+        optgroup,
+        textarea {
+          font: inherit;
+          letter-spacing: inherit;
+          color: inherit;
+          background-color: transparent;
+          border-radius: 0;
+          opacity: 1;
+        }
+        img,
+        svg,
+        video,
+        canvas {
+          display: block;
+          vertical-align: middle;
+        }
+        ::placeholder {
+          opacity: 1;
+        }
+      }
+      ::selection {
+        background-color: #3884ff;
+        color: white;
+      }
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(128, 128, 128, 0.3);
+        border-radius: 5px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(128, 128, 128, 0.45);
+      }
+
       html {
         font-size: 16px;
         min-height: 100%;
         background-color: #0d1117;
+        color-scheme: dark;
       }
       body {
         font-family:
@@ -53,8 +133,9 @@
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
-      [data-theme="light"] html {
+      html[data-theme="light"] {
         background-color: #f0f3f9;
+        color-scheme: light;
       }
       [data-theme="light"] body {
         background-color: #f0f3f9;

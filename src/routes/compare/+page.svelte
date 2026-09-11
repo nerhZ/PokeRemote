@@ -21,6 +21,10 @@
   import StatBar from "$lib/components/StatBar.svelte";
   import ClearButton from "$lib/components/ClearButton.svelte";
   import { onMount, untrack } from "svelte";
+  import * as stylex from "@stylexjs/stylex";
+  import { shared } from "$lib/styles/shared.stylex";
+  import { dynamic } from "../../lib/styles/dynamic.stylex";
+  import { styles } from "./styles";
 
   let allNames: { name: string; id: number }[] = $state([]);
   let catalogTotal = $state(0);
@@ -111,59 +115,50 @@
   }
 </script>
 
-<div class="tool-shell">
-  <div class="tool-hero">
-    <div class="flex items-start justify-between gap-4">
+<div {...stylex.attrs(shared.toolShell)}>
+  <div {...stylex.attrs(shared.toolHero)}>
+    <div {...stylex.attrs(styles.heroRow)}>
       <div>
-        <h1>Compare Pokémon</h1>
-        <p>
+        <h1 {...stylex.attrs(shared.toolHeroTitle)}>Compare Pokémon</h1>
+        <p {...stylex.attrs(shared.toolHeroText)}>
           Side-by-side stats with a shared radar. Search includes all {catalogTotal ||
-            "…"} forms. Share via <code class="text-accent">?a=</code> /
-          <code class="text-accent">?b=</code>.
+            "…"} forms. Share via
+          <code {...stylex.attrs(styles.accent)}>?a=</code>
+          /
+          <code {...stylex.attrs(styles.accent)}>?b=</code>.
         </p>
       </div>
       <ClearButton onclick={clearState} />
     </div>
   </div>
 
-  <div class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
-    <div class="panel p-4!">
-      <div
-        class="mb-2 text-xs font-bold tracking-wider text-white/40 uppercase"
-      >
-        Pokémon A
-      </div>
+  <div {...stylex.attrs(styles.pickGrid)}>
+    <div {...stylex.attrs(shared.panel, styles.panelP4)}>
+      <div {...stylex.attrs(styles.slotLabel)}>Pokémon A</div>
       <PokemonSearch
         bind:value={searchA}
         options={allNames}
         onselect={selectPokemonA}
       />
-      {#if loadingA}<div class="mt-3 flex justify-center">
-          <Pokeball spinning class="h-6 w-6" />
+      {#if loadingA}<div {...stylex.attrs(styles.loadingRow)}>
+          <Pokeball spinning sx={styles.pokeball} />
         </div>{/if}
     </div>
-    <div class="panel p-4!">
-      <div
-        class="mb-2 text-xs font-bold tracking-wider text-white/40 uppercase"
-      >
-        Pokémon B
-      </div>
+    <div {...stylex.attrs(shared.panel, styles.panelP4)}>
+      <div {...stylex.attrs(styles.slotLabel)}>Pokémon B</div>
       <PokemonSearch
         bind:value={searchB}
         options={allNames}
         onselect={selectPokemonB}
       />
-      {#if loadingB}<div class="mt-3 flex justify-center">
-          <Pokeball spinning class="h-6 w-6" />
+      {#if loadingB}<div {...stylex.attrs(styles.loadingRow)}>
+          <Pokeball spinning sx={styles.pokeball} />
         </div>{/if}
     </div>
   </div>
 
   {#if slotError}
-    <div
-      class="border-pokemon-red/30 bg-pokemon-red/10 text-pokemon-red mb-6 rounded-xl border px-4 py-3 text-center text-xs"
-      role="alert"
-    >
+    <div {...stylex.attrs(styles.errorBox)} role="alert">
       {slotError}
     </div>
   {/if}
@@ -174,39 +169,40 @@
       subtitle="Search above to start comparing stats, types, and radar profiles."
     />
   {:else}
-    <div class="relative mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-      <div
-        class="bg-accent absolute top-1/2 left-1/2 z-10 hidden h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 border-(--bg) font-black text-white shadow-xl md:flex"
-      >
-        VS
-      </div>
+    <div {...stylex.attrs(styles.vsGrid)}>
+      <div {...stylex.attrs(styles.vsBadge)}>VS</div>
       {#each [pokemonA, pokemonB] as p, idx}
         {#if p}
           {@const color = typeColor(p.types)}
-          <div class="panel" style="box-shadow: inset 0 0 0 1px {color}33">
+          <div
+            {...stylex.attrs(
+              shared.panel,
+              dynamic.boxShadow(`inset 0 0 0 1px ${color}33`),
+            )}
+          >
             <a
               href={resolve(`/pokemon/${p.name}`)}
-              class="mb-5 flex items-center gap-4 rounded-xl p-2 no-underline transition-colors hover:bg-white/5"
+              {...stylex.attrs(styles.cardLink)}
             >
               <PokemonImage
                 src={p.sprites.other["official-artwork"].front_default}
                 id={p.id}
                 alt={p.name}
-                class="h-20 w-20 object-contain drop-shadow-xl"
+                sx={styles.artwork}
               />
               <div>
-                <div class="text-xl font-black" style="color: var(--text)">
+                <div {...stylex.attrs(styles.name)}>
                   {formatName(p.name)}
                 </div>
-                <div class="text-xs text-white/40">
+                <div {...stylex.attrs(styles.idText)}>
                   {formatId(p.id)}
                 </div>
-                <div class="mt-1.5 flex gap-1">
+                <div {...stylex.attrs(styles.typeRow)}>
                   {#each p.types as t}<TypeBadge type={t} size="xs" />{/each}
                 </div>
               </div>
             </a>
-            <div class="space-y-2">
+            <div {...stylex.attrs(styles.stats)}>
               {#each p.stats as stat}
                 <StatBar
                   label={STAT_LABELS[stat.name]}
@@ -215,17 +211,13 @@
                   size="sm"
                 />
               {/each}
-              <div
-                class="border-t border-white/6 pt-2 text-xs font-bold text-white/60"
-              >
+              <div {...stylex.attrs(styles.total)}>
                 Total {statTotal(p.stats)}
               </div>
             </div>
           </div>
         {:else}
-          <div
-            class="panel flex min-h-64 items-center justify-center text-sm text-white/30"
-          >
+          <div {...stylex.attrs(shared.panel, styles.emptySlot)}>
             Select Pokémon {idx === 0 ? "A" : "B"}
           </div>
         {/if}
@@ -239,9 +231,9 @@
         const alt = pokemonB.types.find((t) => t !== a);
         return alt ? TYPE_COLORS[alt] : "#ff3e3e";
       })()}
-      <div class="panel mb-6">
-        <h2 class="mb-4 text-lg font-bold">Shared Radar</h2>
-        <div class="mx-auto w-full max-w-sm">
+      <div {...stylex.attrs(shared.panel, styles.panelMb6)}>
+        <h2 {...stylex.attrs(styles.sectionTitle)}>Shared Radar</h2>
+        <div {...stylex.attrs(styles.radarWrap)}>
           <RadarChart
             pokemon={pokemonA}
             color={colorA}
@@ -251,9 +243,9 @@
         </div>
       </div>
 
-      <div class="panel">
-        <h2 class="mb-4 text-lg font-bold">Stat Difference</h2>
-        <div class="space-y-2.5">
+      <div {...stylex.attrs(shared.panel)}>
+        <h2 {...stylex.attrs(styles.sectionTitle)}>Stat Difference</h2>
+        <div {...stylex.attrs(styles.diffs)}>
           {#each pokemonA.stats as statA, i}
             {@const statB = pokemonB.stats[i]}
             {@const diff = statA.base_stat - statB.base_stat}
@@ -263,37 +255,43 @@
             {@const totalW = leftW + rightW}
             {@const leftWS = (leftW / totalW) * 100}
             {@const rightWS = (rightW / totalW) * 100}
-            <div class="flex items-center gap-3">
-              <span class="w-12 text-right text-[10px] font-bold text-white/45"
+            <div {...stylex.attrs(styles.diffRow)}>
+              <span {...stylex.attrs(styles.diffLabel)}
                 >{STAT_LABELS[statA.name]}</span
               >
               <span
-                class="w-7 text-right text-xs font-bold"
-                style="color: {colorA}">{statA.base_stat}</span
+                {...stylex.attrs(styles.diffValueLeft, dynamic.color(colorA))}
+                >{statA.base_stat}</span
               >
-              <div
-                class="flex h-2 flex-1 overflow-hidden rounded-full bg-white/4"
-              >
+              <div {...stylex.attrs(styles.diffTrack)}>
                 <div
-                  class="h-full"
-                  style="width: {leftWS}%; background: {colorA}"
+                  {...stylex.attrs(
+                    styles.diffFill,
+                    dynamic.width(`${leftWS}%`),
+                    dynamic.background(colorA),
+                  )}
                 ></div>
                 <div
-                  class="h-full"
-                  style="width: {rightWS}%; background: {colorB}"
+                  {...stylex.attrs(
+                    styles.diffFill,
+                    dynamic.width(`${rightWS}%`),
+                    dynamic.background(colorB),
+                  )}
                 ></div>
               </div>
-              <span class="w-7 text-xs font-bold" style="color: {colorB}"
+              <span
+                {...stylex.attrs(styles.diffValueRight, dynamic.color(colorB))}
                 >{statB.base_stat}</span
               >
               <span
-                class="w-10 text-right text-[10px] font-bold"
-                style="color: {diff > 0
-                  ? '#4ade80'
-                  : diff < 0
-                    ? '#f87171'
-                    : 'var(--muted)'}"
-                >{diff > 0 ? `+${diff}` : diff || ""}</span
+                {...stylex.attrs(
+                  styles.diffDelta,
+                  diff > 0
+                    ? styles.diffPos
+                    : diff < 0
+                      ? styles.diffNeg
+                      : styles.diffMuted,
+                )}>{diff > 0 ? `+${diff}` : diff || ""}</span
               >
             </div>
           {/each}
