@@ -1,6 +1,7 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { resolve } from "$app/paths";
   import * as stylex from "@stylexjs/stylex";
+  import { shared } from "$lib/styles/shared.stylex";
   import Tooltip from "./Tooltip.svelte";
   import TypeBadgeInner from "./TypeBadgeInner.svelte";
   import TypePopup from "./TypePopup.svelte";
@@ -21,7 +22,7 @@
     /** Make the badge a tab stop (tooltip opens on focus). Dense grids opt
         out; thousands of tab stops would bury keyboard navigation. */
     focusable?: boolean;
-    /** Link to the type-filtered Pokédex. Off when the badge sits inside
+    /** Link to the type-filtered PokÃ©dex. Off when the badge sits inside
         another link or button, where a nested anchor is invalid. */
     link?: boolean;
   } = $props();
@@ -35,7 +36,7 @@
   <a
     href={resolve("/") + `?type=${type}`}
     tabindex={focusable ? undefined : -1}
-    {...stylex.attrs(styles.grow)}
+    {...stylex.attrs(shared.grow)}
   >
     {#if tooltip}
       <Tooltip popupSx={styles.tooltip} {position}>
@@ -51,7 +52,7 @@
     {/if}
   </a>
 {:else if tooltip}
-  <span {...stylex.attrs(styles.grow)}>
+  <span {...stylex.attrs(shared.grow)}>
     <Tooltip popupSx={styles.tooltip} {position}>
       {#snippet popup()}
         <TypePopup {type} />
@@ -62,7 +63,7 @@
     </Tooltip>
   </span>
 {:else}
-  <span {...stylex.attrs(styles.grow)}>
+  <span {...stylex.attrs(shared.grow)}>
     <TypeBadgeInner {type} {size} />
   </span>
 {/if}

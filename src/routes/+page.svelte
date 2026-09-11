@@ -273,6 +273,55 @@
     return avail;
   });
 
+  /** Type chip counts for the other active filters: an active type counts
+      within the current selection, an inactive one as if it were added. */
+  let typeCounts = $derived.by(() => {
+    const counts: Record<string, number> = {};
+    if (loadPhase !== "ready") return counts;
+    for (const t of ALL_TYPES) {
+      counts[t] = applyFilters(allPokemon, {
+        types: activeTypes.includes(t) ? activeTypes : [...activeTypes, t],
+        gens: activeGens,
+        search: searchQuery,
+        favs: showFavoritesOnly,
+        special,
+      }).length;
+    }
+    return counts;
+  });
+
+  /** Generation chip counts, with the other filters applied. */
+  let genCounts = $derived.by(() => {
+    const counts: Record<string, number> = {};
+    if (loadPhase !== "ready") return counts;
+    for (const gen of GEN_RANGES) {
+      counts[gen.label] = applyFilters(allPokemon, {
+        types: activeTypes,
+        gens: [gen.label],
+        search: searchQuery,
+        favs: showFavoritesOnly,
+        special,
+      }).length;
+    }
+    return counts;
+  });
+
+  /** Special chip counts, with the other filters applied. */
+  let specialCounts = $derived.by(() => {
+    const counts: Record<string, number> = {};
+    if (loadPhase !== "ready") return counts;
+    for (const s of ["legendary", "mythical"] as const) {
+      counts[s] = applyFilters(allPokemon, {
+        types: activeTypes,
+        gens: activeGens,
+        search: searchQuery,
+        favs: showFavoritesOnly,
+        special: s,
+      }).length;
+    }
+    return counts;
+  });
+
   let filtered = $derived.by(() => {
     const result = applyFilters(allPokemon, {
       types: activeTypes,
@@ -437,7 +486,6 @@
             label="All types"
             active={activeTypes.length === 0}
             variant="inverted"
-            count={activeTypes.length > 0 ? activeTypes.length : undefined}
             onclick={() => setTypes([])}
           />
           {#each ALL_TYPES as t}
@@ -446,6 +494,7 @@
               active={activeTypes.includes(t)}
               variant="color"
               color={TYPE_COLORS[t]}
+              count={typeCounts[t]}
               disabled={loadPhase === "ready" &&
                 !activeTypes.includes(t) &&
                 !possibleTypes.has(t)}
@@ -457,7 +506,6 @@
           <FilterChip
             label="All gens"
             active={activeGens.length === 0}
-            count={activeGens.length > 0 ? activeGens.length : undefined}
             onclick={() => {
               setGens([]);
             }}
@@ -467,6 +515,7 @@
             <FilterChip
               label={generationShortLabel(label)}
               active={activeGens.includes(label)}
+              count={genCounts[label]}
               disabled={loadPhase === "ready" &&
                 !activeGens.includes(label) &&
                 !possibleGens.has(label)}
@@ -484,24 +533,19 @@
           <FilterChip
             label="All"
             active={special === ""}
-            count={special !== "" ? 1 : undefined}
             onclick={() => setSpecial("")}
           />
           <FilterChip
             label="Legendary"
             active={special === "legendary"}
-            count={loadPhase === "ready"
-              ? allPokemon.filter((p) => p.is_legendary).length
-              : undefined}
+            count={specialCounts["legendary"]}
             onclick={() =>
               setSpecial(special === "legendary" ? "" : "legendary")}
           />
           <FilterChip
             label="Mythical"
             active={special === "mythical"}
-            count={loadPhase === "ready"
-              ? allPokemon.filter((p) => p.is_mythical).length
-              : undefined}
+            count={specialCounts["mythical"]}
             onclick={() => setSpecial(special === "mythical" ? "" : "mythical")}
           />
         </div>
@@ -618,6 +662,7 @@
                     {/each}
                     <span
                       {...stylex.attrs(
+                        shared.grow,
                         styles.genBadge,
                         dynamic.background(`${primaryColor}33`),
                       )}>{generationShortLabel(getGeneration(p.id))}</span

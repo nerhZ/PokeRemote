@@ -49,12 +49,16 @@ export const chipStyles = stylex.create({
     color: tokens.onAccent,
   },
   countBadge: {
-    backgroundColor: tokens.accent,
+    backgroundColor: "#1a1a1a",
+    color: "#fff",
     marginLeft: "0.25rem",
     borderRadius: "9999px",
     paddingInline: "0.375rem",
     paddingBlock: "0.125rem",
     fontSize: "8px",
-    color: tokens.onAccent,
+  },
+  countBadgeActive: {
+    backgroundColor: "#000",
+    color: "#fff",
   },
 });

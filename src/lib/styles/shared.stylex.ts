@@ -130,6 +130,28 @@ export const shared = stylex.create({
   typeBadgeText: {
     textShadow: `0 0 2px ${tokens.badgeOutline}, 0 0 4px ${tokens.badgeOutline}`,
   },
+  grow: {
+    display: "inline-flex",
+    borderRadius: "9999px",
+    textDecorationLine: "none",
+    transitionProperty: "all",
+    transitionDuration: motion.durFast,
+    transitionTimingFunction: motion.easeStandard,
+    ":hover": {
+      scale: 1.04,
+    },
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":hover": {
+        scale: 1,
+      },
+      ":active": {
+        scale: 1,
+      },
+    },
+  },
   kbd: {
     backgroundColor: tokens.kbdBg,
     borderWidth: 1,

@@ -1,10 +1,16 @@
 <script lang="ts">
+  import { resolve } from "$app/paths";
   import {
     getAllAbilities,
     getAbilityPokemon,
     type AbilityEntry,
   } from "$lib/api";
-  import { formatName, generationLabel, GEN_COLORS } from "$lib/pokemon-types";
+  import {
+    formatName,
+    generationLabel,
+    generationShortLabel,
+    GEN_COLORS,
+  } from "$lib/pokemon-types";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import SearchInput from "$lib/components/SearchInput.svelte";
   import FilterChip from "$lib/components/FilterChip.svelte";
@@ -104,13 +110,15 @@
               {@const gen = generationLabel(a.generation)}
               {#if gen}
                 {@const color = GEN_COLORS[gen.split(" ")[1]] ?? "#777"}
-                <span
+                <a
+                  href={resolve("/") + `?gen=${generationShortLabel(gen)}`}
                   {...stylex.attrs(
+                    shared.grow,
                     styles.genBadge,
                     dynamic.color(color),
                     dynamic.borderColor(`${color}40`),
                     dynamic.background(`${color}18`),
-                  )}>{gen}</span
+                  )}>{gen}</a
                 >
               {/if}
             {/if}

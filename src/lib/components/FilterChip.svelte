@@ -43,6 +43,9 @@
       : null,
   )}
   >{label}{#if count != null && count > 0}<span
-      {...stylex.attrs(chipStyles.countBadge)}>{count}</span
+      {...stylex.attrs(
+        chipStyles.countBadge,
+        active && chipStyles.countBadgeActive,
+      )}>{count}</span
     >{/if}</button
 >
