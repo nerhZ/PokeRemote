@@ -127,9 +127,6 @@ export const shared = stylex.create({
       borderColor: `color-mix(in srgb, ${tokens.accent} 55%, ${tokens.border})`,
     },
   },
-  typeBadgeText: {
-    textShadow: `0 0 2px ${tokens.badgeOutline}, 0 0 4px ${tokens.badgeOutline}`,
-  },
   grow: {
     display: "inline-flex",
     borderRadius: "9999px",
@@ -151,6 +148,20 @@ export const shared = stylex.create({
         scale: 1,
       },
     },
+  },
+  legendaryBadge: {
+    backgroundImage: `linear-gradient(135deg, #fff8c2 0%, #ffdf4d 25%, ${tokens.pokemonYellow} 50%, ${tokens.pokemonGold} 100%)`,
+    color: tokens.txNavy,
+    borderColor: "transparent",
+    boxShadow: `inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 0 12px color-mix(in srgb, ${tokens.pokemonYellow} 45%, transparent)`,
+  },
+  mythicalBadge: {
+    backgroundImage:
+      "linear-gradient(to right, oklch(65.6% 0.241 354.308), oklch(62.7% 0.265 303.9))",
+    color: tokens.onAccent,
+    borderColor: "transparent",
+    boxShadow:
+      "inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 0 12px color-mix(in srgb, oklch(65.6% 0.241 354.308) 45%, transparent)",
   },
   kbd: {
     backgroundColor: tokens.kbdBg,

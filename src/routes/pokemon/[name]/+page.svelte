@@ -416,7 +416,7 @@
                   href={resolve("/") + "?special=legendary"}
                   {...stylex.attrs(
                     styles.rankBadge,
-                    styles.legendaryBadge,
+                    shared.legendaryBadge,
                     styles.rankBadgeLink,
                   )}>Legendary</a
                 >{/if}
@@ -424,7 +424,7 @@
                   href={resolve("/") + "?special=mythical"}
                   {...stylex.attrs(
                     styles.rankBadge,
-                    styles.mythicalBadge,
+                    shared.mythicalBadge,
                     styles.rankBadgeLink,
                   )}>Mythical</a
                 >{/if}

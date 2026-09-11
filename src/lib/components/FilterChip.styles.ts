@@ -41,7 +41,6 @@ export const chipStyles = stylex.create({
   },
   colorVariant: {
     borderColor: "transparent",
-    color: tokens.txStrong,
   },
   accent: {
     backgroundColor: tokens.accent,

@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as stylex from "@stylexjs/stylex";
   import { dynamic } from "../styles/dynamic.stylex";
+  import { shared } from "../styles/shared.stylex";
   import { chipStyles } from "./FilterChip.styles";
 
   let {
@@ -17,7 +18,7 @@
     onclick: () => void;
     color?: string;
     count?: number;
-    variant?: "accent" | "color" | "inverted";
+    variant?: "accent" | "color" | "inverted" | "legendary" | "mythical";
     disabled?: boolean;
   } = $props();
 
@@ -26,8 +27,22 @@
     if (!active) return chipStyles.idle;
     if (variant === "inverted") return chipStyles.inverted;
     if (variant === "color") return chipStyles.colorVariant;
+    // Rank-badge chips are fully driven by shared styles.
+    if (variant === "legendary" || variant === "mythical") return null;
     return chipStyles.accent;
   });
+
+  function activeStyle() {
+    if (!active) return null;
+    if (variant === "color" && color)
+      return [
+        dynamic.backgroundColor(color),
+        dynamic.color(`contrast-color(${color})`),
+      ];
+    if (variant === "legendary") return shared.legendaryBadge;
+    if (variant === "mythical") return shared.mythicalBadge;
+    return null;
+  }
 </script>
 
 <button
@@ -35,13 +50,7 @@
   {onclick}
   aria-pressed={active}
   disabled={disabled && !active}
-  {...stylex.attrs(
-    chipStyles.chip,
-    variantStyle,
-    active && variant === "color" && color
-      ? dynamic.backgroundColor(color)
-      : null,
-  )}
+  {...stylex.attrs(chipStyles.chip, variantStyle, activeStyle())}
   >{label}{#if count != null && count > 0}<span
       {...stylex.attrs(
         chipStyles.countBadge,

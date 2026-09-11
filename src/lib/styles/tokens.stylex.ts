@@ -18,7 +18,6 @@ export const tokens = stylex.defineVars({
   shadow3: "0 25px 50px -12px rgba(0, 0, 0, 0.55)",
   chartGrid: "rgba(255, 255, 255, 0.06)",
   chartLabel: "rgba(255, 255, 255, 0.4)",
-  badgeOutline: "rgba(0, 0, 0, 0.55)",
   appBgImage:
     "radial-gradient(circle at 10% 20%, rgba(56, 132, 255, 0.07) 0%, transparent 50%), radial-gradient(circle at 90% 60%, rgba(255, 62, 62, 0.05) 0%, transparent 50%), radial-gradient(circle at 50% 90%, rgba(56, 132, 255, 0.04) 0%, transparent 35%)",
 

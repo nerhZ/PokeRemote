@@ -10,6 +10,7 @@
   import {
     TYPE_COLORS,
     GEN_RANGES,
+    GEN_COLORS,
     ALL_TYPES,
     TOTAL_SPECIES,
     TOTAL_POKEMON,
@@ -339,6 +340,29 @@
       sorted.sort((a, b) => b.name.localeCompare(a.name));
     return sorted;
   });
+
+  /** True when anything is narrowing the grid. */
+  let canReset = $derived(
+    searchQuery !== "" ||
+      activeTypes.length > 0 ||
+      activeGens.length > 0 ||
+      special !== "" ||
+      showFavoritesOnly,
+  );
+
+  /** Clear the search box, every chip filter, and favorites-only mode. */
+  function resetFilters() {
+    searchQuery = "";
+    showFavoritesOnly = false;
+    activeTypes = [];
+    activeGens = [];
+    special = "";
+    lastTypeParam = "";
+    lastGenParam = "";
+    lastSpecialParam = "";
+    sync.clearPageState();
+    sync.push(new URLSearchParams());
+  }
 </script>
 
 <div {...stylex.attrs(styles.root)}>
@@ -474,6 +498,16 @@
         <p {...stylex.attrs(styles.filterHint)}>
           Click to toggle · types narrow by AND, gens broaden by OR
         </p>
+        <button
+          onclick={resetFilters}
+          disabled={!canReset}
+          {...stylex.attrs(
+            styles.resetFilters,
+            canReset ? styles.resetFiltersEnabled : styles.resetFiltersDisabled,
+          )}
+        >
+          Reset filters
+        </button>
       </div>
       <div
         {...stylex.attrs(
@@ -506,6 +540,7 @@
           <FilterChip
             label="All gens"
             active={activeGens.length === 0}
+            variant="inverted"
             onclick={() => {
               setGens([]);
             }}
@@ -515,6 +550,8 @@
             <FilterChip
               label={generationShortLabel(label)}
               active={activeGens.includes(label)}
+              variant="color"
+              color={GEN_COLORS[generationShortLabel(label)]}
               count={genCounts[label]}
               disabled={loadPhase === "ready" &&
                 !activeGens.includes(label) &&
@@ -533,19 +570,26 @@
           <FilterChip
             label="All"
             active={special === ""}
+            variant="inverted"
             onclick={() => setSpecial("")}
           />
           <FilterChip
             label="Legendary"
             active={special === "legendary"}
+            variant="legendary"
             count={specialCounts["legendary"]}
+            disabled={loadPhase === "ready" &&
+              (specialCounts["legendary"] ?? 0) === 0}
             onclick={() =>
               setSpecial(special === "legendary" ? "" : "legendary")}
           />
           <FilterChip
             label="Mythical"
             active={special === "mythical"}
+            variant="mythical"
             count={specialCounts["mythical"]}
+            disabled={loadPhase === "ready" &&
+              (specialCounts["mythical"] ?? 0) === 0}
             onclick={() => setSpecial(special === "mythical" ? "" : "mythical")}
           />
         </div>

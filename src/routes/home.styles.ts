@@ -334,6 +334,42 @@ export const styles = stylex.create({
       },
     },
   },
+  resetFilters: {
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+    marginLeft: "auto",
+    borderRadius: "0.75rem",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: tokens.bd10,
+    backgroundColor: tokens.surf5,
+    paddingInline: "0.75rem",
+    paddingBlock: "0.5rem",
+    fontSize: "0.75rem",
+    lineHeight: "calc(1 / 0.75)",
+    fontWeight: 600,
+    color: tokens.tx70,
+  },
+  resetFiltersEnabled: {
+    ":hover": {
+      borderColor: tokens.bd20,
+      color: tokens.txStrong,
+    },
+    ":active": {
+      scale: motion.pressScale,
+    },
+    "@media (prefers-reduced-motion: reduce)": {
+      ":active": {
+        scale: 1,
+      },
+    },
+  },
+  resetFiltersDisabled: {
+    cursor: "not-allowed",
+    borderColor: tokens.bd5,
+    backgroundColor: tokens.surf2,
+    color: tokens.tx25,
+  },
   resultCount: {
     fontSize: "0.75rem",
     lineHeight: "calc(1 / 0.75)",

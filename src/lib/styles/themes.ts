@@ -19,7 +19,6 @@ export const lightTheme = stylex.createTheme(tokens, {
   shadow3: "0 22px 48px rgba(15, 23, 42, 0.16)",
   chartGrid: "rgba(15, 23, 42, 0.12)",
   chartLabel: "rgba(15, 23, 42, 0.55)",
-  badgeOutline: "rgba(255, 255, 255, 0.6)",
   appBgImage:
     "radial-gradient(circle at 10% 20%, rgba(56, 132, 255, 0.1) 0%, transparent 50%), radial-gradient(circle at 90% 60%, rgba(255, 62, 62, 0.07) 0%, transparent 50%), radial-gradient(circle at 50% 90%, rgba(56, 132, 255, 0.06) 0%, transparent 35%)",
   bgNavy: "#f0f3f9",
