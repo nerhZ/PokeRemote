@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as stylex from "@stylexjs/stylex";
+  import { contrastText } from "$lib/utils";
   import { dynamic } from "../styles/dynamic.stylex";
   import { shared } from "../styles/shared.stylex";
   import { chipStyles } from "./FilterChip.styles";
@@ -37,7 +38,7 @@
     if (variant === "color" && color)
       return [
         dynamic.backgroundColor(color),
-        dynamic.color(`contrast-color(${color})`),
+        dynamic.color(contrastText(color)),
       ];
     if (variant === "legendary") return shared.legendaryBadge;
     if (variant === "mythical") return shared.mythicalBadge;

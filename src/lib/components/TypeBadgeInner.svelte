@@ -1,5 +1,6 @@
 <script lang="ts">
   import { TYPE_COLORS } from "$lib/pokemon-types";
+  import { contrastText } from "$lib/utils";
   import * as stylex from "@stylexjs/stylex";
   import { dynamic } from "../styles/dynamic.stylex";
   import { sizes, styles, type BadgeSize } from "./TypeBadgeInner.styles";
@@ -25,6 +26,6 @@
     styles.badge,
     sizes[size],
     dynamic.backgroundColor(typeColor),
-    dynamic.color(`contrast-color(${typeColor})`),
+    dynamic.color(contrastText(typeColor)),
   )}>{type}</span
 >
