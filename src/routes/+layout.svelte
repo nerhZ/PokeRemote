@@ -327,7 +327,7 @@
             href={resolve(link.href)}
             {...stylex.attrs(
               shared.navLink,
-              isActive(link.href) && shared.navLinkActive,
+              isActive(resolve(link.href)) && shared.navLinkActive,
             )}>{link.icon} {link.label}</a
           >
         {/each}
@@ -346,7 +346,7 @@
           href={resolve(quiz.href)}
           {...stylex.attrs(
             shared.navLink,
-            isActive(quiz.href) && shared.navLinkActive,
+            isActive(resolve(quiz.href)) && shared.navLinkActive,
           )}>{quiz.icon} {quiz.label}</a
         >
         <SpriteToggle />
@@ -397,7 +397,7 @@
             onclick={() => (mobileOpen = false)}
             {...stylex.attrs(
               shared.navLink,
-              isActive(link.href) && shared.navLinkActive,
+              isActive(resolve(link.href)) && shared.navLinkActive,
               styles.menuLinkBlock,
             )}>{link.icon} {link.label}</a
           >
@@ -413,7 +413,7 @@
               onclick={() => (mobileOpen = false)}
               {...stylex.attrs(
                 shared.navLink,
-                isActive(item.href) && shared.navLinkActive,
+                isActive(resolve(item.href)) && shared.navLinkActive,
                 styles.menuLinkBlock,
                 styles.menuLinkIndent,
               )}>{item.icon} {item.label}</a
@@ -425,7 +425,7 @@
           onclick={() => (mobileOpen = false)}
           {...stylex.attrs(
             shared.navLink,
-            isActive(quiz.href) && shared.navLinkActive,
+            isActive(resolve(quiz.href)) && shared.navLinkActive,
             styles.menuLinkMt,
             styles.menuLinkBlock,
           )}>{quiz.icon} {quiz.label}</a

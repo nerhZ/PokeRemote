@@ -37,10 +37,10 @@ export function backTarget(raw: string | null): { url: string; label: string } {
   };
 }
 
-/** Whether the current route matches the given path. */
-export function isActive(href: string): boolean {
-  if (href === "/") return page.url.pathname === "/";
-  return page.url.pathname.startsWith(href);
+/** Whether the current route matches the given resolved path. */
+export function isActive(path: string): boolean {
+  if (path === resolve("/")) return page.url.pathname === path;
+  return page.url.pathname.startsWith(path);
 }
 
 /** Navigate to a random Pokémon, falling back to a random species id. */
